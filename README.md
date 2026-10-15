@@ -2,6 +2,10 @@
 
 **Evidence-backed, language-neutral source-porting engine.**
 
+<p align="center">
+  <img src="assets/sourcebridge-logo.svg" alt="Sourcebridge logo: linked source and target nodes over an evidence path" width="560">
+</p>
+
 Sourcebridge helps migrate a source codebase to a chosen target ecosystem
 without pretending every source file has one mechanical translation. It records
 the source corpus and variant, extracts semantic facts, applies reviewable
@@ -81,5 +85,25 @@ Local models may generate high-volume candidate rules, negative cases, fixtures,
 and isolated target drafts. They never directly modify generated output, mark a
 rule validated, or promote a proposal. Sourcebridge records model/prompt/input
 provenance and lets normal validation and review decide what lands.
+
+## Python dependencies are user-controlled decisions
+
+Python is a source frontend like C#, C, or Delphi; it is not automatically a
+Rust conversion. A Python-to-Rust profile inventories every imported package
+and records a user-approved disposition:
+
+- retain the PyPI package;
+- retain it through a Python extension or FFI boundary;
+- map it to a named Rust crate;
+- reimplement a small capability behind a contract;
+- use an external dependency/service;
+- declare a stub or exclusion; or
+- block the conversion.
+
+An agent can gather package APIs, lockfile versions, licensing, transitive use,
+test coverage, candidate Rust equivalents, and compatibility risks. It cannot
+silently choose a replacement. A future conversion-decision workbench will
+present those options and their evidence; the accepted result remains a
+versioned profile record usable without the UI.
 
 See [PLAN.md](PLAN.md) for the staged implementation plan.
