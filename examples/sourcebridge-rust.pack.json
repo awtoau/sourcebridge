@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "sourcebridge-rust",
+  "kind": "backend",
+  "version": "0.1.0",
+  "provides": {
+    "source_languages": [],
+    "target_environments": ["rust"]
+  },
+  "entrypoints": {
+    "emit": "sourcebridge_rust.emit:run",
+    "validate": "sourcebridge_rust.validate:run"
+  }
+}

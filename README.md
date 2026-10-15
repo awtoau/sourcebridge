@@ -55,6 +55,25 @@ Each profile may choose different runtime adapters and target-oriented rules,
 but all three begin from the same pinned Delphi corpus facts. The same applies
 to C#, C, and future source languages.
 
+## Hybrid ports are normal
+
+A profile may convert only selected components. It has a default target backend
+and explicit component decisions for source boundaries:
+
+```text
+application
+├── GUI                 retain in Python+Qt
+├── device/control      translate to Rust
+├── database layer      retain, replace, or bridge by user decision
+└── reporting tool      exclude or translate later
+```
+
+Every non-direct component must name its disposition, rationale, and—where it
+crosses a runtime boundary—a versioned contract. For example, Rust control
+logic can expose a service/FFI/IPC boundary to a retained Python+Qt GUI. The
+boundary has its own compatibility tests; the engine never pretends this is one
+monolithic generated binary.
+
 ## Honest conversion decisions
 
 Every source unit receives a recorded disposition:
@@ -110,5 +129,24 @@ versioned profile record usable without the UI.
 For example, a Python profile may retain a PyPI package or map it to a Rust
 crate; a Delphi profile may retain, replace, or stub a database layer; a C
 profile may preserve a C ABI boundary instead of translating a driver.
+
+## The conversion-decision workbench
+
+The planned GUI is a review/control plane. Its main view is a source-component
+tree or dependency graph, coloured by disposition and validation status. When a
+user selects a component, a detail pane shows:
+
+- source facts, variant, tests, warnings, and call/dependency relationships;
+- agent-proposed target/retain/bridge/stub options with licensing, API, risk,
+  cost, and evidence;
+- the chosen backend/runtime adapter and boundary contract;
+- target build/lint/oracle results and unresolved blockers.
+
+The user can compare profiles such as “Rust core + Python+Qt GUI” and “all
+Python retained,” then approve a decision. The GUI writes a versioned profile
+record; the CLI can reproduce the same conversion without the GUI.
+
+See [the conversion-decision workbench](docs/conversion-decision-workbench.md)
+for the option cards, user actions, and AI-guidance boundary.
 
 See [PLAN.md](PLAN.md) for the staged implementation plan.

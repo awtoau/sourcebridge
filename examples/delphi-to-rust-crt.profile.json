@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "delphi-to-rust-crt",
+  "source_frontend": "sourcebridge-delphi",
+  "target_backend": "sourcebridge-rust",
+  "rule_layers": ["delphi-core", "rust-crt"],
+  "runtime_adapters": ["character-mode-driver"],
+  "component_decisions": [
+    {
+      "source_selector": "Application.UI",
+      "disposition": "retain_runtime",
+      "runtime_adapter": "python-qt-ui",
+      "boundary_contract": "ui-service-v1",
+      "rationale": "Keep the existing GUI domain in its selected runtime while porting its service boundary independently."
+    },
+    {
+      "source_selector": "Application.DeviceControl",
+      "disposition": "direct_translation",
+      "target_backend": "sourcebridge-rust",
+      "rationale": "Port deterministic device/control logic to the default Rust backend."
+    }
+  ],
+  "options": {
+    "ui_strategy": "character-mode"
+  }
+}

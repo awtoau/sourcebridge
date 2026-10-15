@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "id": "sourcebridge-delphi",
+  "kind": "frontend",
+  "version": "0.1.0",
+  "provides": {
+    "source_languages": ["delphi"],
+    "target_environments": []
+  },
+  "entrypoints": {
+    "extract": "sourcebridge_delphi.extract:run"
+  }
+}

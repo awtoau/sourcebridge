@@ -42,6 +42,43 @@
       },
       "uniqueItems": true
     },
+    "component_decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_selector", "disposition", "rationale"],
+        "properties": {
+          "source_selector": {
+            "type": "string"
+          },
+          "disposition": {
+            "enum": [
+              "direct_translation",
+              "retain_runtime",
+              "runtime_replacement",
+              "native_reimplementation",
+              "external_dependency",
+              "stubbed_boundary",
+              "excluded",
+              "blocked"
+            ]
+          },
+          "target_backend": {
+            "type": "string"
+          },
+          "runtime_adapter": {
+            "type": "string"
+          },
+          "boundary_contract": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     "options": {
       "type": "object"
     }
