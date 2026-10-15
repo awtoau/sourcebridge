@@ -105,6 +105,20 @@ and isolated target drafts. They never directly modify generated output, mark a
 rule validated, or promote a proposal. Sourcebridge records model/prompt/input
 provenance and lets normal validation and review decide what lands.
 
+The first executable proposal stage is deliberately strict:
+
+```text
+sourcebridge model-digest
+sourcebridge propose-rule evidence/unmatched-cluster.json \
+  --model-digest sha256:<value printed by model-digest>
+```
+
+It permits only the approved, locally installed `qwen2.5-coder:14b` model on a
+loopback Ollama endpoint, pins the response to its digest, limits the supplied
+JSON evidence to 256 KiB, uses fixed generation options, schema-checks the
+response, and writes the result only under `evidence/proposals/`. A staged
+result is always labelled `unvalidated-llm-proposal`.
+
 ## Dependencies are user-controlled decisions
 
 Sourcebridge does not automatically convert every library or silently replace

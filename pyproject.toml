@@ -21,4 +21,4 @@ postgres = [
 sourcebridge = "sourcebridge.cli:main"
 
 [tool.setuptools]
-packages = ["sourcebridge"]
+packages = ["sourcebridge", "cli"]
