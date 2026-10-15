@@ -13,12 +13,16 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+workbench = [
+  "PySide6>=6.8,<7"
+]
 postgres = [
   "psycopg>=3.2,<4"
 ]
 
 [project.scripts]
 sourcebridge = "sourcebridge.cli:main"
+sourcebridge-workbench = "sourcebridge.workbench:main"
 
 [tool.setuptools]
 packages = ["sourcebridge", "cli"]
