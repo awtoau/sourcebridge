@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 import unittest
 
-from sourcebridge.reporting import diagnostic_groups, diagnostic_occurrences
+from sourcebridge.reporting import diagnostic_groups, diagnostic_occurrences, execution_activity
 
 
 class ReportingTests(unittest.TestCase):
@@ -36,8 +36,9 @@ class ReportingTests(unittest.TestCase):
             connection.close()
             groups = diagnostic_groups(database)
             occurrences = diagnostic_occurrences(database, "setter:unsupported-bit-range")
+            activity = execution_activity(database)
         self.assertEqual(groups[0]["occurrence_count"], 1)
         self.assertEqual(occurrences[0]["source_excerpt"], "SetBits(9, 1)")
         self.assertEqual(occurrences[0]["generated_excerpt"], "unimplemented!()")
         self.assertEqual(occurrences[0]["evidence_path"], "log.txt")
-
+        self.assertEqual(activity, [])

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import sys
 
-from sourcebridge.reporting import diagnostic_groups, diagnostic_occurrences
+from sourcebridge.reporting import diagnostic_groups, diagnostic_occurrences, execution_activity
 
 
 def main() -> int:
@@ -19,7 +19,6 @@ def main() -> int:
             QListWidget,
             QListWidgetItem,
             QMainWindow,
-            QMessageBox,
             QPlainTextEdit,
             QPushButton,
             QVBoxLayout,
@@ -68,12 +67,8 @@ def main() -> int:
         )
 
     def show_activity() -> None:
-        QMessageBox.information(
-            window,
-            "Execution activity",
-            "Execution adapters write run, worker, and event records. "
-            "No approved adapter is installed in this engine-only package.",
-        )
+        details.setPlainText(json.dumps(execution_activity(database), indent=2, sort_keys=True))
+        status.setText("Execution runs, workers, and events")
 
     groups_list.itemSelectionChanged.connect(
         lambda: show_group(groups_list.currentItem()) if groups_list.currentItem() else None
