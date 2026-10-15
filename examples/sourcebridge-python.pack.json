@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "sourcebridge-python",
+  "kind": "frontend",
+  "version": "0.1.0",
+  "provides": {
+    "source_languages": ["python"],
+    "target_environments": []
+  },
+  "entrypoints": {
+    "extract": "sourcebridge_python.extract:run",
+    "validate_source": "sourcebridge_python.validate:run"
+  }
+}

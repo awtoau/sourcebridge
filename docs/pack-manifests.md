@@ -30,6 +30,8 @@ For example, a Delphi frontend and a Python+Qt backend are independent packs:
 
 The same `sourcebridge-delphi` pack can appear in a `delphi-to-rust-crt`
 profile with a Rust character-mode backend and different runtime adapters.
+Likewise, `sourcebridge-python` can select the same Rust backend while retaining
+a Python component through a declared boundary.
 
 Resolve a profile against the available pack directory before running a
 conversion:

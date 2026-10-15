@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "python-to-rust",
+  "source_frontend": "sourcebridge-python",
+  "target_backend": "sourcebridge-rust",
+  "rule_layers": ["python-core"],
+  "runtime_adapters": [],
+  "component_decisions": [
+    {
+      "source_selector": "application.visualization",
+      "disposition": "retain_runtime",
+      "runtime_adapter": "python-visualization",
+      "boundary_contract": "visualization-service-v1",
+      "rationale": "Keep the established visualization dependency while moving the computational core independently."
+    },
+    {
+      "source_selector": "application.compute",
+      "disposition": "direct_translation",
+      "target_backend": "sourcebridge-rust",
+      "rationale": "Port the deterministic computational core to Rust after source and target validation."
+    }
+  ],
+  "options": {
+    "dependency_decisions_required": true
+  }
+}
