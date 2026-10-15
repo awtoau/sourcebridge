@@ -75,6 +75,34 @@ Reports operate over the same data as the tree and support sorting/filtering by:
 Selecting a report row navigates back to the exact tree node and its source,
 target, rule, profile, and validation evidence.
 
+### Failure drill-down: from a count to the actual lines
+
+Aggregate counts are navigation aids, never the only evidence. A row such as
+`254 failed bit setters` groups occurrences by a stable failure signature, but
+the count is always computed from immutable diagnostic occurrences.
+
+Selecting that row opens a review queue with one occurrence per affected source
+span. The queue supports previous/next navigation and filters for variant,
+profile, backend, source path, diagnostic phase, severity, and review status.
+Each occurrence shows side-by-side:
+
+```text
+source file and exact lines       emitted target lines (when generation occurred)
+compiler/parser fact              validator/tool message and diagnostic code
+source revision + variant         profile, rule-layer, generator, and artifact digests
+raw source/target/oracle logs     prior review and linked work item
+```
+
+The exact source and generated excerpts are immutable evidence fragments,
+addressed by digest and source coordinates. A later source revision may add a
+new occurrence but cannot rewrite what a reviewer saw.
+
+The reviewer can mark an occurrence as a known converter gap, accepted source
+behavior, target constraint, false grouping, needs investigation, or resolved,
+with a rationale. The workbench writes an append-only review record and can
+open or link a claimable work item. It never turns a review click into a rule
+change or generated-artifact edit.
+
 ## The decision card
 
 For a selected module, package, service, GUI area, driver, or framework

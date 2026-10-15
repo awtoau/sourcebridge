@@ -54,6 +54,8 @@ The engine core owns these language-neutral entities:
 | Conversion decision | direct mapping or explicit disposition for a source unit |
 | Generated artifact | target output with profile/rule/source provenance |
 | Validation result | source check, target check, oracle, benchmark, or review evidence |
+| Diagnostic occurrence | one tool finding with source/generated spans and immutable excerpts |
+| Diagnostic review | a human classification of one occurrence, with rationale |
 | Work item | a claimable problem linked to diagnostics and evidence |
 
 The core defines neutral storage and report contracts. It does not define
@@ -112,6 +114,13 @@ For every selected source unit:
 5. run target formatter, compiler, linter, type/layout/ABI checks and tests;
 6. run a differential oracle or trace replay when behavior is observable;
 7. record the strongest validation tier and the resulting disposition.
+
+Reports may group failures by stable signature, but every summary count must
+drill into individual diagnostic occurrences. Each occurrence retains exact
+source and generated excerpts, coordinates, tool message, source revision,
+variant, profile, rule-layer/generator digests, and raw validation evidence.
+Reviewing an occurrence records a rationale and may create a work item; it
+does not silently edit a rule or generated artifact.
 
 Source behavior that is undefined or configuration-dependent cannot be
 “faithfully copied” without a declared policy. The engine must block, mark, or

@@ -57,6 +57,32 @@ CREATE TABLE sourcebridge_source_unit (
     UNIQUE (variant_id, source_path, source_span, kind)
 );
 
+-- Immutable excerpts preserve the exact source, generated output, or tool
+-- evidence reviewed for a result even when a later corpus revision changes it.
+CREATE TABLE sourcebridge_evidence_fragment (
+    id TEXT PRIMARY KEY,
+    corpus_id TEXT NOT NULL REFERENCES sourcebridge_corpus(id),
+    kind TEXT NOT NULL CHECK (kind IN ('source', 'generated', 'tool_output')),
+    logical_path TEXT NOT NULL,
+    start_line INTEGER,
+    start_column INTEGER,
+    end_line INTEGER,
+    end_column INTEGER,
+    content TEXT NOT NULL,
+    content_digest TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (
+        corpus_id,
+        kind,
+        logical_path,
+        start_line,
+        start_column,
+        end_line,
+        end_column,
+        content_digest
+    )
+);
+
 CREATE TABLE sourcebridge_component_decision (
     id TEXT PRIMARY KEY,
     profile_id TEXT NOT NULL REFERENCES sourcebridge_profile(id),
@@ -102,6 +128,53 @@ CREATE TABLE sourcebridge_validation_result (
     evidence_digest TEXT NOT NULL,
     details_json TEXT NOT NULL,
     recorded_at TEXT NOT NULL
+);
+
+-- A report groups these rows by a stable failure signature. The occurrences,
+-- not a stored counter, remain the source of truth for drill-down review.
+CREATE TABLE sourcebridge_diagnostic_occurrence (
+    id TEXT PRIMARY KEY,
+    validation_result_id TEXT NOT NULL REFERENCES sourcebridge_validation_result(id),
+    source_unit_id TEXT NOT NULL REFERENCES sourcebridge_source_unit(id),
+    source_fragment_id TEXT REFERENCES sourcebridge_evidence_fragment(id),
+    generated_artifact_id TEXT REFERENCES sourcebridge_generated_artifact(id),
+    generated_fragment_id TEXT REFERENCES sourcebridge_evidence_fragment(id),
+    phase TEXT NOT NULL CHECK (phase IN ('source', 'extraction', 'rule', 'generation', 'target', 'oracle')),
+    tool_identity TEXT NOT NULL,
+    diagnostic_code TEXT,
+    severity TEXT NOT NULL CHECK (severity IN ('note', 'warning', 'error')),
+    failure_signature TEXT NOT NULL,
+    message TEXT NOT NULL,
+    details_json TEXT NOT NULL,
+    recorded_at TEXT NOT NULL
+);
+
+CREATE INDEX sourcebridge_diagnostic_occurrence_signature_idx
+    ON sourcebridge_diagnostic_occurrence (
+        failure_signature,
+        phase,
+        severity,
+        recorded_at
+    );
+
+CREATE TABLE sourcebridge_diagnostic_review (
+    id TEXT PRIMARY KEY,
+    diagnostic_occurrence_id TEXT NOT NULL
+        REFERENCES sourcebridge_diagnostic_occurrence(id),
+    disposition TEXT NOT NULL CHECK (
+        disposition IN (
+            'unreviewed',
+            'accepted_source_behavior',
+            'known_converter_gap',
+            'known_target_constraint',
+            'false_grouping',
+            'needs_investigation',
+            'resolved'
+        )
+    ),
+    rationale TEXT NOT NULL,
+    reviewed_by TEXT NOT NULL,
+    created_at TEXT NOT NULL
 );
 
 CREATE TABLE sourcebridge_work_item (
