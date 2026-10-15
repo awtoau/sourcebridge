@@ -30,3 +30,14 @@ For example, a Delphi frontend and a Python+Qt backend are independent packs:
 
 The same `sourcebridge-delphi` pack can appear in a `delphi-to-rust-crt`
 profile with a Rust character-mode backend and different runtime adapters.
+
+Resolve a profile against the available pack directory before running a
+conversion:
+
+```text
+python3 cli/sourcebridge.py resolve-profile \
+  examples/delphi-to-rust-crt.profile.json --packs-dir examples
+```
+
+Resolution verifies that the declared source pack is a frontend with a source
+language and the declared target pack is a backend with a target environment.

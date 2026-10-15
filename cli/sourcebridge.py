@@ -134,22 +134,70 @@ def validate_profile(path: Path) -> None:
         raise ValueError(f"{path}: contains unsupported fields")
 
 
+def load_packs(directory: Path) -> dict[str, dict[str, Any]]:
+    packs: dict[str, dict[str, Any]] = {}
+    for path in sorted(directory.glob("*.pack.json")):
+        validate_pack(path)
+        pack = read_json(path)
+        pack_id = pack["id"]
+        if pack_id in packs:
+            raise ValueError(f"{directory}: duplicate pack id `{pack_id}`")
+        packs[pack_id] = pack
+    if not packs:
+        raise ValueError(f"{directory}: contains no *.pack.json manifests")
+    return packs
+
+
+def resolve_profile(profile_path: Path, packs_directory: Path) -> None:
+    validate_profile(profile_path)
+    profile = read_json(profile_path)
+    packs = load_packs(packs_directory)
+    frontend = packs.get(profile["source_frontend"])
+    backend = packs.get(profile["target_backend"])
+    if frontend is None:
+        raise ValueError(
+            f"{profile_path}: source_frontend `{profile['source_frontend']}` "
+            "does not name an available pack")
+    if frontend["kind"] != "frontend":
+        raise ValueError(f"{profile_path}: source_frontend must name a frontend pack")
+    if backend is None:
+        raise ValueError(
+            f"{profile_path}: target_backend `{profile['target_backend']}` "
+            "does not name an available pack")
+    if backend["kind"] != "backend":
+        raise ValueError(f"{profile_path}: target_backend must name a backend pack")
+    if not frontend["provides"]["source_languages"]:
+        raise ValueError(f"{profile_path}: source frontend provides no source language")
+    if not backend["provides"]["target_environments"]:
+        raise ValueError(f"{profile_path}: target backend provides no target environment")
+    if "corpus_pack" in profile:
+        corpus = packs.get(profile["corpus_pack"])
+        if corpus is None or corpus["kind"] != "corpus":
+            raise ValueError(f"{profile_path}: corpus_pack must name a corpus pack")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     for name in ("validate-pack", "validate-profile"):
         command = commands.add_parser(name)
         command.add_argument("manifest", type=Path)
+    resolve = commands.add_parser("resolve-profile")
+    resolve.add_argument("profile", type=Path)
+    resolve.add_argument("--packs-dir", type=Path, required=True)
     args = parser.parse_args()
     try:
         if args.command == "validate-pack":
             validate_pack(args.manifest)
-        else:
+        elif args.command == "validate-profile":
             validate_profile(args.manifest)
+        else:
+            resolve_profile(args.profile, args.packs_dir)
     except ValueError as error:
         print(error, file=sys.stderr)
         return 1
-    print(f"valid {args.command.removeprefix('validate-')}: {args.manifest}")
+    manifest = args.profile if args.command == "resolve-profile" else args.manifest
+    print(f"valid {args.command.removeprefix('validate-')}: {manifest}")
     return 0
 
 
