@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/awtoau/sourcebridge/schemas/profile.schema.json",
+  "title": "Sourcebridge conversion profile",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "source_frontend",
+    "target_backend",
+    "rule_layers",
+    "runtime_adapters"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "source_frontend": {
+      "type": "string"
+    },
+    "corpus_pack": {
+      "type": "string"
+    },
+    "target_backend": {
+      "type": "string"
+    },
+    "rule_layers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "runtime_adapters": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "options": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

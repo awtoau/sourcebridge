@@ -86,24 +86,29 @@ and isolated target drafts. They never directly modify generated output, mark a
 rule validated, or promote a proposal. Sourcebridge records model/prompt/input
 provenance and lets normal validation and review decide what lands.
 
-## Python dependencies are user-controlled decisions
+## Dependencies are user-controlled decisions
 
-Python is a source frontend like C#, C, or Delphi; it is not automatically a
-Rust conversion. A Python-to-Rust profile inventories every imported package
-and records a user-approved disposition:
+Sourcebridge does not automatically convert every library or silently replace
+it with a convenient target package. A profile inventories each dependency,
+framework integration, and native boundary, then records a user-approved
+disposition:
 
-- retain the PyPI package;
-- retain it through a Python extension or FFI boundary;
-- map it to a named Rust crate;
+- direct conversion;
+- retain the original library/runtime;
+- retain it through an extension, FFI, or service boundary;
+- map it to a named target-language equivalent;
 - reimplement a small capability behind a contract;
-- use an external dependency/service;
-- declare a stub or exclusion; or
-- block the conversion.
+- declare an external dependency;
+- stub, exclude, or block it.
 
-An agent can gather package APIs, lockfile versions, licensing, transitive use,
-test coverage, candidate Rust equivalents, and compatibility risks. It cannot
+An agent can gather APIs, lockfile versions, licensing, transitive use, test
+coverage, target-library candidates, and compatibility risks. It cannot
 silently choose a replacement. A future conversion-decision workbench will
 present those options and their evidence; the accepted result remains a
 versioned profile record usable without the UI.
+
+For example, a Python profile may retain a PyPI package or map it to a Rust
+crate; a Delphi profile may retain, replace, or stub a database layer; a C
+profile may preserve a C ABI boundary instead of translating a driver.
 
 See [PLAN.md](PLAN.md) for the staged implementation plan.
