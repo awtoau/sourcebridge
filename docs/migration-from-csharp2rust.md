@@ -5,6 +5,10 @@ a directory tree to copy wholesale. Migration is compatibility-gated: each
 extraction must preserve a known command/result contract before the next
 component moves.
 
+Before moving any path, create a clean-repository ledger record with
+`cli/record_migration.py`. The record captures source remote/revision,
+checksums, and path-level Git history under `migration/records/`.
+
 ## Move order
 
 1. **Neutral core contracts**

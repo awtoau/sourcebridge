@@ -4,6 +4,11 @@ The workbench helps a user decide what happens to each source component and
 dependency. It is not a “translate all” button and it is not an autonomous
 architecture tool.
 
+The workbench is the intended primary user interface. The command-line tools
+exist for automation, code review, CI, and exact reproduction of a saved GUI
+decision; they read and write the same versioned profile/decision records and
+must never form a second decision model.
+
 ## The decision card
 
 For a selected module, package, service, GUI area, driver, or framework
