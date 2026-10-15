@@ -9,6 +9,72 @@ exist for automation, code review, CI, and exact reproduction of a saved GUI
 decision; they read and write the same versioned profile/decision records and
 must never form a second decision model.
 
+## Workspace layout
+
+### Entry page: configure a conversion
+
+The entry page guides a user through a reproducible run instead of exposing a
+blank editor:
+
+```text
+1. Select source corpus and pinned revision
+2. Select or create a concrete variant
+   - compiler/dialect, ABI, configuration, generated inputs
+3. Select source frontend
+4. Select target backend and runtime adapters
+5. Choose an existing profile or create a profile draft
+6. Review source-side check status
+7. Start analysis, not emission
+```
+
+At each choice, the page shows compatible packs, unavailable combinations,
+required toolchains, existing evidence, and the consequences of the selected
+target. A user can start with “retain everything except this component” as
+readily as “translate the validated core.”
+
+### Main page: project and conversion tree
+
+The main page is a split workspace:
+
+```text
+┌ Project tree ─────────────┬ Conversion detail ────────────────┬ Evidence/options ──┐
+│ Application               │ selected: DeviceControl            │ proposed choices   │
+│ ├── GUI      retained     │ source facts and dependency graph  │ direct Rust        │
+│ ├── Core     Rust ✓       │ selected profile/component decision│ retain/bridge GUI  │
+│ ├── Database blocked      │ source ↔ target artifact/diff      │ replace adapter    │
+│ └── Tests    source only  │ validation timeline and contracts  │ missing facts      │
+└───────────────────────────┴───────────────────────────────────┴────────────────────┘
+```
+
+Every tree node shows compact, filterable badges:
+
+- disposition and target backend;
+- source and target validation state;
+- coverage and rule-instance count;
+- complexity/risk band;
+- source warning, undefined-behavior, or unresolved-gap count;
+- boundary/contract status.
+
+Selecting a node never generates code implicitly. It opens its facts,
+dependencies, selected decision, generated artifacts if any, and evidence.
+
+### Reports page: find the work that matters
+
+Reports operate over the same data as the tree and support sorting/filtering by:
+
+- source coverage, direct-translation coverage, and explicit-disposition
+  coverage;
+- complexity, dependency fan-in/fan-out, and estimated migration effort;
+- validation tier, failing source checks, failing target checks, and oracle
+  disagreement;
+- undefined/unspecified/configuration-dependent source behavior;
+- rule reuse, unmatched-cluster size, and negative-match confidence;
+- target backend, runtime adapter, profile, source variant, owner, or issue;
+- candidate cost/risk and user decisions awaiting approval.
+
+Selecting a report row navigates back to the exact tree node and its source,
+target, rule, profile, and validation evidence.
+
 ## The decision card
 
 For a selected module, package, service, GUI area, driver, or framework
