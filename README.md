@@ -163,4 +163,20 @@ record; the CLI can reproduce the same conversion without the GUI.
 See [the conversion-decision workbench](docs/conversion-decision-workbench.md)
 for the option cards, user actions, and AI-guidance boundary.
 
+## Reviewable diagnostic reports
+
+The report API groups failures by stable signature without discarding their
+individual source/target evidence:
+
+```text
+sourcebridge report-diagnostics --database evidence/sourcebridge.db
+sourcebridge report-diagnostics --database evidence/sourcebridge.db \
+  --signature "setter:unsupported-bit-range"
+```
+
+The first command produces groups and counts. The second prints the individual
+occurrences, including source and generated excerpts, coordinates, diagnostic
+message, profile-side validation reference, and raw evidence path. The
+workbench consumes the same records for click-through review.
+
 See [PLAN.md](PLAN.md) for the staged implementation plan.

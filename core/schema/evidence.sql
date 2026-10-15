@@ -177,6 +177,53 @@ CREATE TABLE sourcebridge_diagnostic_review (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE sourcebridge_execution_run (
+    id TEXT PRIMARY KEY,
+    profile_id TEXT NOT NULL REFERENCES sourcebridge_profile(id),
+    variant_id TEXT NOT NULL REFERENCES sourcebridge_variant(id),
+    action TEXT NOT NULL CHECK (
+        action IN ('analyze', 'emit', 'validate-source', 'validate-target', 'oracle')
+    ),
+    requested_workers INTEGER NOT NULL CHECK (requested_workers > 0),
+    status TEXT NOT NULL CHECK (
+        status IN ('queued', 'running', 'stopping', 'passed', 'failed', 'cancelled')
+    ),
+    command_json TEXT NOT NULL,
+    requested_by TEXT NOT NULL,
+    started_at TEXT,
+    completed_at TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE sourcebridge_execution_worker (
+    id TEXT PRIMARY KEY,
+    run_id TEXT NOT NULL REFERENCES sourcebridge_execution_run(id),
+    worker_slot INTEGER NOT NULL CHECK (worker_slot >= 0),
+    status TEXT NOT NULL CHECK (
+        status IN ('idle', 'running', 'blocked', 'failed', 'stopped', 'completed')
+    ),
+    source_unit_id TEXT REFERENCES sourcebridge_source_unit(id),
+    current_work_item_id TEXT REFERENCES sourcebridge_work_item(id),
+    units_completed INTEGER NOT NULL DEFAULT 0 CHECK (units_completed >= 0),
+    updated_at TEXT NOT NULL,
+    UNIQUE (run_id, worker_slot)
+);
+
+CREATE TABLE sourcebridge_execution_event (
+    id TEXT PRIMARY KEY,
+    run_id TEXT NOT NULL REFERENCES sourcebridge_execution_run(id),
+    worker_id TEXT REFERENCES sourcebridge_execution_worker(id),
+    occurred_at TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (
+        kind IN ('started', 'progress', 'diagnostic', 'retry', 'blocked', 'completed', 'failed', 'stopped')
+    ),
+    message TEXT NOT NULL,
+    metrics_json TEXT NOT NULL
+);
+
+CREATE INDEX sourcebridge_execution_event_run_idx
+    ON sourcebridge_execution_event (run_id, occurred_at);
+
 CREATE TABLE sourcebridge_work_item (
     id TEXT PRIMARY KEY,
     decision_id TEXT REFERENCES sourcebridge_component_decision(id),

@@ -56,6 +56,8 @@ The engine core owns these language-neutral entities:
 | Validation result | source check, target check, oracle, benchmark, or review evidence |
 | Diagnostic occurrence | one tool finding with source/generated spans and immutable excerpts |
 | Diagnostic review | a human classification of one occurrence, with rationale |
+| Execution run | a selected profile action with variant, command contract, and outcome |
+| Execution worker/event | durable per-worker state and activity for live/reconnected reporting |
 | Work item | a claimable problem linked to diagnostics and evidence |
 
 The core defines neutral storage and report contracts. It does not define

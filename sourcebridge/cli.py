@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import sys
 
@@ -16,6 +17,7 @@ from sourcebridge.proposals import (
     validate_local_endpoint,
     write_staged_proposal,
 )
+from sourcebridge.reporting import EvidenceReportError, diagnostic_groups, diagnostic_occurrences
 
 
 def _proposal_parser() -> argparse.ArgumentParser:
@@ -56,6 +58,24 @@ def _model_digest(arguments: list[str]) -> int:
     return 0
 
 
+def _report_diagnostics(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-diagnostics")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--signature")
+    args = parser.parse_args(arguments)
+    try:
+        report = (
+            diagnostic_occurrences(args.database, args.signature)
+            if args.signature
+            else diagnostic_groups(args.database)
+        )
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0
+
+
 def _legacy_command(arguments: list[str]) -> int:
     sys.argv = [sys.argv[0], *arguments]
     return manifest_cli.main()
@@ -67,6 +87,8 @@ def main() -> int:
         return _propose_rule(arguments[1:])
     if arguments and arguments[0] == "model-digest":
         return _model_digest(arguments[1:])
+    if arguments and arguments[0] == "report-diagnostics":
+        return _report_diagnostics(arguments[1:])
     return _legacy_command(arguments)
 
 

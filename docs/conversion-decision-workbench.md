@@ -58,6 +58,35 @@ Every tree node shows compact, filterable badges:
 Selecting a node never generates code implicitly. It opens its facts,
 dependencies, selected decision, generated artifacts if any, and evidence.
 
+### Runs and worker activity
+
+The workbench can start an approved **profile action**—analysis, emission,
+source validation, target validation, or an oracle—not an arbitrary shell
+command. The selected profile, variant, action, requested worker count, and
+resolved command contract are saved before the run begins.
+
+The activity page shows a live timeline and worker table:
+
+```text
+run: linux-rust / arm64-defconfig / analysis       24 of 24 workers active
+worker 03   fs/ext4/inode.c       extracting facts       381 units complete
+worker 11   drivers/net/...       blocked: missing variant header
+worker 18   kernel/sched/...      validating target      emitted diagnostic SB001
+queue       12,481 pending        3 retrying             1,924 completed
+```
+
+Selecting a worker opens its current source unit, linked work item, emitted
+diagnostics, and timestamped activity stream. A user may request a controlled
+stop; the run moves through `stopping` and records which units were completed,
+blocked, or left pending. It cannot claim a successful conversion after a
+cancelled run.
+
+Large corpora such as the Linux kernel must additionally show the selected
+compiler/configuration variant and shard boundaries. The UI reports activity
+for all workers and queue health rather than reducing a parallel conversion to
+one percentage number. A CLI/worker process writes the same execution-run,
+worker, and event records, so reconnecting the UI never loses activity.
+
 ### Reports page: find the work that matters
 
 Reports operate over the same data as the tree and support sorting/filtering by:
