@@ -18,6 +18,7 @@ from sourcebridge.proposals import (
     write_staged_proposal,
 )
 from sourcebridge.reporting import EvidenceReportError, diagnostic_groups, diagnostic_occurrences
+from sourcebridge.execution import run_approved
 
 
 def _proposal_parser() -> argparse.ArgumentParser:
@@ -76,6 +77,18 @@ def _report_diagnostics(arguments: list[str]) -> int:
     return 0
 
 
+def _run_approved(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge run-approved")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("run_id")
+    args = parser.parse_args(arguments)
+    try:
+        return run_approved(args.database, args.run_id)
+    except (ValueError, OSError) as error:
+        print(error, file=sys.stderr)
+        return 1
+
+
 def _legacy_command(arguments: list[str]) -> int:
     sys.argv = [sys.argv[0], *arguments]
     return manifest_cli.main()
@@ -89,6 +102,8 @@ def main() -> int:
         return _model_digest(arguments[1:])
     if arguments and arguments[0] == "report-diagnostics":
         return _report_diagnostics(arguments[1:])
+    if arguments and arguments[0] == "run-approved":
+        return _run_approved(arguments[1:])
     return _legacy_command(arguments)
 
 
