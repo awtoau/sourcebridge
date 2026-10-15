@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Sourcebridge icon</title>
+  <desc id="desc">A blue bridge links two pale source nodes through a green verified evidence point on a deep navy square.</desc>
+  <rect width="512" height="512" rx="96" fill="#10233f"/>
+  <path d="M82 286H136M376 286H430" fill="none" stroke="#78a8ee" stroke-width="18" stroke-linecap="round"/>
+  <path d="M136 286C188 150 324 150 376 286M136 286H376M164 286V350M348 286V350" fill="none" stroke="#2e72d2" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="82" cy="286" r="38" fill="#f7fafc" stroke="#10233f" stroke-width="14"/>
+  <circle cx="430" cy="286" r="38" fill="#f7fafc" stroke="#10233f" stroke-width="14"/>
+  <path d="M256 166l42 42-42 42-42-42z" fill="#58d6ba" stroke="#f7fafc" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M234 208l15 15 31-35" fill="none" stroke="#10233f" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

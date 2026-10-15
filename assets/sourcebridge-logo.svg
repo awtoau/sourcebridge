@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" role="img" aria-labelledby="title desc">
+  <title id="title">Sourcebridge</title>
+  <desc id="desc">The Sourcebridge wordmark beside a bridge linking two source nodes through a verified evidence point.</desc>
+  <style>
+    .ink { fill: #10233f; }
+    .rail { fill: none; stroke: #2e72d2; stroke-width: 18; stroke-linecap: round; stroke-linejoin: round; }
+    .link { fill: none; stroke: #78a8ee; stroke-width: 10; stroke-linecap: round; }
+    .node { fill: #10233f; stroke: #f7fafc; stroke-width: 8; }
+    .proof { fill: #58d6ba; stroke: #10233f; stroke-width: 10; stroke-linejoin: round; }
+    .name { fill: #10233f; font-family: Inter, Avenir, "Segoe UI", sans-serif; font-size: 76px; font-weight: 700; letter-spacing: -2px; }
+    .tagline { fill: #42617f; font-family: Inter, Avenir, "Segoe UI", sans-serif; font-size: 22px; font-weight: 600; letter-spacing: 4px; }
+    @media (prefers-color-scheme: dark) {
+      .ink, .name { fill: #f7fafc; }
+      .node { fill: #f7fafc; stroke: #10233f; }
+      .proof { stroke: #f7fafc; }
+      .tagline { fill: #bed0e7; }
+    }
+  </style>
+  <g transform="translate(36 38)">
+    <path class="link" d="M25 170H75M255 170H305"/>
+    <path class="rail" d="M75 170C112 80 218 80 255 170"/>
+    <path class="rail" d="M75 170H255"/>
+    <path class="rail" d="M92 170V210M238 170V210"/>
+    <circle class="node" cx="25" cy="170" r="22"/>
+    <circle class="node" cx="305" cy="170" r="22"/>
+    <path class="proof" d="M165 108l25 25-25 25-25-25z"/>
+    <path d="M152 133l9 9 18-20" fill="none" stroke="#10233f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text class="name" x="390" y="146">Sourcebridge</text>
+  <text class="tagline" x="395" y="192">CONVERSION WITH EVIDENCE</text>
+</svg>
