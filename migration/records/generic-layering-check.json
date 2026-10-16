@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-16T00:52:37.805786+00:00",
+  "component": "generic-layering-check",
+  "destination": "migration",
+  "source": {
+    "remote": "https://github.com/awtoau/csharp2rust.git",
+    "revision": "21fc2ff9a65f9383cf27475181ba23c0ecb07a34"
+  },
+  "paths": [
+    {
+      "source_path": "scripts/validation/check_layering.py",
+      "sha256": "f95b4acf6349bd503e46c091a2b8a392f8fa8bc65d3138d20e10653cdb84d73f",
+      "history": [
+        {
+          "commit": "c964ffb822fa9162d2e2642f33e649252dfe03e5",
+          "recorded_at": "2026-08-06T12:42:19+10:00",
+          "subject": "restructure: flatten renode-rs/ up to repo root -- same layout as the source repo"
+        },
+        {
+          "commit": "2a9980d2fbecc01b899acc15289bd2923ff04ae0",
+          "recorded_at": "2026-08-04T09:20:28+10:00",
+          "subject": "scripts: categorise and move into subdirectories (core/validation/analysis/oracle)"
+        },
+        {
+          "commit": "c01afeddc82665263e0c4ac41876c96bb7fe81ef",
+          "recorded_at": "2026-08-02T21:34:40+10:00",
+          "subject": "gc: Gc<T> in csharp-rt, and the rule that maps a reference field to it"
+        },
+        {
+          "commit": "ede087c4f6601adbb9ae11ecc6c244abf2bcf551",
+          "recorded_at": "2026-08-01T11:28:51+10:00",
+          "subject": "transpiler: pluggable emitter architecture, with the layer boundary enforced"
+        }
+      ]
+    }
+  ]
+}

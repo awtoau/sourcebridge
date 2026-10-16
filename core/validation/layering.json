@@ -1,0 +1,16 @@
+{
+  "layers": [
+    {
+      "name": "engine-core",
+      "paths": [
+        "sourcebridge/**/*.py",
+        "core/schema/**/*.json",
+        "core/schema/**/*.sql"
+      ],
+      "forbidden_terms": [
+        "renode",
+        "csharp2rust"
+      ]
+    }
+  ]
+}
