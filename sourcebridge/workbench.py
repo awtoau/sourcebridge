@@ -11,11 +11,12 @@ from sourcebridge.reporting import diagnostic_groups, diagnostic_occurrences, ex
 
 def main() -> int:
     try:
-        from PySide6.QtCore import Qt
+        from PySide6.QtCore import QProcess, Qt, QTimer
         from PySide6.QtWidgets import (
             QApplication,
             QHBoxLayout,
             QLabel,
+            QLineEdit,
             QListWidget,
             QListWidgetItem,
             QMainWindow,
@@ -51,7 +52,10 @@ def main() -> int:
     details.setReadOnly(True)
     status = QLabel(f"{len(groups)} diagnostic group(s)")
     activity = QPushButton("Execution activity")
-    activity.setToolTip("Execution adapters populate durable worker activity records.")
+    run_id = QLineEdit()
+    run_id.setPlaceholderText("Queued execution run ID")
+    start = QPushButton("Start queued run")
+    process = QProcess(window)
 
     for group in groups:
         item = QListWidgetItem(
@@ -70,14 +74,50 @@ def main() -> int:
         details.setPlainText(json.dumps(execution_activity(database), indent=2, sort_keys=True))
         status.setText("Execution runs, workers, and events")
 
+    def start_run() -> None:
+        selected_run = run_id.text().strip()
+        if not selected_run:
+            status.setText("Enter a queued execution run ID before starting.")
+            return
+        start.setEnabled(False)
+        status.setText(f"Starting approved run {selected_run}...")
+        process.start(
+            sys.executable,
+            [
+                "-m",
+                "sourcebridge.cli",
+                "run-approved",
+                "--database",
+                str(database),
+                selected_run,
+            ],
+        )
+
+    def completed_run() -> None:
+        start.setEnabled(True)
+        show_activity()
+        status.setText(
+            "Run completed."
+            if process.exitCode() == 0
+            else process.readAllStandardError().data().decode().strip() or "Run failed."
+        )
+
     groups_list.itemSelectionChanged.connect(
         lambda: show_group(groups_list.currentItem()) if groups_list.currentItem() else None
     )
     activity.clicked.connect(show_activity)
+    start.clicked.connect(start_run)
+    process.finished.connect(completed_run)
+    refresh = QTimer(window)
+    refresh.setInterval(1_000)
+    refresh.timeout.connect(show_activity)
+    refresh.start()
     left = QVBoxLayout()
     left.addWidget(status)
     left.addWidget(groups_list)
     left.addWidget(activity)
+    left.addWidget(run_id)
+    left.addWidget(start)
     layout.addLayout(left, 1)
     layout.addWidget(details, 3)
     window.setCentralWidget(central)
