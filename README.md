@@ -69,6 +69,14 @@ The initial public packs are now available:
 This is deliberately a narrow end-to-end proof, not a claim that general
 Delphi-to-Rust conversion or overflow behavior is validated.
 
+Run the reproducible scalar-profile validation from this repository:
+
+```text
+python3 tools/validate_delphi_scalar_rust.py \
+  --delphi-pack ../sourcebridge-delphi \
+  --rust-pack ../sourcebridge-rust
+```
+
 ## The C# to Rust naming exception
 
 `sourcebridge-csharp` will become the canonical C# to Rust pack. It will
