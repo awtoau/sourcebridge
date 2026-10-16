@@ -34,6 +34,14 @@ class ModelIdentity:
     digest: str
 
 
+class ProposalValidationError(ValueError):
+    """A model response that must be retained for prompt/schema review."""
+
+    def __init__(self, message: str, record: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.record = record
+
+
 def validate_local_endpoint(endpoint: str) -> str:
     parsed = urlparse(endpoint)
     if parsed.scheme != "http" or parsed.hostname not in _LOCAL_HOSTS:
@@ -127,13 +135,44 @@ def _proposal_schema() -> dict[str, Any]:
                     "variant_selector",
                     "rationale",
                 ],
+                "properties": {
+                    "source_language": {"type": "string"},
+                    "version_selector": {"type": "object"},
+                    "variant_selector": {"type": "object"},
+                    "rationale": {"type": "string"},
+                },
+                "additionalProperties": False,
             },
             "status_claim": {"const": "unvalidated-llm-proposal"},
             "description": {"type": "string"},
-            "positive_patterns": {"type": "array"},
-            "negative_patterns": {"type": "array"},
-            "suggested_tests": {"type": "array"},
-            "open_questions": {"type": "array"},
+            "positive_patterns": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["snippet", "why_it_matches"],
+                    "properties": {"snippet": {"type": "string"}, "why_it_matches": {"type": "string"}},
+                    "additionalProperties": False,
+                },
+            },
+            "negative_patterns": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["snippet", "why_it_must_not_match"],
+                    "properties": {"snippet": {"type": "string"}, "why_it_must_not_match": {"type": "string"}},
+                    "additionalProperties": False,
+                },
+            },
+            "suggested_tests": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["source_input", "expected_result"],
+                    "properties": {"source_input": {"type": "string"}, "expected_result": {"type": "string"}},
+                    "additionalProperties": False,
+                },
+            },
+            "open_questions": {"type": "array", "items": {"type": "string"}},
         },
         "additionalProperties": False,
     }
@@ -221,12 +260,12 @@ def stage_proposal(
     try:
         proposal = json.loads(message["content"])
     except json.JSONDecodeError as error:
-        raise ValueError(f"Ollama proposal is not valid JSON: {error}") from error
-    validate_proposal(proposal)
+        proposal = None
+        parse_error = f"Ollama proposal is not valid JSON: {error}"
     payload_hash = hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
-    return {
+    record = {
         "status": "unvalidated-llm-proposal",
         "prompt_template_version": PROMPT_TEMPLATE_VERSION,
         "model": asdict(model),
@@ -236,6 +275,13 @@ def stage_proposal(
         "proposal": proposal,
         "raw_response": response,
     }
+    if proposal is None:
+        raise ProposalValidationError(parse_error, record)
+    try:
+        validate_proposal(proposal)
+    except ValueError as error:
+        raise ProposalValidationError(str(error), record) from error
+    return record
 
 
 def write_staged_proposal(output_directory: Path, staged: dict[str, Any]) -> Path:
@@ -245,4 +291,14 @@ def write_staged_proposal(output_directory: Path, staged: dict[str, Any]) -> Pat
     root.mkdir(parents=True, exist_ok=True)
     path = root / f"{staged['payload_sha256']}.json"
     path.write_text(json.dumps(staged, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def write_rejected_proposal(output_directory: Path, rejected: dict[str, Any]) -> Path:
+    root = output_directory.resolve() / "rejected"
+    if root.parent.name != "proposals" or root.parent.parent.name != "evidence":
+        raise ValueError("proposal output directory must be `evidence/proposals`")
+    root.mkdir(parents=True, exist_ok=True)
+    path = root / f"{rejected['payload_sha256']}.json"
+    path.write_text(json.dumps(rejected, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path

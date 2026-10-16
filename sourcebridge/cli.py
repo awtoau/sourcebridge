@@ -10,12 +10,14 @@ import sys
 from cli import sourcebridge as manifest_cli
 from sourcebridge.proposals import (
     DEFAULT_MODEL,
+    ProposalValidationError,
     installed_model,
     read_evidence,
     resolve_model,
     stage_proposal,
     validate_local_endpoint,
     write_staged_proposal,
+    write_rejected_proposal,
 )
 from sourcebridge.reporting import EvidenceReportError, diagnostic_groups, diagnostic_occurrences
 from sourcebridge.execution import run_approved
@@ -38,6 +40,10 @@ def _propose_rule(arguments: list[str]) -> int:
         model = resolve_model(endpoint, args.model, args.model_digest)
         staged = stage_proposal(endpoint, model, read_evidence(args.evidence))
         path = write_staged_proposal(args.output_dir, staged)
+    except ProposalValidationError as error:
+        path = write_rejected_proposal(args.output_dir, error.record)
+        print(f"{error}; raw response staged at {path}", file=sys.stderr)
+        return 1
     except ValueError as error:
         print(error, file=sys.stderr)
         return 1
