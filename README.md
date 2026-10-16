@@ -55,6 +55,18 @@ Each profile may choose different runtime adapters and target-oriented rules,
 but all three begin from the same pinned Delphi corpus facts. The same applies
 to C#, C, and future source languages.
 
+## The C# to Rust naming exception
+
+`sourcebridge-csharp` will become the canonical C# to Rust pack. It will
+preserve the full Git history of [`awtoau/csharp2rust`](https://github.com/awtoau/csharp2rust),
+including the Roslyn frontend, Rust backend, C# language mappings, corpus
+adapters, and validation evidence.
+
+The existing `csharp2rust` repository remains authoritative until the
+history-preserving move and reproducibility gates succeed. Only then may it
+become a compatibility placeholder that directs users to `sourcebridge-csharp`;
+it must not be emptied or redirected prematurely.
+
 ## Hybrid ports are normal
 
 A profile may convert only selected components. It has a default target backend

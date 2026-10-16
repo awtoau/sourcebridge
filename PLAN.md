@@ -17,6 +17,13 @@ The first migration path will extract lessons from C# to Rust work. That work
 is evidence, not an API boundary: Sourcebridge must also support paths such as
 Delphi to Python+Qt without forcing either language through Rust-shaped rules.
 
+`sourcebridge-csharp` will become the canonical C# to Rust pack through a
+history-preserving move from `awtoau/csharp2rust`. The existing repository
+remains authoritative until its full Git history, Roslyn frontend, Rust
+backend, C# rules, corpus adapters, and C#→Rust evidence have been migrated and
+reproducibility gates pass. Only then may `csharp2rust` become a compatibility
+placeholder directing users to `sourcebridge-csharp`.
+
 ## Principles
 
 1. **Facts before text.** A frontend records compiler/parser facts and source
