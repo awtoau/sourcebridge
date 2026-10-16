@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "sourcebridge-delphi-stage1-fixtures",
+  "kind": "corpus",
+  "version": "0.1.0",
+  "provides": {
+    "source_languages": [],
+    "target_environments": []
+  },
+  "requires": [
+    "sourcebridge-delphi"
+  ],
+  "entrypoints": {
+    "fixtures": "corpora/delphi-stage1-fixtures"
+  }
+}

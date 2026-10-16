@@ -1,0 +1,28 @@
+{
+  "cluster_id": "delphi-scalar-addition-v1",
+  "source_language": "delphi",
+  "variant": {
+    "status": "fixture-only",
+    "compiler": "unselected",
+    "dialect": "unselected"
+  },
+  "active_rule_digest": "unavailable-until-rule-layer-exists",
+  "failures": [
+    {
+      "source_path": "scalars.pas",
+      "symbol": "AddSigned",
+      "reason": "No Delphi frontend has extracted scalar arithmetic facts yet."
+    }
+  ],
+  "negative_context": [
+    "Do not treat pointer arithmetic as scalar arithmetic.",
+    "Do not claim overflow behavior until the compiler/dialect variant is pinned."
+  ],
+  "target_context": {
+    "candidate_backends": [
+      "rust",
+      "python-qt"
+    ],
+    "status": "proposal-only"
+  }
+}
