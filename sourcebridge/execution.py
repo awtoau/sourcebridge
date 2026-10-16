@@ -100,14 +100,42 @@ def _record_event(engine: Any, run_id: str, line: str) -> None:
     if not isinstance(message, str):
         message = line
     with engine.begin() as connection:
+        worker_id = None
+        worker_slot = event.get("worker_slot")
+        if isinstance(worker_slot, int) and worker_slot >= 0:
+            worker_id = f"{run_id}:worker:{worker_slot}"
+            worker_status = {
+                "blocked": "blocked",
+                "failed": "failed",
+                "stopped": "stopped",
+                "completed": "completed",
+            }.get(kind, "running")
+            units_completed = event.get("units_completed", 0)
+            if not isinstance(units_completed, int) or units_completed < 0:
+                units_completed = 0
+            connection.execute(
+                text(
+                    "INSERT INTO sourcebridge_execution_worker "
+                    "(id, run_id, worker_slot, status, source_unit_id, current_work_item_id, "
+                    "units_completed, updated_at) "
+                    "VALUES (:id, :run_id, :slot, :status, NULL, NULL, :completed, :now) "
+                    "ON CONFLICT(run_id, worker_slot) DO UPDATE SET "
+                    "status = excluded.status, units_completed = excluded.units_completed, "
+                    "updated_at = excluded.updated_at"
+                ),
+                {
+                    "id": worker_id, "run_id": run_id, "slot": worker_slot,
+                    "status": worker_status, "completed": units_completed, "now": _now(),
+                },
+            )
         connection.execute(
             text(
                 "INSERT INTO sourcebridge_execution_event "
                 "(id, run_id, worker_id, occurred_at, kind, message, metrics_json) "
-                "VALUES (:id, :run_id, NULL, :now, :kind, :message, :metrics)"
+                "VALUES (:id, :run_id, :worker_id, :now, :kind, :message, :metrics)"
             ),
             {
-                "id": str(uuid4()), "run_id": run_id, "now": _now(), "kind": kind,
+                "id": str(uuid4()), "run_id": run_id, "worker_id": worker_id, "now": _now(), "kind": kind,
                 "message": message, "metrics": json.dumps(event.get("metrics", {}), sort_keys=True),
             },
         )
