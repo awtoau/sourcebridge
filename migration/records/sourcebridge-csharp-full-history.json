@@ -1,0 +1,1193 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-16T02:06:06.714553+00:00",
+  "component": "sourcebridge-csharp-full-history",
+  "destination": "migration",
+  "source": {
+    "remote": "https://github.com/awtoau/csharp2rust.git",
+    "revision": "ea6d9b26cc563f65c199bc6be6b909037d2fb6b3"
+  },
+  "paths": [
+    {
+      "source_path": ".",
+      "sha256": "54b8e5a87ff82ad3d62a6d80f6e1d22e9c64abf71663e9f7a3cf711861f06f07",
+      "history": [
+        {
+          "commit": "ea6d9b26cc563f65c199bc6be6b909037d2fb6b3",
+          "recorded_at": "2026-10-15T19:33:15+11:00",
+          "subject": "Sync corpus to Renode v1.17.0"
+        },
+        {
+          "commit": "6df3437b8a73880c959bf744550a1b6f238432d6",
+          "recorded_at": "2026-10-15T17:40:55+11:00",
+          "subject": "emit: switch case labels that are literal casts become plain literal patterns (#85)"
+        },
+        {
+          "commit": "514b548ae26ebaecd71dd526db18a86e1a76a20e",
+          "recorded_at": "2026-10-15T17:34:22+11:00",
+          "subject": "status: derive repo slug from origin, fix enforcement line (#81) (#83)"
+        },
+        {
+          "commit": "044ad9d21d2e70d809849ed842e2e840b2c2c6f0",
+          "recorded_at": "2026-10-15T17:30:46+11:00",
+          "subject": "gitignore: .vscode/ (machine-local editor/MCP config)"
+        },
+        {
+          "commit": "c4207fd71f8c171111f912c0d397413276832aa1",
+          "recorded_at": "2026-10-15T17:20:23+11:00",
+          "subject": "compile_check: wipe scratch crate at start of main(); emit_pool: fix worker default to 32"
+        },
+        {
+          "commit": "9d4699336bc41f191169bc2d414faac661c968ee",
+          "recorded_at": "2026-08-06T12:45:27+10:00",
+          "subject": "docs: move renode-rs README under renode/, restore csharp2rust's own README at root"
+        },
+        {
+          "commit": "c964ffb822fa9162d2e2642f33e649252dfe03e5",
+          "recorded_at": "2026-08-06T12:42:19+10:00",
+          "subject": "restructure: flatten renode-rs/ up to repo root -- same layout as the source repo"
+        },
+        {
+          "commit": "fbd0850bcb43ae2b465d4f3c084000586c9e789a",
+          "recorded_at": "2026-08-06T12:08:08+10:00",
+          "subject": "docs: record awto-renode-rs -> csharp2rust issue number mapping (old N -> new N+2)"
+        },
+        {
+          "commit": "11a5dcfe50ca4d7898aa06e08b74762db82b4dc9",
+          "recorded_at": "2026-08-06T11:20:29+10:00",
+          "subject": "emit: fix both root causes of duplicate synthesized names (#75)"
+        },
+        {
+          "commit": "7cdbd518cbabca0536738662f13d8ebe46322c60",
+          "recorded_at": "2026-08-06T10:36:48+10:00",
+          "subject": "docs: snapshot all 75 GitHub issues to markdown (backup copy, 2026-08-06)"
+        },
+        {
+          "commit": "2cca8c06b332276ee33e674385405a4708db2e6f",
+          "recorded_at": "2026-08-06T10:34:17+10:00",
+          "subject": "review: refresh the numbers, which went stale in a day"
+        },
+        {
+          "commit": "a80597b79deab694491b1a66fd8dcc33a1dc432e",
+          "recorded_at": "2026-08-06T02:15:19+10:00",
+          "subject": "emit: withhold a method only when a GAP marker lands in expression position (#75)"
+        },
+        {
+          "commit": "64dbbb2bba655c38e81408d8aa40a9c387a55fdc",
+          "recorded_at": "2026-08-06T02:11:57+10:00",
+          "subject": "progress_graph: add commit date, and say why a row repeats a number"
+        },
+        {
+          "commit": "216bda5bb543cee03ff47c4c2bd6b3156568590e",
+          "recorded_at": "2026-08-06T01:37:13+10:00",
+          "subject": "rename scripts/core/emit.py -> csharp_emitter.py, and share utility-fn table across emit_pool workers"
+        },
+        {
+          "commit": "4362d4bbe65aaa088e10a98476a1ce75f95b841f",
+          "recorded_at": "2026-08-06T00:48:55+10:00",
+          "subject": "docs: report for 2026-08-06 -- #63-#68/#75, platform floor 27 -> 48"
+        },
+        {
+          "commit": "754d7a8947497f8894a48c47b0fb91633369e34e",
+          "recorded_at": "2026-08-06T00:46:58+10:00",
+          "subject": "floor_census: refresh after the #63-#68 fixes -- platform floor 27 -> 48"
+        },
+        {
+          "commit": "3c9d8d3177d803e28bb03c62c26d9802427be995",
+          "recorded_at": "2026-08-06T00:40:09+10:00",
+          "subject": "compile_clean_set: grow floor to 617/687 modules after #64-#68 fixes"
+        },
+        {
+          "commit": "20b2992df7ab208b4e85fefb137902c1bd61dbfb",
+          "recorded_at": "2026-08-06T00:22:14+10:00",
+          "subject": "gap_census: refresh after utility-module fixes touching the peripheral corpus (#63)"
+        },
+        {
+          "commit": "c050e6ee0b354b8da1a11fa777e495e5dd8b175f",
+          "recorded_at": "2026-08-06T00:19:11+10:00",
+          "subject": "utility types: emit BitHelper/Misc/DebugHelper etc. as real modules (#63)"
+        },
+        {
+          "commit": "c7041971ec17f7abb47ce39947a76bbe160f279e",
+          "recorded_at": "2026-08-05T23:23:21+10:00",
+          "subject": "register_dsl: inline a local closure's body at its call site (E0425)"
+        },
+        {
+          "commit": "667b8036cf87b69bfa3a8c12d5e01c67fb3f169d",
+          "recorded_at": "2026-08-05T23:22:25+10:00",
+          "subject": "decisions: index the C#-vs-Renode split, drop D1-D4 from the preamble"
+        },
+        {
+          "commit": "1fbc96738622c2bd7ddb773d5b24ab435f642f03",
+          "recorded_at": "2026-08-05T23:20:22+10:00",
+          "subject": "Reframe: plain-English names, and measure what is actually blocking us"
+        },
+        {
+          "commit": "929e3a1167724092a71f3169f03f7d9ee45d9603",
+          "recorded_at": "2026-08-05T23:08:21+10:00",
+          "subject": "register_dsl: disambiguate loop-replicated register names by iteration"
+        },
+        {
+          "commit": "b6a5b79a5d181a2805a9d0e95b8b4dea9f055370",
+          "recorded_at": "2026-08-04T09:36:22+10:00",
+          "subject": "floor_census: stop re-deriving the register-owner query, share it"
+        },
+        {
+          "commit": "2a9980d2fbecc01b899acc15289bd2923ff04ae0",
+          "recorded_at": "2026-08-04T09:20:28+10:00",
+          "subject": "scripts: categorise and move into subdirectories (core/validation/analysis/oracle)"
+        },
+        {
+          "commit": "c5ca5b355b9860d798a7bf44b64f7e01a3a3165c",
+          "recorded_at": "2026-08-04T08:59:22+10:00",
+          "subject": "reports: consolidate output files, fix scorecard's misleading zeros, add gaps/issues"
+        },
+        {
+          "commit": "ffd1d29d96d50e083fad4e936ecca3c59fb2f6ee",
+          "recorded_at": "2026-08-04T08:24:57+10:00",
+          "subject": "tooling: add compile_progress_graph.py, a clean-module history chart"
+        },
+        {
+          "commit": "73624b8331cb5b22d3493b5c70124c74ebb31136",
+          "recorded_at": "2026-08-03T23:35:19+10:00",
+          "subject": "Fix: emit C# int-indexer reads (`x[i]`) as Rust indexing, not `.this[int]`"
+        },
+        {
+          "commit": "3e2249cd6f4eac17fce880e2e4c68382dca278f6",
+          "recorded_at": "2026-08-03T23:23:36+10:00",
+          "subject": "lang: route compound assignment on a property target through get+set (E0067)"
+        },
+        {
+          "commit": "192963874c9aa5ee1a76999cefcfb8df8f55fd4f",
+          "recorded_at": "2026-08-03T23:11:15+10:00",
+          "subject": "Fix delegate += multicast combine (E0368)"
+        },
+        {
+          "commit": "f45b96d349797824f28efa414a3faf6482b04efd",
+          "recorded_at": "2026-08-03T23:04:00+10:00",
+          "subject": "lang: recognize a Conversion-wrapped `null` in an Equals/NotEquals comparison"
+        },
+        {
+          "commit": "6c4a8e03950fef9e9d2786cc46ca7cde9ae46015",
+          "recorded_at": "2026-08-03T22:59:20+10:00",
+          "subject": "core: escape a C# identifier that collides with a Rust keyword"
+        },
+        {
+          "commit": "d16ff3015c503be565f73ff8d2828b978a92a58d",
+          "recorded_at": "2026-08-03T22:45:46+10:00",
+          "subject": "emit: append `.to_string()` to a string-literal return where the method returns `String`"
+        },
+        {
+          "commit": "572ab6008e67c081acd8f5393376c6abbaeca2f7",
+          "recorded_at": "2026-08-03T22:31:03+10:00",
+          "subject": "emit: declare every member of the offset enum, not just the bound ones"
+        },
+        {
+          "commit": "99d1b73619aa967046d9b79c65806c35a69bb24a",
+          "recorded_at": "2026-08-03T22:23:13+10:00",
+          "subject": "emit: rename a nested enum named State or Fields to avoid colliding"
+        },
+        {
+          "commit": "8e56ef35a337c6d386905a318800e30535ad1536",
+          "recorded_at": "2026-08-03T22:22:20+10:00",
+          "subject": "emit: translate the C# `null` literal instead of passing it through"
+        },
+        {
+          "commit": "6ba8704be05d71ecbaac1e4ded8f3bd63cefffc0",
+          "recorded_at": "2026-08-03T22:02:02+10:00",
+          "subject": "fix: resolve register-offset enum reference at peer-method call sites"
+        },
+        {
+          "commit": "1170b5640c3f1f239944ec58ecbad7efb0768df5",
+          "recorded_at": "2026-08-03T21:30:37+10:00",
+          "subject": "emit: convert single-bit callback params to bool at use sites (issue #64 item 4)"
+        },
+        {
+          "commit": "626f63f0ac27bb22b38c26963f4f2b03418c7608",
+          "recorded_at": "2026-08-03T21:11:16+10:00",
+          "subject": "emit: fix out-param binding to match by name, not declared ordinal"
+        },
+        {
+          "commit": "5953b50178e6ab75c504b158e4b7ccd15429121f",
+          "recorded_at": "2026-08-03T20:58:24+10:00",
+          "subject": "rules: map Logger severity-level wrappers and IGPIOExtensions Set/Unset/Blink"
+        },
+        {
+          "commit": "e67cf544d593ad77a460d13b610bd3e8c27db12e",
+          "recorded_at": "2026-08-03T20:33:51+10:00",
+          "subject": "docs: backfill decision record for Logger -> log crate mapping"
+        },
+        {
+          "commit": "b1dc23518664e8e0a64820de75ec2b5b28320f22",
+          "recorded_at": "2026-08-03T20:15:18+10:00",
+          "subject": "tooling: add census_static_calls.py to rank unmapped static helpers"
+        },
+        {
+          "commit": "239377ca368454102ce022fc5ac23423b972a922",
+          "recorded_at": "2026-08-03T19:41:25+10:00",
+          "subject": "tooling: add timestamped progress logs for emitter determinism"
+        },
+        {
+          "commit": "31803b7b75e4ed14ae8882cc370b73d3e8cc6f8b",
+          "recorded_at": "2026-08-03T19:17:08+10:00",
+          "subject": "emit: harden invocation binding parsing against empty symbols"
+        },
+        {
+          "commit": "36b666bb4659342fade4091c6949068d1b4f25de",
+          "recorded_at": "2026-08-03T19:16:32+10:00",
+          "subject": "tooling: add ci-fast alias for fail-fast full gates"
+        },
+        {
+          "commit": "c64e89b413c312e2e80b82d47ff1eb4c39da2332",
+          "recorded_at": "2026-08-03T18:56:39+10:00",
+          "subject": "docs: advertise fail-fast gate and ci workflows"
+        },
+        {
+          "commit": "c932a6c9e25fec4647f8b83a4d9c1b40f8744c64",
+          "recorded_at": "2026-08-03T18:53:27+10:00",
+          "subject": "gates: add fail-fast option for quick triage"
+        },
+        {
+          "commit": "19df758ca647f55b81e0bc2110ccd0f05cdd1017",
+          "recorded_at": "2026-08-03T18:52:53+10:00",
+          "subject": "checks: align peer-calls fixture with emitter caches"
+        },
+        {
+          "commit": "1dd37c47318d745aae1d1e3f7b1330f72d9e2b7b",
+          "recorded_at": "2026-08-03T18:37:57+10:00",
+          "subject": "tooling: add dev issue-62 crash census command"
+        },
+        {
+          "commit": "4d37e6cdee1a72cec4bb1265051ec9d2660a03c5",
+          "recorded_at": "2026-08-03T18:37:21+10:00",
+          "subject": "emit: guard constructor target symbol parsing"
+        },
+        {
+          "commit": "07075bd25f5fd145ee6f8618f4ba219abda5d712",
+          "recorded_at": "2026-08-03T18:19:00+10:00",
+          "subject": "tooling: add optional determinism wave to gates"
+        },
+        {
+          "commit": "d2f80adea1090f5dbc5a84a451de3e5b52fa61fd",
+          "recorded_at": "2026-08-03T18:16:06+10:00",
+          "subject": "tooling: add determinism CI command for issue-36"
+        },
+        {
+          "commit": "575c2f77a6e670155aa4ae2abeb73dc86b0966f4",
+          "recorded_at": "2026-08-03T18:14:42+10:00",
+          "subject": "docs(issues): refresh mutable-statics census in p2 list"
+        },
+        {
+          "commit": "876b492797605a829175cf7a4e4063874d01aa5a",
+          "recorded_at": "2026-08-03T18:10:15+10:00",
+          "subject": "docs(issues): add and index issue-52 status note"
+        },
+        {
+          "commit": "795aa236528c037dfa317ebabc9cd51371e9fa54",
+          "recorded_at": "2026-08-03T18:09:40+10:00",
+          "subject": "docs: add issue-52 acceptance status audit"
+        },
+        {
+          "commit": "984a3d056a9cbc4bacd1c66fee81385dc83a5cbe",
+          "recorded_at": "2026-08-03T18:08:54+10:00",
+          "subject": "debris: archive field-layout spike crate"
+        },
+        {
+          "commit": "ddb58ca4c24e376cfdc5478b27ed11ec152296de",
+          "recorded_at": "2026-08-03T18:06:48+10:00",
+          "subject": "docs(plan): keep lock mapping pending D3 evidence"
+        },
+        {
+          "commit": "c1bdad9e492153d166230541367019bbf012ed62",
+          "recorded_at": "2026-08-03T18:03:04+10:00",
+          "subject": "docs: refresh scripts inventory status"
+        },
+        {
+          "commit": "e67b440d329d3c4819acb68d0533302ce80b732e",
+          "recorded_at": "2026-08-03T17:38:18+10:00",
+          "subject": "tooling: classify scripts and archive dead issue tools"
+        },
+        {
+          "commit": "8c672cab37a7459c1fa4ee7f801c6a9832b1dcd1",
+          "recorded_at": "2026-08-03T17:26:08+10:00",
+          "subject": "perf: cache immutable emitter metadata"
+        },
+        {
+          "commit": "5a82cd7c0bdde94a672bf5578cfe90fe12c049db",
+          "recorded_at": "2026-08-03T16:46:26+10:00",
+          "subject": "tooling: make build the clean-set ratchet"
+        },
+        {
+          "commit": "29e2815da9004667ab5d41331d55cbd5a166b10a",
+          "recorded_at": "2026-08-03T16:44:28+10:00",
+          "subject": "tooling: unify commands and saturate emitter workers"
+        },
+        {
+          "commit": "5f281662daca67f121349d2b3b054b74bd48f220",
+          "recorded_at": "2026-08-03T16:04:42+10:00",
+          "subject": "tooling: one build check report command"
+        },
+        {
+          "commit": "be1353222d9b2e85d7ed06e4e1501b20405493fe",
+          "recorded_at": "2026-08-03T15:47:11+10:00",
+          "subject": "docs: refresh scorecard and progress graph"
+        },
+        {
+          "commit": "868b097588ee89b07b632611f9550306e20587ab",
+          "recorded_at": "2026-08-03T15:32:06+10:00",
+          "subject": "measure and guard C# semantic differences"
+        },
+        {
+          "commit": "cca5b644625e9c18e9832313a1945d63f1ac0a5c",
+          "recorded_at": "2026-08-03T15:19:50+10:00",
+          "subject": "fix declaring-type resolution for static calls"
+        },
+        {
+          "commit": "91944043006f0b46504a6a738a2788a56e12fe80",
+          "recorded_at": "2026-08-03T14:19:42+10:00",
+          "subject": "emit: a dictionary-located register kept its C# reset value"
+        },
+        {
+          "commit": "37919e3725bbbfec36204235adf9b60eda4ecc4a",
+          "recorded_at": "2026-08-03T11:50:01+10:00",
+          "subject": "docs: unverifiable is not a blocker, and I had it as one"
+        },
+        {
+          "commit": "d8b3f08c35e07064ac1762cb2af168ec9b513bf6",
+          "recorded_at": "2026-08-03T11:48:41+10:00",
+          "subject": "docs: the cut is history, not a live rule; and ten ingest gaps, not six"
+        },
+        {
+          "commit": "df57bbd4748a97392cbd116d4b116aa9c96694b2",
+          "recorded_at": "2026-08-03T11:46:54+10:00",
+          "subject": "docs: terse report, and stop calling unverifiable 'unreachable'"
+        },
+        {
+          "commit": "3d4f3deccc3ad93479d99ff4fb20ffa4ef5a0e15",
+          "recorded_at": "2026-08-03T11:41:51+10:00",
+          "subject": "graph: the progress report is a deliverable, not scratch"
+        },
+        {
+          "commit": "684caf0ab01487ca53941b06019dc3a808a0a85e",
+          "recorded_at": "2026-08-03T11:37:50+10:00",
+          "subject": "docs: report for 2026-08-03, and two corrections to the last one"
+        },
+        {
+          "commit": "f9fc84485a924faf7b5b6e1d65328dee54a7223f",
+          "recorded_at": "2026-08-03T11:09:13+10:00",
+          "subject": "bug rules: a defect in the C# becomes data, not a doc comment"
+        },
+        {
+          "commit": "031c794a4653337552e7d798c864af4d85663745",
+          "recorded_at": "2026-08-03T10:36:57+10:00",
+          "subject": "decide: a defect in the SOURCE is a fourth rule class"
+        },
+        {
+          "commit": "14d4f67d0cdc99092156ebd083891aab34991c7a",
+          "recorded_at": "2026-08-03T04:09:19+10:00",
+          "subject": "ingest: four unread Roslyn properties, and why the last attempt did not reproduce"
+        },
+        {
+          "commit": "71593887ed22910dddfe75c6048902e08bc8b0bb",
+          "recorded_at": "2026-08-03T03:38:30+10:00",
+          "subject": "rules: registers from an offset switch -- can1 99 divergences to 28"
+        },
+        {
+          "commit": "edb587bcc73378e0bd1c89f8ffed2061624ac21f",
+          "recorded_at": "2026-08-03T02:43:18+10:00",
+          "subject": "selector: choose a type's register method by CONTENT, not by its name"
+        },
+        {
+          "commit": "bcb68f23de18cf1d31fc06d612cf42f1eef0a9df",
+          "recorded_at": "2026-08-03T02:28:01+10:00",
+          "subject": "decision: define the build target -- the floor that runs"
+        },
+        {
+          "commit": "da0438404b8d20ac9ccb9c23eb39585a926e1c09",
+          "recorded_at": "2026-08-03T02:18:53+10:00",
+          "subject": "perf: emit in parallel, and split the compile gate into two tiers"
+        },
+        {
+          "commit": "65b4c5f6168bdaaea1b97275f8763107c6e3f695",
+          "recorded_at": "2026-08-03T01:37:26+10:00",
+          "subject": "merge: adc1's 1,192 divergences are unreachable by replay, not unfixed"
+        },
+        {
+          "commit": "14bbaa9fb072ddd66b904c383f67c51573189d84",
+          "recorded_at": "2026-08-03T01:34:33+10:00",
+          "subject": "docs: file the selector defect that can1 turned out to be"
+        },
+        {
+          "commit": "acb11a74d20a3d2a3165ea0e6f8a92d4ac7ddf5e",
+          "recorded_at": "2026-08-03T01:16:40+10:00",
+          "subject": "diagnose: adc1's 1,192 divergences are a behaviour gap, and unreachable by this oracle"
+        },
+        {
+          "commit": "2f8d239d69d164e23eb003f28572d8d35bea01e1",
+          "recorded_at": "2026-08-03T01:15:51+10:00",
+          "subject": "diagnostics: tell the three causes of a trace divergence apart"
+        },
+        {
+          "commit": "b3a21ff09991b9f1fcc3955d7e866b3133e4d54a",
+          "recorded_at": "2026-08-03T00:34:41+10:00",
+          "subject": "docs: move the seven issue drafts out of gitignored tmp/"
+        },
+        {
+          "commit": "e2c294ed4a7ac60b6c4c13cd6bce52580aabc827",
+          "recorded_at": "2026-08-03T00:21:56+10:00",
+          "subject": "rules: an emit-shape postcondition, and a WARNING severity tier"
+        },
+        {
+          "commit": "f1f35db5ececc1c2ef578623775826063c047efe",
+          "recorded_at": "2026-08-03T00:17:48+10:00",
+          "subject": "fix: a tag reads back its reset value, and the mode table stops being a copy"
+        },
+        {
+          "commit": "26509f34138a6e5b2d6f0baf305fc5cbac0b4165",
+          "recorded_at": "2026-08-03T00:14:53+10:00",
+          "subject": "runtime: the fourth layer lands, and the audit found five wrong rules"
+        },
+        {
+          "commit": "883b6e076a0bf0623cacf01201bad4c70c84382e",
+          "recorded_at": "2026-08-03T00:14:34+10:00",
+          "subject": "rules: a register builder bound to a local, extended from a loop"
+        },
+        {
+          "commit": "e679bef639c8ec71076cd8a9673fbacc5aa50c6c",
+          "recorded_at": "2026-08-03T00:09:14+10:00",
+          "subject": "ctors: a constructor becomes an initialiser, or a gap -- never silence"
+        },
+        {
+          "commit": "44767a8160683c08e6a7b396c782b5628fe5a779",
+          "recorded_at": "2026-08-03T00:04:09+10:00",
+          "subject": "cut: remove CorpusCut.cs -- the corpus is the whole Renode tree"
+        },
+        {
+          "commit": "d52b95088e13b7760cff22973e30da27e36e3546",
+          "recorded_at": "2026-08-02T23:55:00+10:00",
+          "subject": "decide: runtime is the fourth layer"
+        },
+        {
+          "commit": "e6d2f8f27b16af57fb14e6a4add8edf20f991ead",
+          "recorded_at": "2026-08-02T23:37:44+10:00",
+          "subject": "merge: four structural checks, and repair one against a table that moved"
+        },
+        {
+          "commit": "3c967419162c237656a74af2ce50fc4de750e9c2",
+          "recorded_at": "2026-08-02T23:35:05+10:00",
+          "subject": "checks: four structural checks the audit asked for -- all four fail today"
+        },
+        {
+          "commit": "36b86727c06f7ce92a0377f8e978ad44958c2e74",
+          "recorded_at": "2026-08-02T23:34:51+10:00",
+          "subject": "fix: the new inheritance check made every commit take two minutes"
+        },
+        {
+          "commit": "40ca32c690875533ad70ef9aa1833cf912ddc3f1",
+          "recorded_at": "2026-08-02T23:26:27+10:00",
+          "subject": "land: the dispatch trait, strictly resolved, and the field-collision guard"
+        },
+        {
+          "commit": "9e1f62af4a85356a5cd27c1e316e3d9249f19774",
+          "recorded_at": "2026-08-02T23:18:47+10:00",
+          "subject": "fix: the ingest wrote a second corpus wherever it was run from"
+        },
+        {
+          "commit": "57582f2bb21bc3c670f5e2dbf876857e3506b9c4",
+          "recorded_at": "2026-08-02T23:07:43+10:00",
+          "subject": "decide: remove the corpus cut, and retier on the oracle instead"
+        },
+        {
+          "commit": "86b6445852e0c126e003800f8f711c98bb90f861",
+          "recorded_at": "2026-08-02T23:00:10+10:00",
+          "subject": "decide: #56 -- take dispatch and the guard, defer merge-vs-embed"
+        },
+        {
+          "commit": "18ba51d07fac6d721c7edcd5b82ba7ca8d1c9e29",
+          "recorded_at": "2026-08-02T22:38:24+10:00",
+          "subject": "dsl: the four register-DSL families the rule table did not cover"
+        },
+        {
+          "commit": "5a25298748062fca65e501b9f390caea2e04ace9",
+          "recorded_at": "2026-08-02T22:36:45+10:00",
+          "subject": "Revert \"merge: four unread corpus facts, and the ninth ingest gap\""
+        },
+        {
+          "commit": "9b7d4b2e1330196994f2d149797179652d3a06c7",
+          "recorded_at": "2026-08-02T22:28:12+10:00",
+          "subject": "read the four facts the corpus already recorded"
+        },
+        {
+          "commit": "e5c9d43ccb7eb011eddebeb5886a0c0ea151310c",
+          "recorded_at": "2026-08-02T22:30:11+10:00",
+          "subject": "docs: state the charter up front -- this is renode-rs's generic half"
+        },
+        {
+          "commit": "2b711f81f5fe915ac0ab38385866342f33b3f81f",
+          "recorded_at": "2026-08-02T22:26:35+10:00",
+          "subject": "fix: a declared mapping that did not exist, and the lint for a shipped bug"
+        },
+        {
+          "commit": "0df8e4abe74f1add39db0aa41840b438c21bd58c",
+          "recorded_at": "2026-08-02T22:22:24+10:00",
+          "subject": "research: second prior-art sweep -- four leads, and seven negative results"
+        },
+        {
+          "commit": "f45ad070e6328f727fa23445ab859653ac508604",
+          "recorded_at": "2026-08-02T22:17:20+10:00",
+          "subject": "fix: the compile gate passed when cargo never ran, and five checks were not gates"
+        },
+        {
+          "commit": "de600d3cbb71b06d591236579b0a814feb24dd48",
+          "recorded_at": "2026-08-02T22:11:04+10:00",
+          "subject": "fix: an anonymous WithValueField is STORED, not a tag -- 171 sites"
+        },
+        {
+          "commit": "0a95b4e51a048388308316a9ab2fe56d7a7dcdd3",
+          "recorded_at": "2026-08-02T22:10:42+10:00",
+          "subject": "check: a type that calls register combinators must emit registers"
+        },
+        {
+          "commit": "83df9e7bd890ce422b1af9a664d90ab82b26d722",
+          "recorded_at": "2026-08-02T21:44:25+10:00",
+          "subject": "#56 inheritance: measure merge vs embed, and compile the dispatch trait"
+        },
+        {
+          "commit": "dfbb9fa048046b0240a1d7860622bba91536e22f",
+          "recorded_at": "2026-08-02T21:45:39+10:00",
+          "subject": "ratchet: lower the compile baseline to 25, and record interfaces.rs"
+        },
+        {
+          "commit": "88b8e183bdf30392b1bb7eedffaca8e29784518c",
+          "recorded_at": "2026-08-02T21:43:45+10:00",
+          "subject": "fix: a supertrait's type argument may not take the object-graph wrapper"
+        },
+        {
+          "commit": "42ac309819ae36725d43341c8fe78dccd4cc192d",
+          "recorded_at": "2026-08-02T21:42:38+10:00",
+          "subject": "feat: interfaces become COMPLETE traits, or are withheld with reasons"
+        },
+        {
+          "commit": "68f02dbca40196bdb4e6ac23eadacec4f1e86e6f",
+          "recorded_at": "2026-08-02T21:39:21+10:00",
+          "subject": "oracle: a tier that can observe interleaving, and a census of what the locks guard"
+        },
+        {
+          "commit": "c01afeddc82665263e0c4ac41876c96bb7fe81ef",
+          "recorded_at": "2026-08-02T21:34:40+10:00",
+          "subject": "gc: Gc<T> in csharp-rt, and the rule that maps a reference field to it"
+        },
+        {
+          "commit": "edf837f3057886bf244e6486defbc2b3e5a39095",
+          "recorded_at": "2026-08-02T21:21:37+10:00",
+          "subject": "docs: record the two decisions taken today"
+        },
+        {
+          "commit": "949c38f7f47e9798da6c07772b892c1b11e1e75b",
+          "recorded_at": "2026-08-02T21:10:41+10:00",
+          "subject": "docs: correct two claims the audit disproved, and drop a dangling issue ref"
+        },
+        {
+          "commit": "fe91bb998b1b9165103d8ec86ea63fe37d30ad91",
+          "recorded_at": "2026-08-02T21:00:52+10:00",
+          "subject": "fix: two silent-drop paths in the register walker, and a defeated guard"
+        },
+        {
+          "commit": "037da046ecc5d49f430ddefc1e4e8f9abbcf8790",
+          "recorded_at": "2026-08-02T20:54:07+10:00",
+          "subject": "refactor: a construct is a file -- the 23-branch expression chain is gone"
+        },
+        {
+          "commit": "44f538d2f400d84d6631226f052a82bfba83e04c",
+          "recorded_at": "2026-08-02T20:52:57+10:00",
+          "subject": "refactor: twelve statement constructs, twelve files"
+        },
+        {
+          "commit": "cbb91ce484b4c6d90b1a3b089c40fbacc5739c7e",
+          "recorded_at": "2026-08-02T20:52:25+10:00",
+          "subject": "fix: the refactor check recorded a crash as an artefact"
+        },
+        {
+          "commit": "fec45a0680ebf893559622afb98beb19a35cb4dd",
+          "recorded_at": "2026-08-02T20:50:19+10:00",
+          "subject": "refactor: the register DSL is a plugin, not half the driver"
+        },
+        {
+          "commit": "1bb8a0fde08508b05604567f42960fc274ae8255",
+          "recorded_at": "2026-08-02T20:47:15+10:00",
+          "subject": "graph: add the only line that measures correctness"
+        },
+        {
+          "commit": "bc97e10a67d7131209b146ff0641adf2d0a8268e",
+          "recorded_at": "2026-08-02T20:41:11+10:00",
+          "subject": "tools: check_refactor.py -- prove a refactor changed no bytes"
+        },
+        {
+          "commit": "1ee0f559f788f7469bc7b5340be4fa1d93c4d727",
+          "recorded_at": "2026-08-02T20:33:11+10:00",
+          "subject": "feat: register offsets may be expressions -- dma1 9.3%->92.8%, dma2 0.2%->90.0%"
+        },
+        {
+          "commit": "41347c3d1b89d2212c0425bd8da82c48a287355a",
+          "recorded_at": "2026-08-02T20:02:31+10:00",
+          "subject": "fix: the trait decision had no issue, and the report cited the wrong one"
+        },
+        {
+          "commit": "6103067917edea30197f20d8afdb2b51b4737663",
+          "recorded_at": "2026-08-02T19:56:51+10:00",
+          "subject": "fix: prescan overwrote the cut's graph with the tree's; embed graphs in the report"
+        },
+        {
+          "commit": "15efb56a178c643d0178615805f8444998d36929",
+          "recorded_at": "2026-08-02T19:38:53+10:00",
+          "subject": "docs: replace the 1,073-line issue draft with a generated index"
+        },
+        {
+          "commit": "9f53a9e95edd6b0b6387f89ab1ef9a90c691feb2",
+          "recorded_at": "2026-08-02T19:32:07+10:00",
+          "subject": "docs: planning sweep -- log what was discussed, delete what was transient"
+        },
+        {
+          "commit": "fe3033eb23d609d80b919af6f103eeea7c5dac31",
+          "recorded_at": "2026-08-02T19:08:47+10:00",
+          "subject": "docs: correct the GC argument -- it holds for the cut, not for Renode"
+        },
+        {
+          "commit": "813f333c6b2bb5551e4d889ff31da25db7c26451",
+          "recorded_at": "2026-08-02T18:45:27+10:00",
+          "subject": "docs: state of the transpiler -- what is proven, assumed, and open"
+        },
+        {
+          "commit": "cc82255ee5e1ef784e4d293956799da5ac6b5db3",
+          "recorded_at": "2026-08-02T18:40:55+10:00",
+          "subject": "docs: the audit belongs in the issue, the rule belongs in the protocol"
+        },
+        {
+          "commit": "bee5471480b00e0ad27562b59fe4e6fef3a76a92",
+          "recorded_at": "2026-08-02T17:43:32+10:00",
+          "subject": "instrument: guard the always-failure paths, and audit the rest"
+        },
+        {
+          "commit": "d92a9ced3d7b3dbe631d2d33458b6894485e03d1",
+          "recorded_at": "2026-08-02T17:35:10+10:00",
+          "subject": "instrument: a path that emits nothing must explain itself, or raise"
+        },
+        {
+          "commit": "b833c8b7e7afa8107626e9401e4116f87a1f8454",
+          "recorded_at": "2026-08-02T17:29:50+10:00",
+          "subject": "fix: a method that does not exist reported nothing at all"
+        },
+        {
+          "commit": "928b2e97a982201968a0523456567ed9788d42e0",
+          "recorded_at": "2026-08-02T17:05:19+10:00",
+          "subject": "rules: LINQ chains now compile -- closures, chaining, and an honest OrderBy"
+        },
+        {
+          "commit": "179f0e3c2d7d3e9bb40649a58b9941747ecb80aa",
+          "recorded_at": "2026-08-02T16:54:05+10:00",
+          "subject": "rules: LINQ operators -- a static extension read as a state field"
+        },
+        {
+          "commit": "55b67559c5fb6456d462cf768e038a48f6b49e42",
+          "recorded_at": "2026-08-02T16:47:51+10:00",
+          "subject": "emit: interface traits, typable-subset -- and a correction to its size"
+        },
+        {
+          "commit": "9bac39f6e90a39dd650cf3d945b5856c82c1abb7",
+          "recorded_at": "2026-08-02T16:37:42+10:00",
+          "subject": "fix: `out arr[i]` was unrecognised, so those registers stopped storing"
+        },
+        {
+          "commit": "eb35aabe8f69e3e3f1b11ea68d3e2c402f197cb0",
+          "recorded_at": "2026-08-02T16:31:49+10:00",
+          "subject": "oracle: generated UART replays 33,164 accesses with zero divergences"
+        },
+        {
+          "commit": "fd45f8912a97c370356f94bba72857f225103cec",
+          "recorded_at": "2026-08-02T15:06:07+10:00",
+          "subject": "oracle: five traces now replay against generated code, and the spread is the finding"
+        },
+        {
+          "commit": "ac058fdcef94318c7c877e29263fa270eaba54a2",
+          "recorded_at": "2026-08-02T14:53:12+10:00",
+          "subject": "oracle: replay a captured trace against GENERATED code, for the first time"
+        },
+        {
+          "commit": "7d03b2460b521e5ab189f00ef813d6e86d5e403e",
+          "recorded_at": "2026-08-02T14:50:26+10:00",
+          "subject": "scripts: measure how much oracle we already have and are not using"
+        },
+        {
+          "commit": "384fa83720466e4e0a7937088931163a6282d473",
+          "recorded_at": "2026-08-02T13:24:00+10:00",
+          "subject": "gate: ratchet the compile check, and ban editing by string match"
+        },
+        {
+          "commit": "70c50c381e6a422c574122ceefabc48f638f0860",
+          "recorded_at": "2026-08-02T13:20:59+10:00",
+          "subject": "fix: lambda slot names were snake_cased in the body but not the signature"
+        },
+        {
+          "commit": "a5656f8a7026a9fbd846f6514a8a1e51dd395c58",
+          "recorded_at": "2026-08-02T13:17:44+10:00",
+          "subject": "fix: the format-string rule was never called -- fifth silent no-op today"
+        },
+        {
+          "commit": "504fdc6a235c582bb29ba21ea0bf6797f14a3c94",
+          "recorded_at": "2026-08-02T13:15:44+10:00",
+          "subject": "scripts: prescan -- per-field ownership with evidence, and the object graph"
+        },
+        {
+          "commit": "b8c8f535297f9b1986eaf97d6067faa8600bdb99",
+          "recorded_at": "2026-08-02T13:11:54+10:00",
+          "subject": "docs: review of the five conceptual proposals, against measurement"
+        },
+        {
+          "commit": "ba2cf7b35988653c5bc39757990fcd3621fbaf21",
+          "recorded_at": "2026-08-01T22:49:58+10:00",
+          "subject": "fix: the E0317 guard landed in the wrong file -- fourth silent no-op today"
+        },
+        {
+          "commit": "751d417b11ea61c03fab48bf3c9224d848361e22",
+          "recorded_at": "2026-08-01T22:49:01+10:00",
+          "subject": "rules: delegate invocation, C# enum aliases, and C# format strings"
+        },
+        {
+          "commit": "2c2059ed1e9c6e602bdba6c88de400b909ef2404",
+          "recorded_at": "2026-08-01T17:26:27+10:00",
+          "subject": "rules: match arms are pattern context -- `X::Y as u64` does not parse there"
+        },
+        {
+          "commit": "e2f0dfe73245b8a71fe70f5c5a9dc9f751bc1490",
+          "recorded_at": "2026-08-01T17:21:18+10:00",
+          "subject": "cut: add IBusController -- the cut is now closed"
+        },
+        {
+          "commit": "4a720034d468428783457022c0fa648194283b5e",
+          "recorded_at": "2026-08-01T17:17:14+10:00",
+          "subject": "rules: parenthesise numeric casts -- `x as i32 << 8` does not parse"
+        },
+        {
+          "commit": "0bb9cf59e5a5291009603002b2bfdfcd52f2d6e0",
+          "recorded_at": "2026-08-01T17:15:59+10:00",
+          "subject": "scripts: compile everything the converter emits, and classify what rustc says"
+        },
+        {
+          "commit": "7f8d78b77ceb379afb3d91acf77ad4889d6461cb",
+          "recorded_at": "2026-08-01T17:11:04+10:00",
+          "subject": "rules: record D1's object-graph mapping; make interface gaps actionable"
+        },
+        {
+          "commit": "7c8557649d46ac567bd0c7cb2c943ee8cb408172",
+          "recorded_at": "2026-08-01T16:48:06+10:00",
+          "subject": "cut: add the scheduling primitives, not the machine"
+        },
+        {
+          "commit": "97a1afc37a4d9a69eab8edcf77b623a359d708b1",
+          "recorded_at": "2026-08-01T16:40:50+10:00",
+          "subject": "csharp-rt: a runtime crate, starting with a faithful rectangular array"
+        },
+        {
+          "commit": "db1d265e19b7136e16da740cb31403421957be3a",
+          "recorded_at": "2026-08-01T16:35:45+10:00",
+          "subject": "rules: nullable value types and rectangular arrays"
+        },
+        {
+          "commit": "8206c1d20f668664a80ec16226c7ca4bb924dc4b",
+          "recorded_at": "2026-08-01T16:33:42+10:00",
+          "subject": "rules: locks become Mutex, marked as measurement points, no timing claimed"
+        },
+        {
+          "commit": "21dff48ca67c3597392020919971789f4ca82fe7",
+          "recorded_at": "2026-08-01T16:18:54+10:00",
+          "subject": "fix: compound assignment was never implemented -- the edit silently no-opped"
+        },
+        {
+          "commit": "250b21c14fce67a6d7171b1b333234f86764a63d",
+          "recorded_at": "2026-08-01T16:17:09+10:00",
+          "subject": "transpiler: a normalisation named in data with no handler is now an error"
+        },
+        {
+          "commit": "77ba344cf6e6eb6110c8bcf0dbcb637b4b60c8cb",
+          "recorded_at": "2026-08-01T16:01:44+10:00",
+          "subject": "transpiler: ordered normalisation passes with a hard termination bound"
+        },
+        {
+          "commit": "3107e06164e8e0509b809449ea2b5a8f67a8edbc",
+          "recorded_at": "2026-08-01T15:49:17+10:00",
+          "subject": "rules: normalisation phase, starting with `?.` in statement position"
+        },
+        {
+          "commit": "7fe721d6218cdccbae94faf9fbce2a8248a8064c",
+          "recorded_at": "2026-08-01T15:19:30+10:00",
+          "subject": "rules: BTreeMap over HashMap, and a mined-rules ledger"
+        },
+        {
+          "commit": "207fffd3f8ceefa468126005148e2c2c10ea1a02",
+          "recorded_at": "2026-08-01T13:46:33+10:00",
+          "subject": "rules: fully-qualified collection paths, deleting the import bookkeeping"
+        },
+        {
+          "commit": "893665db3692d3f39fbecd271df687c273e152b8",
+          "recorded_at": "2026-08-01T13:31:41+10:00",
+          "subject": "docs: close the arXiv gap in the prior-art sweep, with a control query"
+        },
+        {
+          "commit": "58124e4529fb13f923ea412be154cfe6b18c93e6",
+          "recorded_at": "2026-08-01T13:30:49+10:00",
+          "subject": "initial: claim the name, record what the project is"
+        },
+        {
+          "commit": "1c858c1c667b5aad22b49365d063b4539c49c4af",
+          "recorded_at": "2026-08-01T13:29:24+10:00",
+          "subject": "docs: four research reports on the transpiler's open design questions"
+        },
+        {
+          "commit": "90a31ebee5d6b024fdf4e25d10148f5cd5a3fa4e",
+          "recorded_at": "2026-08-01T13:27:40+10:00",
+          "subject": "fix: base_chain keyed on an ambiguous type name"
+        },
+        {
+          "commit": "562dd56f4e4cf8dc69c16a7f15a4c8dff6dfb5ae",
+          "recorded_at": "2026-08-01T13:16:53+10:00",
+          "subject": "transpiler: make the dispatch registry real, not decoration"
+        },
+        {
+          "commit": "637750bc3524277d6739c4da3502b8888ce42f30",
+          "recorded_at": "2026-08-01T12:59:41+10:00",
+          "subject": "rules: switch to match, and a gap count that goes UP for a good reason"
+        },
+        {
+          "commit": "97a923963c769fe417bcaee133eee553c70de37b",
+          "recorded_at": "2026-08-01T12:56:54+10:00",
+          "subject": "transpiler: finish the split -- expressions and type mapping into lang/"
+        },
+        {
+          "commit": "b8414cd4e5b2b0920a6f6cb2ef931d569406e284",
+          "recorded_at": "2026-08-01T12:45:40+10:00",
+          "subject": "rules: compound assignment and the CPU register value type"
+        },
+        {
+          "commit": "6784af37b1f4330726bad7aaede881ec64517311",
+          "recorded_at": "2026-08-01T12:44:34+10:00",
+          "subject": "rules: map the delegate families, closing 90 gaps with one rule"
+        },
+        {
+          "commit": "f68e316587ccf2214bac3749a7e0a46725a349f2",
+          "recorded_at": "2026-08-01T12:42:59+10:00",
+          "subject": "docs: what exists today versus what the rule engine still has to build"
+        },
+        {
+          "commit": "a21344222618cba82d99209a05b65ea38299e812",
+          "recorded_at": "2026-08-01T12:14:49+10:00",
+          "subject": "D5: breadth discovers, the cut validates -- two rule tiers"
+        },
+        {
+          "commit": "91e1e837766751f3f342950976930932f6daf49a",
+          "recorded_at": "2026-08-01T12:04:18+10:00",
+          "subject": "scripts: rank blocking root causes, and graph converter progress"
+        },
+        {
+          "commit": "788b6026b9e380e8e871e7e13df1265e301f2459",
+          "recorded_at": "2026-08-01T11:55:07+10:00",
+          "subject": "scripts: gap census, and a breadth health check over the whole tree"
+        },
+        {
+          "commit": "fdb5f8067c3dde1348c5a6c7cdcf583f5c49fce3",
+          "recorded_at": "2026-08-01T11:49:04+10:00",
+          "subject": "transpiler: split emit.py into layered modules, byte-identically"
+        },
+        {
+          "commit": "0e71e29e318da59f5448dd6b8b75108e4eacc519",
+          "recorded_at": "2026-08-01T11:38:47+10:00",
+          "subject": "docs: transpiler issue drafts, and the first breadth measurement"
+        },
+        {
+          "commit": "ede087c4f6601adbb9ae11ecc6c244abf2bcf551",
+          "recorded_at": "2026-08-01T11:28:51+10:00",
+          "subject": "transpiler: pluggable emitter architecture, with the layer boundary enforced"
+        },
+        {
+          "commit": "db16a1551d751041e151b56684cabfb0ff69be19",
+          "recorded_at": "2026-07-31T21:02:02+10:00",
+          "subject": "emit: loops and increments; withhold on a surviving gap marker"
+        },
+        {
+          "commit": "07949389d27b1d19f4d25f47a3e399b88175538b",
+          "recorded_at": "2026-07-31T20:53:06+10:00",
+          "subject": "cut: add the base classes of peripherals already in the corpus"
+        },
+        {
+          "commit": "e6b6cc48183fcefa8c8bc93f5bfea0f5de7fc3af",
+          "recorded_at": "2026-07-31T20:42:22+10:00",
+          "subject": "emit: flatten base classes into the peripheral"
+        },
+        {
+          "commit": "e9f1aa8a1da1e6a7a5c76bdd60e4a93fc4f33151",
+          "recorded_at": "2026-07-31T19:43:08+10:00",
+          "subject": "emit: generate nested enums, unblocking BaudRate and the GPIO callbacks"
+        },
+        {
+          "commit": "e2921de31c68f9764ae8fbaa0a6cce1b57542125",
+          "recorded_at": "2026-07-31T17:24:18+10:00",
+          "subject": "ingest: walk computed property accessors; emit them as functions"
+        },
+        {
+          "commit": "d8b07c26f7f0184aff57071bee573bde4cf72291",
+          "recorded_at": "2026-07-31T17:22:01+10:00",
+          "subject": "emit: interpolated strings, delegates, nameof"
+        },
+        {
+          "commit": "223baf97a93de8f57ee095d7127c78cb223990cb",
+          "recorded_at": "2026-07-31T17:14:03+10:00",
+          "subject": "emit: whole peripheral methods, and withhold anything not yet emittable"
+        },
+        {
+          "commit": "018c5500f061f5a9018d6d6226732b92c4bf1ca0",
+          "recorded_at": "2026-07-31T17:08:44+10:00",
+          "subject": "emit: generated files now carry State and computed-field callbacks"
+        },
+        {
+          "commit": "7de7e2b7a1dd154c9c19bd99938798f9c619b0bb",
+          "recorded_at": "2026-07-31T16:54:06+10:00",
+          "subject": "ingest: record whether a member actually stores anything"
+        },
+        {
+          "commit": "360499d1fa2a5188951a794fe311b78458911c02",
+          "recorded_at": "2026-07-31T16:38:04+10:00",
+          "subject": "rules: peripheral methods as free fns, and the BCL-to-std mapping"
+        },
+        {
+          "commit": "c8cf1317285cbb5170164c5b8c180c072706a043",
+          "recorded_at": "2026-07-31T16:28:45+10:00",
+          "subject": "emit: lambdas as free functions, and fix references dropping their receiver"
+        },
+        {
+          "commit": "2161a68f5dcaee733968d65b1e32dac9636c3273",
+          "recorded_at": "2026-07-31T16:20:08+10:00",
+          "subject": "feat: statements, control flow and assignment \u2014 WriteChar generates"
+        },
+        {
+          "commit": "9a87d3b7b4ea41190246e2c219df9d469c519b16",
+          "recorded_at": "2026-07-31T15:59:39+10:00",
+          "subject": "feat: expression emitter \u2014 the behavioural half, generated from rules"
+        },
+        {
+          "commit": "c599fa88d8df18bbe23d75c7536b9f0b10d2f82a",
+          "recorded_at": "2026-07-31T15:50:46+10:00",
+          "subject": "feat: extract per-kind detail systematically, from the audit not from need"
+        },
+        {
+          "commit": "d3c4981c886b10ca448d97f1cfab3ba2381ebd4b",
+          "recorded_at": "2026-07-31T15:34:33+10:00",
+          "subject": "docs: separate the three layers; decline to fork Roslyn, with the criterion"
+        },
+        {
+          "commit": "7aad3d3a42ee790d7c5b2385ce29b002e6be6151",
+          "recorded_at": "2026-07-31T15:27:32+10:00",
+          "subject": "feat: make ingest gaps enumerable instead of discovered one at a time"
+        },
+        {
+          "commit": "af150c63264030913ef59cd3110da0e60995e71f",
+          "recorded_at": "2026-07-31T15:21:09+10:00",
+          "subject": "feat: register discovery is rule-driven; GPIO layout now generates too"
+        },
+        {
+          "commit": "2243572a647b158ff57270648a9fff35688a7723",
+          "recorded_at": "2026-07-31T15:18:02+10:00",
+          "subject": "feat: the converter owns its first file"
+        },
+        {
+          "commit": "10c3b4931fbb4e1861cc29b5fb9d96e75162a19d",
+          "recorded_at": "2026-07-31T15:15:03+10:00",
+          "subject": "refactor: the converter's knowledge is data, not code"
+        },
+        {
+          "commit": "9c16ad83a43a5c309bd4a46d70393764e3587a31",
+          "recorded_at": "2026-07-31T15:08:33+10:00",
+          "subject": "rule: build the converter, do not write the output by hand"
+        },
+        {
+          "commit": "1f74f1faa22dc732fef3c5b67335e091cddc9de7",
+          "recorded_at": "2026-07-31T15:04:22+10:00",
+          "subject": "feat: verify hand-written translations against the emitter (#35)"
+        },
+        {
+          "commit": "80cd0593d54b65fbd8ceb3b26cdc9220e5492acf",
+          "recorded_at": "2026-07-31T15:02:02+10:00",
+          "subject": "feat: the emitter \u2014 rules now produce Rust, not just match (#35)"
+        },
+        {
+          "commit": "cf4050b35dc8f588f16da371543d6bbbc3b88c91",
+          "recorded_at": "2026-07-31T14:58:31+10:00",
+          "subject": "fix: the scorecard was flattering the project \u2014 100% of translations are patches"
+        },
+        {
+          "commit": "7583d30355a6cd51b1aa3b11583a86bfd5936edb",
+          "recorded_at": "2026-07-31T14:57:19+10:00",
+          "subject": "feat(tlib): FFI mechanism proven; callback bring-up in progress (#7)"
+        },
+        {
+          "commit": "d03c6cfd07f13ebbbee8dde1dd1c66f2b4080469",
+          "recorded_at": "2026-07-31T14:47:25+10:00",
+          "subject": "feat: mutation scores on the scorecard, with survivors named"
+        },
+        {
+          "commit": "7daa3358d4cce95c40507ee2331520116dc202cf",
+          "recorded_at": "2026-07-31T14:45:40+10:00",
+          "subject": "feat: GPIO to DSL callbacks; 64% -> 100% of viable mutants caught"
+        },
+        {
+          "commit": "aea84b562bdd38b834db929b1140cf46921b904b",
+          "recorded_at": "2026-07-31T14:39:52+10:00",
+          "subject": "test: close UART mutation survivors, 53% -> 81%"
+        },
+        {
+          "commit": "eb1b7369eb966ee0122ffcb317bfe0d37e1c54c4",
+          "recorded_at": "2026-07-31T14:24:04+10:00",
+          "subject": "feat: mutation harness \u2014 measure what the oracle can actually see"
+        },
+        {
+          "commit": "02f5c7d2c94d753b809e87ab7a4bc49284b0c78e",
+          "recorded_at": "2026-07-31T14:18:45+10:00",
+          "subject": "feat: enforce no-second-source-of-truth in the pre-commit hook"
+        },
+        {
+          "commit": "165ac9f5a8a150bf7e3c1a0a4948853c3172eb5d",
+          "recorded_at": "2026-07-31T14:11:08+10:00",
+          "subject": "fix: callbacks DO belong in the DSL, and stop hardcoding platform data"
+        },
+        {
+          "commit": "7047ada5a962b98718e9119660b39c94417ed530",
+          "recorded_at": "2026-07-31T14:02:54+10:00",
+          "subject": "feat: translate STM32_GPIOPort, and expose how weak its traces are (#14)"
+        },
+        {
+          "commit": "e8ccc271e73dc637e82e76cdf47a055347f5d78c",
+          "recorded_at": "2026-07-31T13:37:53+10:00",
+          "subject": "docs: rule-leverage gate PASSES on an unseen peripheral (#14)"
+        },
+        {
+          "commit": "fe4106c031e4ba78328e9e5bd651b4c9744b49cf",
+          "recorded_at": "2026-07-31T13:31:33+10:00",
+          "subject": "feat: translate STM32_UART, and find the tier-2 oracle's limit (#13, #34)"
+        },
+        {
+          "commit": "0c8a8dcdb409e6c421e5859f2651837e947da36b",
+          "recorded_at": "2026-07-31T13:19:58+10:00",
+          "subject": "feat: Rust register DSL and tier-2 replay harness (#12, #34 R5)"
+        },
+        {
+          "commit": "68acd37012e49d5d6c6275a3f18831660aa520bc",
+          "recorded_at": "2026-07-31T13:11:06+10:00",
+          "subject": "feat(oracle): capture tier-2 register access traces (#6)"
+        },
+        {
+          "commit": "fdb5504643ff5191ab5b77a8c7813d33d6cd3a9d",
+          "recorded_at": "2026-07-31T13:01:54+10:00",
+          "subject": "feat: rule engine \u2014 propose once, match everywhere (#35 R6)"
+        },
+        {
+          "commit": "e0fc8705792b0555a01a7071ca0e532f032cfee8",
+          "recorded_at": "2026-07-31T12:54:55+10:00",
+          "subject": "feat: census gate \u2014 74.4% of AST nodes coverable by 653 patterns (#32 R3)"
+        },
+        {
+          "commit": "fe63d504b919da8e2a32ac3fd14901e7908062b2",
+          "recorded_at": "2026-07-31T12:42:38+10:00",
+          "subject": "feat: corpus analysis, work queue, and a call-graph fix (#31 R2)"
+        },
+        {
+          "commit": "7656c71ce40de5673009af2ca893065df5d34a40",
+          "recorded_at": "2026-07-31T12:25:54+10:00",
+          "subject": "feat: breadth is a health check, enforced structurally (#30)"
+        },
+        {
+          "commit": "8d919cd413654adeb11d01119aa1bb7e0c850596",
+          "recorded_at": "2026-07-31T12:19:19+10:00",
+          "subject": "fix(frontend): HasBody was wrong for partial methods, found by breadth ingest (#30)"
+        },
+        {
+          "commit": "13315c9806655746dcb933a57fb134563eb42582",
+          "recorded_at": "2026-07-31T12:00:01+10:00",
+          "subject": "feat(frontend): IOperation walk and deterministic SQLite writer (#30 R1)"
+        },
+        {
+          "commit": "b4d1b93b0988a7f53ee93d863e8b48ff589a9997",
+          "recorded_at": "2026-07-31T11:50:51+10:00",
+          "subject": "feat(frontend): Roslyn corpus loader, and the MSBuildWorkspace question answered (#30 R1)"
+        },
+        {
+          "commit": "1542ccb4696cc4cd79eb56daaca1154227616408",
+          "recorded_at": "2026-07-31T11:38:14+10:00",
+          "subject": "feat(rulesdb): corpus database schema (#30 R1)"
+        },
+        {
+          "commit": "7f384ffbd6c99291c4a8ba087bf3892549c336ef",
+          "recorded_at": "2026-07-31T11:36:33+10:00",
+          "subject": "feat: scorecard regenerated on every commit"
+        },
+        {
+          "commit": "6e49706097fa338ba9b8bc876bd79929235f106c",
+          "recorded_at": "2026-07-31T11:27:27+10:00",
+          "subject": "docs(perf): P1 spike results -- PASS, but two PLAN.md arguments were wrong (#3)"
+        },
+        {
+          "commit": "9fe8fcbbfd8f42c3fd38f5c01e9da459a6c5bd3c",
+          "recorded_at": "2026-07-31T11:16:45+10:00",
+          "subject": "spike: measure the D2 field layout instead of asserting it (#3)"
+        },
+        {
+          "commit": "5b86759f944ccd095a7babd37917f0dfafbc5088",
+          "recorded_at": "2026-07-31T11:06:45+10:00",
+          "subject": "feat(oracle): baseline boot reproducer and pinned reference (#2)"
+        },
+        {
+          "commit": "7759e5afab4baba9e98fcc5a2c2213b5c7f0a49f",
+          "recorded_at": "2026-07-31T10:29:32+10:00",
+          "subject": "docs: rules are the source code; whole-type transformation required in R6"
+        },
+        {
+          "commit": "99b8d9406b7af35cb44a4da1b985c6d85a475d9e",
+          "recorded_at": "2026-07-31T10:17:27+10:00",
+          "subject": "docs: parallelism as a conversion rule -- saturate 31 threads, deterministically"
+        },
+        {
+          "commit": "6fc375c70f622d35f50a18abe84295143b207155",
+          "recorded_at": "2026-07-31T10:15:05+10:00",
+          "subject": "docs: tooling-and-corpus-first, driven by measured linux-rs drift"
+        },
+        {
+          "commit": "b3b8dba806b4daac3d60d0a008220a0026b257d3",
+          "recorded_at": "2026-07-31T10:02:06+10:00",
+          "subject": "chore: add scripts/file_issues.py, the issue filer"
+        },
+        {
+          "commit": "48918a2806ec4ff468f6d7e706b4008915d18e90",
+          "recorded_at": "2026-07-31T09:53:10+10:00",
+          "subject": "docs: log tlib questions as deferred research, restate ARM-only C# scope"
+        },
+        {
+          "commit": "fd5bbad7d3ccb7a815f20093965f001a78630299",
+          "recorded_at": "2026-07-31T09:48:43+10:00",
+          "subject": "docs: performance as first-class goal; fix D2 layout; correct the scope framing"
+        },
+        {
+          "commit": "1fa86b763a0508806dde543b84b0aa703fad7f8e",
+          "recorded_at": "2026-07-31T09:37:58+10:00",
+          "subject": "docs: draft 24 issues + tracking epic across phases 0-5"
+        },
+        {
+          "commit": "7a60a64b663e854861329c18b1785b926ea5deb1",
+          "recorded_at": "2026-07-31T09:36:08+10:00",
+          "subject": "chore: no-absolute-paths rule, enforcement, and project CLAUDE.md"
+        },
+        {
+          "commit": "11cbd17cc168a6b2ed8557043370d1b7c3443192",
+          "recorded_at": "2026-07-31T09:30:57+10:00",
+          "subject": "docs: renode-rs plan \u2014 ARM/STM32F427-first C#\u2192Rust translation"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3778 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-16T02:06:06.892899+00:00",
+  "component": "sourcebridge-linux-full-history",
+  "destination": "migration",
+  "source": {
+    "remote": "https://github.com/awto-au/linux-rs.git",
+    "revision": "e48c8aae898d1bd10b08c76da54ba01368b36d2c"
+  },
+  "paths": [
+    {
+      "source_path": ".",
+      "sha256": "065d304d78ddb281482f13083856c891588c6441404202312182897e38b15084",
+      "history": [
+        {
+          "commit": "e48c8aae898d1bd10b08c76da54ba01368b36d2c",
+          "recorded_at": "2026-10-15T11:08:26+11:00",
+          "subject": "Session report 2026-10-15: cleanup, drift tooling, fix classes; next steps"
+        },
+        {
+          "commit": "c83a768685786682d06d35375b5fbc9f17d7798b",
+          "recorded_at": "2026-10-15T11:07:07+11:00",
+          "subject": "Add check_tu_built.py gate; wire into dev.py check after build (#122)"
+        },
+        {
+          "commit": "fda47f8087e79af0ab911332196db151f1d1820b",
+          "recorded_at": "2026-10-15T11:06:15+11:00",
+          "subject": "boot-history: default \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "86fd4b9dda6d3cb69e04ed82896fa0c8366e8934",
+          "recorded_at": "2026-10-15T11:01:33+11:00",
+          "subject": "dev.py: pin an interpreter that has clang.cindex (#123)"
+        },
+        {
+          "commit": "0e4c936d6a6a70b41d95f9ed6d9bc931cf6cb092",
+          "recorded_at": "2026-10-15T10:59:02+11:00",
+          "subject": "diff_fix_class_errors.py: --show-all logs every remaining error per file"
+        },
+        {
+          "commit": "98171d02f2fbb3ea7058f799c83f13687a1a0a71",
+          "recorded_at": "2026-10-15T10:58:15+11:00",
+          "subject": "Fix class 0047: paren-balanced size_t memcpy arg (#98)"
+        },
+        {
+          "commit": "36dfc443844bb81f4ba84181df17610e3a6fe764",
+          "recorded_at": "2026-10-15T10:50:42+11:00",
+          "subject": "Land fix classes 0047 (libc size_t memcpy arg) and 0048 (param shadows tuple struct)"
+        },
+        {
+          "commit": "5b0e045592e011d9307d4d291f5bf2724eb444d5",
+          "recorded_at": "2026-10-15T10:45:10+11:00",
+          "subject": "Fix-class warn_on! cmp-0 strip: paren-balanced, negate == 0 (#121)"
+        },
+        {
+          "commit": "469ebf3cf847687bee4a78339662032d237a8e82",
+          "recorded_at": "2026-10-15T10:43:40+11:00",
+          "subject": "Track per-TU header + rust/ deps for upstream drift (#119 step 7)"
+        },
+        {
+          "commit": "a563062531823c90bf565411a14cfaebfe594a10",
+          "recorded_at": "2026-10-15T10:35:03+11:00",
+          "subject": "Publish kernel series to awto-au/linux: scrub + branch-rewrite scripts, docs (#118)"
+        },
+        {
+          "commit": "a52f86efa2b199a18986fd86451a6babaaddfa39",
+          "recorded_at": "2026-10-15T10:17:35+11:00",
+          "subject": "Re-record 12 reviewed TUs at series base; status regen (#119)"
+        },
+        {
+          "commit": "0016441e624304e8beca20941fde1a47b413415b",
+          "recorded_at": "2026-10-15T10:15:39+11:00",
+          "subject": "boot-history: default \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "3fee082ffeb4dc549817c8b7c978edb2d818b2b9",
+          "recorded_at": "2026-10-15T10:11:59+11:00",
+          "subject": "check_c_drift.py --record --at REV; re-record 12 TUs at v7.1 (#119)"
+        },
+        {
+          "commit": "e8e4e831101a38f4fb80df4239e92f8f0597f752",
+          "recorded_at": "2026-10-15T09:58:44+11:00",
+          "subject": "Add audit_kernel_worktrees.py: find unique work in agent kernel trees, snapshot + retire"
+        },
+        {
+          "commit": "40fedbba2ebc47beb5d837b85ede432cc813f7aa",
+          "recorded_at": "2026-10-15T09:52:42+11:00",
+          "subject": "Record per-TU upstream C blob; gate stale translations; drift in sync/dev (#119 steps 1, 2, 5)"
+        },
+        {
+          "commit": "c8dc683d816128b7074cfb60348773e1d247472c",
+          "recorded_at": "2026-10-15T09:45:45+11:00",
+          "subject": "Add check_c_drift.py: flag translated TUs whose C original changed upstream"
+        },
+        {
+          "commit": "ea272ba6739892a7d5d665d5922cc664617a6593",
+          "recorded_at": "2026-10-15T09:09:44+11:00",
+          "subject": "Kernel trees: worktrees of the shared Linux store instead of an own clone (#118)"
+        },
+        {
+          "commit": "3a044b7248cf8f010219d295c01836b9bbfa9c4c",
+          "recorded_at": "2026-08-02T23:08:35+10:00",
+          "subject": "Land issue #115 fix: bitfield setter self-borrow (E0499)"
+        },
+        {
+          "commit": "f2367ff9d18a511ded76dfe8e8a1bc6ee5a17dc4",
+          "recorded_at": "2026-08-02T23:03:21+10:00",
+          "subject": "Land partial libc:: fix (issue #98): fn+intptr_t legs, size_t left flagged"
+        },
+        {
+          "commit": "3eef1d2ae583577cd717aa440740c30df2f1a9be",
+          "recorded_at": "2026-08-02T22:55:55+10:00",
+          "subject": "Land 9 more sweep fix classes from parallel investigation, 419->460 ok"
+        },
+        {
+          "commit": "fdfb5b263b9fa231cb284fc0384c36bc717fc79d",
+          "recorded_at": "2026-08-02T22:17:17+10:00",
+          "subject": "Add sweep_c2rust_corpus_watch.py: triggered re-sweep on fix-class/rule changes"
+        },
+        {
+          "commit": "d34161f1aed46e5975b1fd257c08c0ffdbf81ae3",
+          "recorded_at": "2026-08-02T22:13:53+10:00",
+          "subject": "Add continuous c2rust corpus sweep + mechanical fix-class automation"
+        },
+        {
+          "commit": "2a5f63b3e31fc38c92cb9c204fbca1afb76ba6d2",
+          "recorded_at": "2026-08-02T21:38:19+10:00",
+          "subject": "boot-history: combined-boot-28-23file \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "058dd41242ea3e5cfc83a29cae90532addf29489",
+          "recorded_at": "2026-08-02T20:48:09+10:00",
+          "subject": "docs: #28 round 3 final \u2014 c_variadic reversal, 19 files, seq_buf.c landed"
+        },
+        {
+          "commit": "4e33aa81700fb0c3c39d56d033d1a53df9c5fc4f",
+          "recorded_at": "2026-08-02T20:46:39+10:00",
+          "subject": "Land seq_buf.c as c2rust+hand-fix; add c_variadic to rust_allowed_features"
+        },
+        {
+          "commit": "3326a299995736a0a0b776d6e9d97289584324ae",
+          "recorded_at": "2026-08-02T20:45:02+10:00",
+          "subject": "boot-history: default \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "28aa77df860ace75cc7b040cfa1a8abafa680fd7",
+          "recorded_at": "2026-08-02T20:43:17+10:00",
+          "subject": "boot-history: default \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "df85869abe7ca84509583ea791d736a08682fdef",
+          "recorded_at": "2026-08-02T20:37:05+10:00",
+          "subject": "boot-history: combined-boot-28-19file \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a896d1a02489b996b3abce9df96bdaf19c652648",
+          "recorded_at": "2026-08-02T20:14:33+10:00",
+          "subject": "docs: #28 round 3 \u2014 scale combined boot to 18 files, 20/20 KUnit"
+        },
+        {
+          "commit": "38cd8f9771a34e50cf331bc527d3d3b8e799bc9a",
+          "recorded_at": "2026-08-02T20:11:23+10:00",
+          "subject": "boot-history: combined-boot-28-18file-v2 \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "5e25f1b3abcfc03eb047705d2f23f2b37f6b1920",
+          "recorded_at": "2026-08-02T20:09:01+10:00",
+          "subject": "boot-history: combined-boot-28-18file \u2014 18 ok / 0 not ok"
+        },
+        {
+          "commit": "178101c1d1022fba8c9ad3268f699c6421004e20",
+          "recorded_at": "2026-08-02T16:53:42+10:00",
+          "subject": "docs: #28 round 2 \u2014 scale combined boot to 8 files, 20/20 KUnit"
+        },
+        {
+          "commit": "09cb475bea4dec84d9ca2de1ef5b3ff34ba1f09a",
+          "recorded_at": "2026-08-02T16:52:37+10:00",
+          "subject": "boot-history: combined-boot-28-8file \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a3f27515a2bc0d323d456ca0871ead1b4a0093c9",
+          "recorded_at": "2026-08-02T13:41:53+10:00",
+          "subject": "Document #28 multi-file combined-boot test: klist+sys_info+rcuref, 20/20 KUnit"
+        },
+        {
+          "commit": "e33b18730397b9b794ad72e627b2e028b15f24eb",
+          "recorded_at": "2026-08-02T13:38:35+10:00",
+          "subject": "boot-history: default \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d83ef978914933e17874acd7ca7a72805e7a7bab",
+          "recorded_at": "2026-08-02T13:37:24+10:00",
+          "subject": "boot-history: combined-boot-28 \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a12c0144ac44b9a347aed6922958e651397cb367",
+          "recorded_at": "2026-08-01T16:46:23+10:00",
+          "subject": "boot-history: default \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "2290e37fe2c418f386cb921dae0d9054fba6bb67",
+          "recorded_at": "2026-08-01T16:44:43+10:00",
+          "subject": "boot-history: vdso-isolate-test \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "4d2f563ba3255a16c65c538b32d7d4a92a62cfba",
+          "recorded_at": "2026-08-01T16:18:12+10:00",
+          "subject": "boot-history: vdso-ldbfd-test \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "0fe96b8bbc438a506b42f236ed29c6ac931e4043",
+          "recorded_at": "2026-08-01T15:52:25+10:00",
+          "subject": "boot-history: vdso-const-test \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "61b7b3113234d8352a67aeeea7ce3ea30cf6c132",
+          "recorded_at": "2026-08-01T15:21:26+10:00",
+          "subject": "Restore all 41 hand-translated files as a tracked bridge (#56)"
+        },
+        {
+          "commit": "6f451ec938e98664fedbcb8dbca5dea8a01e0762",
+          "recorded_at": "2026-08-01T15:19:47+10:00",
+          "subject": "boot-history: default \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "6e9a9c0f8750a0c96f9ee4ad5e2205f73552385b",
+          "recorded_at": "2026-08-01T12:55:53+10:00",
+          "subject": "Add explicit hand-translation provenance tracking (#56)"
+        },
+        {
+          "commit": "84bc46f5c7553043db67f2a53711c127261bba4f",
+          "recorded_at": "2026-08-01T12:44:13+10:00",
+          "subject": "Quarantine 4 8250 hand-translated files (d72042ffe791); boot-history: 0 translated TUs, full-corpus revert complete"
+        },
+        {
+          "commit": "a54b9dd5b5a8e700243c6068d5ac72184827ac5f",
+          "recorded_at": "2026-08-01T12:43:26+10:00",
+          "subject": "boot-history: default \u2014 19 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0c16551f4f5becd7efcad67fadf663eb3842f9d9",
+          "recorded_at": "2026-08-01T12:36:37+10:00",
+          "subject": "boot-history + streams.md: reflect 34-file hand-translation revert (11e280e)"
+        },
+        {
+          "commit": "11e280e75ccb0c3a998451f01eefb4f9832d897d",
+          "recorded_at": "2026-08-01T12:36:32+10:00",
+          "subject": "Quarantine 34 hand-translated *_rs.rs files under hand_translated/"
+        },
+        {
+          "commit": "5444e558394250a442fa9eb86324e31bb4b2257e",
+          "recorded_at": "2026-08-01T12:34:59+10:00",
+          "subject": "boot-history: default \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "04441b5f3ed35e13caff8bd905922c2239911a8f",
+          "recorded_at": "2026-08-01T12:23:28+10:00",
+          "subject": "boot-history: revert to 38 TUs \u2014 reflects hand-translation revert (bb326c9)"
+        },
+        {
+          "commit": "bb326c9aac89e302b101b307c04b2f7286bb9aeb",
+          "recorded_at": "2026-08-01T12:23:18+10:00",
+          "subject": "Revert 3 hand-written translations (ctype, error_private, glob): wrong mission"
+        },
+        {
+          "commit": "400b0fad9454bdaf923155b1ed7ec86a697f8ada",
+          "recorded_at": "2026-08-01T12:22:09+10:00",
+          "subject": "boot-history: default \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "afba371bbd4e44e8d3e224ac7d288a0d0490d1fc",
+          "recorded_at": "2026-08-01T11:51:59+10:00",
+          "subject": "lib/glob: add Tier-2.5 differential oracle for glob_match_len"
+        },
+        {
+          "commit": "ea394bbb5e41d598519f37b8eb6bdea642598dea",
+          "recorded_at": "2026-08-01T11:49:29+10:00",
+          "subject": "boot-history: default \u2014 20 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "2f8de6bba4631ea4e087bcb2325d51ebb5abb68c",
+          "recorded_at": "2026-07-31T21:32:27+10:00",
+          "subject": "lib/zstd: add Tier-2.5 differential oracle for error_private translation"
+        },
+        {
+          "commit": "ab54734fa2890dd47d4118e7013e82b6dc4c22c5",
+          "recorded_at": "2026-07-31T21:09:35+10:00",
+          "subject": "boot-history: default \u2014 19 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ce605736e20152a0392ea193d66f308ce9ef3541",
+          "recorded_at": "2026-07-31T19:46:37+10:00",
+          "subject": "rule 0021: document drivers/char/random.c as a permanent cross-TU dep"
+        },
+        {
+          "commit": "ad6bf50c4887ed64dff4e4d6f0bc73101f0de6fb",
+          "recorded_at": "2026-07-31T19:41:32+10:00",
+          "subject": "boot-history: default \u2014 19 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "43582ed660eb2dcdb92ef5fb52178e2980c7c0d5",
+          "recorded_at": "2026-07-31T17:29:04+10:00",
+          "subject": "boot-history: default \u2014 19 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "67a990aa6170392c50693f67bd3291d6f4f26710",
+          "recorded_at": "2026-07-31T17:12:14+10:00",
+          "subject": "Remove all 8250 driver detail from repo docs, park permanently in #25"
+        },
+        {
+          "commit": "2ece97896498ec2baeb5a06ea40de80e794c768f",
+          "recorded_at": "2026-07-31T16:52:27+10:00",
+          "subject": "#53: fix libclang version mismatch blocking Phase-1 census, run real census"
+        },
+        {
+          "commit": "9ebc797d28c08491e5c3124145f01000aa6e89e7",
+          "recorded_at": "2026-07-31T16:42:05+10:00",
+          "subject": "boot-history: default \u2014 19 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "5be8ae6509e3fcf646c8a4bfd23076cfb46681b0",
+          "recorded_at": "2026-07-31T16:41:43+10:00",
+          "subject": "boot-history: default \u2014 19 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "72a39d150a2a0390ae6ad37874b681db61ae9566",
+          "recorded_at": "2026-07-31T16:36:39+10:00",
+          "subject": "#51: fix diff_decompress.rs bench wording, document test-transpile safety policy"
+        },
+        {
+          "commit": "3102a2d60d4831e626b6af0f27b6d9da4b6357ed",
+          "recorded_at": "2026-07-31T16:21:29+10:00",
+          "subject": "boot-history: default \u2014 19 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e8f873f6517db24d179b01fa3628760e6e0c855a",
+          "recorded_at": "2026-07-31T16:20:29+10:00",
+          "subject": "boot-history: wire-c2rust-final2 \u2014 19 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "659dc578622b4b1b7be5b46db99f944bbb46ed00",
+          "recorded_at": "2026-07-31T16:19:22+10:00",
+          "subject": "boot-history: wire-c2rust-support-final \u2014 19 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "4a184b81e2cb394d0861c4dd50c17202c55a79a2",
+          "recorded_at": "2026-07-31T16:13:58+10:00",
+          "subject": "boot-history: wire-c2rust-support \u2014 19 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e3269cced540f2b6eb3fd6d4b4a117a6cd084289",
+          "recorded_at": "2026-07-31T14:44:17+10:00",
+          "subject": "boot-history: vdso-hang-recheck \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "5dc24734950d7d21b0ac11e0d84712321e0c4d6b",
+          "recorded_at": "2026-07-31T14:09:53+10:00",
+          "subject": "restore 8250 docs from debris/, provenance is resolved"
+        },
+        {
+          "commit": "38458e4efc6254bb036276a843cf846186bc0980",
+          "recorded_at": "2026-07-31T14:08:01+10:00",
+          "subject": "8250 split-TU provenance policy: explicit mapping table + regression check"
+        },
+        {
+          "commit": "47d72cd01fab10a7d3c04b24db900322530bf67c",
+          "recorded_at": "2026-07-31T13:40:40+10:00",
+          "subject": "boot-history: default \u2014 19 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ec8d74adab1aef4d2c73563c4920b7c739aab06f",
+          "recorded_at": "2026-07-31T13:18:08+10:00",
+          "subject": "docs/STATUS.md: regenerate against the rebased+promoted linux-riscv/ tree"
+        },
+        {
+          "commit": "19a4480dfca003238f7060a3ddbfaf16fb29e848",
+          "recorded_at": "2026-07-31T13:17:56+10:00",
+          "subject": "debris/code: land the ARCHIVED headers that 7e0f528 missed"
+        },
+        {
+          "commit": "365187c883d81f824b7d5167f90a6efda4eafe4d",
+          "recorded_at": "2026-07-31T13:09:02+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "130c01c80e044360c0bd88e6371541426fba4a5c",
+          "recorded_at": "2026-07-31T12:56:20+10:00",
+          "subject": "boot-history: rebase-upstream \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "7032e89f230e2c6be68a2ab30704f9392763b830",
+          "recorded_at": "2026-07-31T12:52:07+10:00",
+          "subject": "integrate_tu.py, run_c2rust_file_review.py: add --tree/--run-id for safe parallel review runs"
+        },
+        {
+          "commit": "82a17146d3d6253990aeaf754978e177ab8bc372",
+          "recorded_at": "2026-07-31T12:51:30+10:00",
+          "subject": "boot-history: review-b \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "03164da5c40419a860c80dfcd0e2f2491973902a",
+          "recorded_at": "2026-07-31T12:51:29+10:00",
+          "subject": "boot-history: review-a \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "521ac41f4cb09aabd763b78f586cc679e6a8bdc3",
+          "recorded_at": "2026-07-31T12:45:12+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "12033d4578e4695fd6795deb00a8a7b198c4f03a",
+          "recorded_at": "2026-07-31T12:44:51+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "58ec53011cd29b0c3310d85ba390276f6db31a9f",
+          "recorded_at": "2026-07-31T12:44:30+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d27aa4ead2bb7fa0293b4c99c030f97551379b76",
+          "recorded_at": "2026-07-31T12:44:09+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b680910175df6cf7113ae2290d7580fa5c94d128",
+          "recorded_at": "2026-07-31T12:43:47+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "8823ae338a2bbc74c75cdf04f30f0488d3c4acd7",
+          "recorded_at": "2026-07-31T12:43:26+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "bcda24a82bc01b445db6b095aa0471ece6a99533",
+          "recorded_at": "2026-07-31T12:43:04+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e28f6661b00c5f8f5a439815147ef668dbe494b4",
+          "recorded_at": "2026-07-31T12:42:43+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d1f07a504029fc6f2dfb7e14b674584e4e23df2e",
+          "recorded_at": "2026-07-31T12:42:22+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "4061e1667f0fb5afa6431647b012415d9721358d",
+          "recorded_at": "2026-07-31T12:42:01+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d4fe12584d356db1e0c1f4677860b37af63f92ea",
+          "recorded_at": "2026-07-31T12:41:40+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "f0de5bf37e9fb1af225e987f2d380a643f1d504c",
+          "recorded_at": "2026-07-31T12:41:19+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0cc98ef0ad46dd4b6c9ba58964da56a3149b4770",
+          "recorded_at": "2026-07-31T12:40:58+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "25dc146cc4ad1023dd64ebf20a871aa929a92477",
+          "recorded_at": "2026-07-31T12:40:37+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "9bff9fb94bb57f6da0678abb0eadaf894387d5ff",
+          "recorded_at": "2026-07-31T12:40:16+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d989ebd6e3bfad58059884ed0b356625424cc175",
+          "recorded_at": "2026-07-31T12:39:55+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "5f35dca3e511097e1154a96fb9a5efe3f6be097f",
+          "recorded_at": "2026-07-31T12:39:33+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "60e6b984c4e99c9f0ac1d4d749b92e94030f5963",
+          "recorded_at": "2026-07-31T12:39:12+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "56879b4053de41f662bacb90418dc808b4b0df23",
+          "recorded_at": "2026-07-31T12:38:51+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0a99b5b07b3180d09a5d6f018d694c6254b7d2c3",
+          "recorded_at": "2026-07-31T12:38:29+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "4432bd232a0f4a0b08ac40e9a00172c625c2bea9",
+          "recorded_at": "2026-07-31T12:38:08+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "7ab8c7268f0ac705f89fe3f4ece91f37d4a1d38c",
+          "recorded_at": "2026-07-31T12:37:47+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "601cc622979ec0949aeca99e9860b4245a29a79b",
+          "recorded_at": "2026-07-31T12:37:25+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "8e5360c3d77fed09004c2683ef6055ffbb7af5ed",
+          "recorded_at": "2026-07-31T12:37:03+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "aa2a8ee6e2c5ad74d50017a2945ec3056811b6ff",
+          "recorded_at": "2026-07-31T12:36:42+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "152fc19a8db0b205e4c6a515b2e19746d5d7bcf4",
+          "recorded_at": "2026-07-31T12:36:21+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "94f7ae6c610b76d5b83f9f98083126f8b2c5d732",
+          "recorded_at": "2026-07-31T12:35:03+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "2762fb30ac4d8efa1496d7d7ae3965fb74829ff2",
+          "recorded_at": "2026-07-31T12:34:00+10:00",
+          "subject": "boot-history: default \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "46656361ecaee07b1ce2ae0131cf4508e79033a4",
+          "recorded_at": "2026-07-31T12:33:01+10:00",
+          "subject": "run_c2rust_file_review.py: actually enable a file's own KUnit config before boot"
+        },
+        {
+          "commit": "23f665550a29e4e414fe2e900701a9dbd26c61db",
+          "recorded_at": "2026-07-31T12:22:31+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "f2c2ef15fa1a9909c485f743fd41ecdbde5df339",
+          "recorded_at": "2026-07-31T12:15:42+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a3afbbefc76fdd538e2f3164a37e9d3670e99e05",
+          "recorded_at": "2026-07-31T12:14:41+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ca076decc4af7ac72da8ff56438b2198a8ac6ab8",
+          "recorded_at": "2026-07-31T12:13:13+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "7e0f5282ca4faacdc2136ada8030d2836856a870",
+          "recorded_at": "2026-07-31T11:33:33+10:00",
+          "subject": "resolve remaining debris candidates, close out the action plan"
+        },
+        {
+          "commit": "e98783c63f6b618b37d7605dab39ea4c4d5ebe86",
+          "recorded_at": "2026-07-31T11:31:04+10:00",
+          "subject": "PLAN.md: reference the real Phase-1 GATE:GO decision instead of \"unproven\""
+        },
+        {
+          "commit": "0d413b674ccf94fb95288dbd0773563ba33b5785",
+          "recorded_at": "2026-07-31T11:14:58+10:00",
+          "subject": "add structural census go/no-go gate to dev.py PRE_BUILD_CHECKS"
+        },
+        {
+          "commit": "6d914ca365748f2f5abfde99ce3a25e050f8296d",
+          "recorded_at": "2026-07-31T10:16:26+10:00",
+          "subject": "extract Ollama HTTP-call boilerplate into shared scripts/ollama_client.py"
+        },
+        {
+          "commit": "28614dd9c307fcba5e8d95b9950e9b65ad4f609e",
+          "recorded_at": "2026-07-31T10:13:40+10:00",
+          "subject": "extract git_rev/find_clean_outputs/build_support_crates into shared module"
+        },
+        {
+          "commit": "6152e8122094514f5f02bcaa4826654d0460d6eb",
+          "recorded_at": "2026-07-31T10:10:03+10:00",
+          "subject": "extract normalize_path() into shared scripts/pathutil.py"
+        },
+        {
+          "commit": "00a28c0c1d3e0576c43f62ab2979a2428f25a7d4",
+          "recorded_at": "2026-07-31T09:38:41+10:00",
+          "subject": "boot_qemu.py, query_db.py: adopt the standard logging convention"
+        },
+        {
+          "commit": "101023e21dd1ff68488dc2a95b61e066475be76d",
+          "recorded_at": "2026-07-31T09:28:43+10:00",
+          "subject": "style: move mid-function imports to module level"
+        },
+        {
+          "commit": "df3ece64b1b94dd4362bce73defe2e680e4408b6",
+          "recorded_at": "2026-07-31T00:35:46+10:00",
+          "subject": "integrate_tu.py: fix dead --patch docstring, crash on non-linux/ header prefix"
+        },
+        {
+          "commit": "0fceeadb809bcc49ce0adb8d761866e04fc7aa3c",
+          "recorded_at": "2026-07-31T00:34:05+10:00",
+          "subject": "target_compile_test.py: add missing subprocess timeout, fix misleading docstring"
+        },
+        {
+          "commit": "f6e2ffdd645eb6f4967025ce82f979bcc9c8e459",
+          "recorded_at": "2026-07-31T00:32:57+10:00",
+          "subject": "readiness.py: warn instead of silently mismatching on tree-name split"
+        },
+        {
+          "commit": "2de54375ca48c39f749160af74940e2779ab7b23",
+          "recorded_at": "2026-07-31T00:32:12+10:00",
+          "subject": "query_db.py: read-only by default for the sql subcommand"
+        },
+        {
+          "commit": "db3584d273ab36fb23ada918c76dc33e014b5b90",
+          "recorded_at": "2026-07-31T00:30:38+10:00",
+          "subject": "plot_session_progress.py: derive chart date range from real data, fix dict-repr parsing"
+        },
+        {
+          "commit": "eb9b6ce327e66476834ae54abed41d555f7e646f",
+          "recorded_at": "2026-07-31T00:29:03+10:00",
+          "subject": "fingerprint.py, region_census.py: restore worker cwd after os.chdir()"
+        },
+        {
+          "commit": "9b5bc3bed34d81e7e68ea96f284600f64de71980",
+          "recorded_at": "2026-07-31T00:24:54+10:00",
+          "subject": "offload_cycle.py: clippy_check() no longer treats warnings as hard failures"
+        },
+        {
+          "commit": "5d412732223b1c9cefc187877734cf376112173d",
+          "recorded_at": "2026-07-31T00:23:44+10:00",
+          "subject": "crawl_c2rust_upstream.py: fetch upstream's real default branch instead of hardcoding \"master\""
+        },
+        {
+          "commit": "27eb81e5067370a3d78600bd45a2070dbec65af9",
+          "recorded_at": "2026-07-31T00:23:06+10:00",
+          "subject": "combined_boot_scaffold.py: fix vacuous init heuristic + dead os import"
+        },
+        {
+          "commit": "026995b1aa2abd7e0785ab64fed946abf2afab49",
+          "recorded_at": "2026-07-31T00:22:24+10:00",
+          "subject": "check_c2rust_output_compiles.py: remove dead import-time rev crash, port vanished-file race handling"
+        },
+        {
+          "commit": "0a214b8eb369a8597b7aca3f2f99d07d7e2bb164",
+          "recorded_at": "2026-07-31T00:15:30+10:00",
+          "subject": "boot_qemu.py: fix archive-log filename collision + uncaught OSError"
+        },
+        {
+          "commit": "24a7e0df09eb42f097e755dab7f678cd8fd6de26",
+          "recorded_at": "2026-07-31T00:14:21+10:00",
+          "subject": "build_db.py: remove stale WAL/SHM sidecars on rebuild"
+        },
+        {
+          "commit": "9d45551d52de55a4c7c5bab5aa5848437c18f0e8",
+          "recorded_at": "2026-07-31T00:13:29+10:00",
+          "subject": "debris: retrofit issue references onto archived scripts"
+        },
+        {
+          "commit": "dd1f635fd4e6a7762166ea2c81530c3913ddee70",
+          "recorded_at": "2026-07-31T00:08:20+10:00",
+          "subject": "scripts/docs: archive run_c2rust_pch_compare.py, wire ollama_queue_watch.py into streams.md"
+        },
+        {
+          "commit": "cf310628ed2e5ec577b5028868a2d06efe73d527",
+          "recorded_at": "2026-07-30T21:53:23+10:00",
+          "subject": "docs: full code-review action plan (2026-07-30)"
+        },
+        {
+          "commit": "12cad18a4f8b59d60787d2fe7390c124c06e729a",
+          "recorded_at": "2026-07-30T21:46:20+10:00",
+          "subject": "scripts: fix dangling 8250-doc references, archive 2 confirmed-dead scripts"
+        },
+        {
+          "commit": "4ead8034fda7318b78b0ff3ac622be128c01d7e3",
+          "recorded_at": "2026-07-30T20:35:44+10:00",
+          "subject": "README: standing policy \u2014 linux-riscv/ tracks upstream permanently"
+        },
+        {
+          "commit": "c36144c34100fa30c6d130609fade4ca1d6a7463",
+          "recorded_at": "2026-07-30T19:59:54+10:00",
+          "subject": "c2rust file-review loop: canonical process, tracking schema, TODO markers, 8250 deferral"
+        },
+        {
+          "commit": "05467e28eca09e7f79544b2aef005307ce5ed77a",
+          "recorded_at": "2026-07-30T19:58:17+10:00",
+          "subject": "README: link the canonical c2rust file-review process at the top"
+        },
+        {
+          "commit": "1b2ebacab65a2504dd402b96df350076cf965aa3",
+          "recorded_at": "2026-07-28T09:33:06+10:00",
+          "subject": "fix(vscode): exclude Linux worktrees from file watching"
+        },
+        {
+          "commit": "9e51be3f681070f225d0bdf2bb1426ec4e80dc3f",
+          "recorded_at": "2026-07-20T23:01:41+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0a7aa3b5e7810ab2e4ec8da3914a40753abea41f",
+          "recorded_at": "2026-07-20T23:00:16+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "bea9b748e8c7a747d5d331146e4fdf975df4f979",
+          "recorded_at": "2026-07-20T21:18:16+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "4748c0d7f0d0bdbac904d510ca267a833e7061f1",
+          "recorded_at": "2026-07-20T21:17:28+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "f8dd957f73f10eeadfd07023400cfa6d0941cdee",
+          "recorded_at": "2026-07-20T21:16:58+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "acbe53c24df1b5b75253b0727e90cdb1552d1b92",
+          "recorded_at": "2026-07-20T21:13:13+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b621aab76845c160a251c92795cc779e555724b8",
+          "recorded_at": "2026-07-20T21:12:43+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "1f5106246c61d42bbe9b213e36859d41ab404a1e",
+          "recorded_at": "2026-07-20T21:12:12+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "56adbcf0df891318a4820a78fcd5f11310348a21",
+          "recorded_at": "2026-07-20T21:11:42+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "965ebea0a624aff0f392017341d9da2c5cbfd387",
+          "recorded_at": "2026-07-20T21:05:23+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "5311271f72ca495f596a1f300308e27b905c8e53",
+          "recorded_at": "2026-07-20T20:48:16+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "56d9dff1a37eab8f2a5c4250e04b4a04cf0ece93",
+          "recorded_at": "2026-07-20T20:47:50+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "40b85294ab4c2092ea76d75f73f2086ff64724e7",
+          "recorded_at": "2026-07-20T20:47:24+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b50db17f00801262594137d55e2b7aa6237fb920",
+          "recorded_at": "2026-07-20T20:46:59+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "f64383c41ba6b6af280ad24ef6888bd0421fdeda",
+          "recorded_at": "2026-07-20T20:46:32+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "f0dcfe3984e3e7d0a853dc66af8c2cb938b4ac67",
+          "recorded_at": "2026-07-20T20:46:05+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "45f9448d1cf148dee8bac9f9183e03e3f6b59ed3",
+          "recorded_at": "2026-07-20T20:45:40+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "8a9d166b979b37dc609e8f6adb66f4ca17dcb822",
+          "recorded_at": "2026-07-20T20:45:14+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "64915c9b7a2b2c0a9ef92522d6c03125444adda6",
+          "recorded_at": "2026-07-20T20:44:48+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "bdebbb8f21a0dd14d9251b22d537d510a4668a6e",
+          "recorded_at": "2026-07-20T20:44:22+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0f1d88077373c2321126763c28a03164ff12ca32",
+          "recorded_at": "2026-07-20T20:43:56+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "1f65e1450c19b087f6a095fba7a593155cc99c98",
+          "recorded_at": "2026-07-20T20:43:31+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ef7a726a536b62efaebcbb5b29cfd63183d49859",
+          "recorded_at": "2026-07-20T20:43:04+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d846312269e068cd344a7d17c95bef3aede63b35",
+          "recorded_at": "2026-07-20T20:42:39+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "6535aa62cd7e59fc65136ad0960c5b79ad5bc2db",
+          "recorded_at": "2026-07-20T20:42:13+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "2baf4a3fbe0f87051de0985fabf0d3e0cf48edd9",
+          "recorded_at": "2026-07-20T20:41:47+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "371c66138ec0ddf806448045382b992471f51cb9",
+          "recorded_at": "2026-07-20T20:41:22+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a01063811109fa5f3516a2d23e81a58fb0155f93",
+          "recorded_at": "2026-07-20T20:40:56+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "56dceb45a009ccea3926974e289dd1063fb105d0",
+          "recorded_at": "2026-07-20T20:40:30+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c736fe372a6d805eb0cb6ef9a943237f07b8efe8",
+          "recorded_at": "2026-07-20T20:40:00+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ad509096e0e84bbfa76d89a1f685be1cf3e38200",
+          "recorded_at": "2026-07-20T20:39:25+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "2971c1d917b6a7f2eac32f49bd61f036c6bb3218",
+          "recorded_at": "2026-07-20T20:38:59+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "5954375dfbf066fde96ee3e669f48a3635416f29",
+          "recorded_at": "2026-07-20T20:38:33+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "34e2e56316dba156c0365fc67b7cacb923f06224",
+          "recorded_at": "2026-07-20T20:38:08+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "bc5d5ce8e49c6508e05788f0871e46a244639bd4",
+          "recorded_at": "2026-07-20T20:37:43+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "42cd20d70c927a7e93f9795581f357b2692710ed",
+          "recorded_at": "2026-07-20T20:37:07+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "93184d73a1b1451bfaf79eed346c7b31297b66e9",
+          "recorded_at": "2026-07-20T20:36:33+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "06111504c5959a94f694e9ed2507ca4c159be26f",
+          "recorded_at": "2026-07-20T20:36:03+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "16f530f5de753c21e1b3c2860c95a2eeaae61310",
+          "recorded_at": "2026-07-20T20:35:38+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c354aa3fdf6ac571b4e7895c46a05db98b86fa3d",
+          "recorded_at": "2026-07-20T20:35:12+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "43f5fe3f5fad47c6dc32946c7e4c77350582b36c",
+          "recorded_at": "2026-07-20T20:34:46+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0b2e06b1748f4c4635f949eef4430c1d152cd390",
+          "recorded_at": "2026-07-20T20:34:19+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "48285c87fabf9b2b0b3f39e68973138d7b894223",
+          "recorded_at": "2026-07-20T20:33:44+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "665116054701bf454e20d264a67d8d79043cfd97",
+          "recorded_at": "2026-07-20T20:33:18+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "2dd956df72d938333f07dc6e1d7a65ecf0bb3302",
+          "recorded_at": "2026-07-20T20:31:20+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "18d64f6aa8333b11cb0b26fce7a55d008525edcc",
+          "recorded_at": "2026-07-20T20:30:49+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "6c849d73261d2e915e52ed3a20ce5c4fe3ff58f9",
+          "recorded_at": "2026-07-20T20:23:54+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "fecd255c6581c217acaeaefd654fd3c7cc10cc5b",
+          "recorded_at": "2026-07-20T20:23:24+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "011d01c5e0d5e42a76b1587bf263a1a5d814a28d",
+          "recorded_at": "2026-07-20T20:22:52+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "9b3665b70559690845dbb218f3ac50b9f0e031da",
+          "recorded_at": "2026-07-20T20:18:05+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "fb2fd414317be74b5357a883b4c4d12f9ebe77e6",
+          "recorded_at": "2026-07-20T20:17:39+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b2daf8c7639d333c8ca777f1a368e5e0eaebb305",
+          "recorded_at": "2026-07-20T20:17:13+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "704ae9b7ceea8b323d4d8b81a5b81d12de882239",
+          "recorded_at": "2026-07-20T20:16:48+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a34e7812290a07ae67f19eb776692cdaba0fa3b7",
+          "recorded_at": "2026-07-20T20:16:22+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c6178049743d31b118ff12a636efc6016de24fb3",
+          "recorded_at": "2026-07-20T20:16:06+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "95a8b6327a66b29d4c13fcae19d03a0b08417fbc",
+          "recorded_at": "2026-07-20T20:15:57+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "eef9085daf9bcdff2a136f14e892546100448326",
+          "recorded_at": "2026-07-20T20:15:40+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "1618e1b9211af257a67d3bc5aec9382678d8991c",
+          "recorded_at": "2026-07-20T20:15:32+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0cfceb890f12a218edd914106042d2f8de94397c",
+          "recorded_at": "2026-07-20T20:15:15+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "301770b96657438a85eec4842ba6a191cbc7811a",
+          "recorded_at": "2026-07-20T20:15:07+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "713669cfb53b9695609065e628fe00a552d6106d",
+          "recorded_at": "2026-07-20T20:14:49+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "baa79b2ce8e36993cf816a999094a629d7c12eb0",
+          "recorded_at": "2026-07-20T20:14:42+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "98b615ec9323e4af5ba2da963e84cdd65522f187",
+          "recorded_at": "2026-07-20T20:14:22+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e0c65f89edcc78a2dd292878d3f35c4857a531a0",
+          "recorded_at": "2026-07-20T20:14:16+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ae5cc0e594c35e3efb9d580aa7347f7bcb4e5be9",
+          "recorded_at": "2026-07-20T20:13:55+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "f57aa6122f7ca4e3c9c1503dc505514d790313de",
+          "recorded_at": "2026-07-20T20:13:51+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "5e5520090e98b4636d03877250b9f15e20d82f57",
+          "recorded_at": "2026-07-20T20:13:29+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "cd7b1a4a6e4accfa51576bd5d57a6eeee7319b73",
+          "recorded_at": "2026-07-20T20:13:20+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "56bf0ef9b37a60e38eac7a67359f5ca7759d66b6",
+          "recorded_at": "2026-07-20T20:13:03+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d4ef6d647929a58bb04c4b7881a77044ba3e2bca",
+          "recorded_at": "2026-07-20T20:12:45+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "588637ef35fa5e2a2052861a68a9140111b1e2b3",
+          "recorded_at": "2026-07-20T20:12:37+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "51889fe29d2d87875228e6eb6e940a29bf632238",
+          "recorded_at": "2026-07-20T20:12:18+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ecdb6645a22b36ee7fe4414df32184eece53995b",
+          "recorded_at": "2026-07-20T20:12:11+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e25570ecbd19b0829335890d89dc4f25bff42cbe",
+          "recorded_at": "2026-07-20T20:11:52+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "89bf783fdaa638ba4823cb2df137aa0c9abb3f57",
+          "recorded_at": "2026-07-20T20:11:46+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c181ec6c1bcdc4f20e98ab8b02c6b18625d41484",
+          "recorded_at": "2026-07-20T20:11:27+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "229d7b6261ef9a7a563fe4373d825ca40f28fa5e",
+          "recorded_at": "2026-07-20T20:11:20+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "04a6076b0d3bd2b57dc0254b8a41c522265e7a5b",
+          "recorded_at": "2026-07-20T20:11:01+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "91ddb14086fda9f45286d1c65f31d0d9a4dd5f8f",
+          "recorded_at": "2026-07-20T20:10:53+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "82715e97835577b8959d95d1199a913c46562f17",
+          "recorded_at": "2026-07-20T20:10:27+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "937bd1244c6b0f8222384fccc7869af659d63abd",
+          "recorded_at": "2026-07-20T20:10:23+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "f1bcfaeeb5845d084e6682e8e7122ff10a191741",
+          "recorded_at": "2026-07-20T20:10:02+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "74819bd6c40b03c645071711a6d17e4cdf8950d7",
+          "recorded_at": "2026-07-20T20:09:48+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "4096b1af260d9448cfef22edd77e6450ae381de7",
+          "recorded_at": "2026-07-20T20:09:35+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "1955fb53585fc08f5838c5eb59719a6a35d8e9f2",
+          "recorded_at": "2026-07-20T20:09:18+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "6df1534edf87c2504777339446c27e9e03a7fbed",
+          "recorded_at": "2026-07-20T20:09:08+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0ad195c9fb28a8969f688d7fe0664d4dfaa7cc36",
+          "recorded_at": "2026-07-20T20:08:53+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a359caab226b01cd30266b1b14e1ea796bf913a6",
+          "recorded_at": "2026-07-20T20:08:42+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "23c5bc337408b821fcfc074934fa14a0aa40058a",
+          "recorded_at": "2026-07-20T20:08:23+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0df7d966c57d2a22b55dd267fac0a8fafbcf81a1",
+          "recorded_at": "2026-07-20T20:08:16+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "295f2b1a3585a6329b53bf4c8a884b49d0e8a47f",
+          "recorded_at": "2026-07-20T20:07:56+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "fbeb0120fa8ffdf7fadd0bfc4cc2ffc36f2f7dfc",
+          "recorded_at": "2026-07-20T20:07:45+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e6c903b7c07b33e06db5c0da1dc0fc7a8896fffe",
+          "recorded_at": "2026-07-20T20:07:30+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d3a0a3f367303a41c74ecd9d9339de1953b014e8",
+          "recorded_at": "2026-07-20T20:07:10+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "9a9268fd5b18b494cd144ac35422edec4f320240",
+          "recorded_at": "2026-07-20T20:06:54+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ed3f9a43ff55ef21265134057e5f6a21295bd6ce",
+          "recorded_at": "2026-07-20T20:06:44+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0fd976735002c2afaab6be570b158ed2aa72db25",
+          "recorded_at": "2026-07-20T20:06:28+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "453f6ef6a5cd96861ceff44a2bf289da4b80e35b",
+          "recorded_at": "2026-07-20T20:06:17+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "1ba2d68f683b5da73f50ee0f06b704deaae0141b",
+          "recorded_at": "2026-07-20T20:05:52+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "5a37cf3f95618e48353dbfc8c1899e37c501d7d0",
+          "recorded_at": "2026-07-20T20:05:25+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "af41ef25ea02b748972bd045c0cfa18f71367ff3",
+          "recorded_at": "2026-07-20T20:04:50+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "8422702cb9358fa9338d71a76aaed8218598b14c",
+          "recorded_at": "2026-07-20T20:04:15+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "da842629968b4ca2c4e789632d9d5e29bdfe9276",
+          "recorded_at": "2026-07-20T20:03:45+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "45addc9fc29179971034490f5ddeedffaba1cf1f",
+          "recorded_at": "2026-07-20T20:03:20+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "3f6e5b0acc60314d00dbe97204def68d7a1ab298",
+          "recorded_at": "2026-07-20T20:02:54+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "6a716b4f35badbe6a4615106154acda281c89f8a",
+          "recorded_at": "2026-07-20T20:02:27+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0764a9d4b5ed17a1505d70f36a59844b7032ce26",
+          "recorded_at": "2026-07-20T20:02:00+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "377f43b8c80ab162eb5511192bdc1b35deb9d812",
+          "recorded_at": "2026-07-20T20:01:26+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "9e77dca64590c83406ec0a869a5b5c47e53e7218",
+          "recorded_at": "2026-07-20T20:01:00+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "86fb3e1568d5892fbba70eb286a8dd7602f717ed",
+          "recorded_at": "2026-07-20T19:58:43+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "4a462f99e7584d68b4f4462d18df1ac9bf5b3b52",
+          "recorded_at": "2026-07-20T19:58:12+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "450a8aeec35d2afeec2001530c5a3546ef8f469b",
+          "recorded_at": "2026-07-20T15:42:14+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "fcab380322ffb286747e4fabe1a85f87ad45ee33",
+          "recorded_at": "2026-07-20T15:41:47+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "31e2949fe7ebdb4e71a2e1ead34353f809ee5a73",
+          "recorded_at": "2026-07-20T15:41:21+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d73c984ab357b5a519f0c973dd815660e9fc5cef",
+          "recorded_at": "2026-07-20T15:40:54+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "5344ed2def21ede15b3a365fdc3a97500dc53038",
+          "recorded_at": "2026-07-20T15:40:28+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e07a8bd25e056f32a7ed07a3851338b35bed2df5",
+          "recorded_at": "2026-07-20T15:40:01+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b3416c6d08702c1c281f6297a4496d45d479c85c",
+          "recorded_at": "2026-07-20T15:39:35+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "3aa2134b8d65d9df70ed18d7fa7aa6852fb30d95",
+          "recorded_at": "2026-07-20T15:39:09+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "2b3f5c40b3c05dd64a1c2c8d2a15c641ad36d123",
+          "recorded_at": "2026-07-20T15:38:43+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "da03b013967c4b0fd9f556e9d5a41f5b1e3584f8",
+          "recorded_at": "2026-07-20T15:38:17+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "152c451a128b900d3d183975700974da48a7dc41",
+          "recorded_at": "2026-07-20T15:37:52+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "61594b055ff97de94e3aee34086fefc6dcd46226",
+          "recorded_at": "2026-07-20T15:37:27+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "61d5bafb9346cb63c9c11202dac04434e4bfe5b8",
+          "recorded_at": "2026-07-20T15:37:00+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "22ea2815ce209c29c6896cf8d1dd431e68b0479c",
+          "recorded_at": "2026-07-20T15:36:35+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "2dfa5de2d46894677587ee532b6cd39ac61c6a94",
+          "recorded_at": "2026-07-20T15:36:10+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c47853f0c94beaa51b8b7f3ee63ce9cd507ade4d",
+          "recorded_at": "2026-07-20T15:35:42+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "6c613999e2cafcb0ce33474e146fa95ebdc8bfff",
+          "recorded_at": "2026-07-20T15:35:17+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "5d43ba461f0bbd30e2f77a5d3579fa110ae1ecb0",
+          "recorded_at": "2026-07-20T15:34:49+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "9c742f718c651f23d12a7ac089fb9743eda5b548",
+          "recorded_at": "2026-07-20T15:34:24+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "736f12a9e5a6db5836c0a2fc24aab21890b69a9f",
+          "recorded_at": "2026-07-20T15:33:53+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e92043d5d8ea039512110053d095771948bc2e23",
+          "recorded_at": "2026-07-20T15:33:19+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "96dccbe43b7f0ce8113607181a567cd67f176fe2",
+          "recorded_at": "2026-07-20T15:32:53+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "3f0ff10ecf56499be9ad0c9ca8aa39cf48466dbd",
+          "recorded_at": "2026-07-20T15:32:27+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b0b10509f39f6c2c6bde9d63a3484c43a40097bd",
+          "recorded_at": "2026-07-20T15:32:01+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "95f6861e793f82afcbeb478dc84a4f759381cfad",
+          "recorded_at": "2026-07-20T15:31:35+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d9188152bdd817023340d8f82b19e9ec22c01df9",
+          "recorded_at": "2026-07-20T15:31:00+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "607d1a9a22548bf94a117effd47814790aa80b11",
+          "recorded_at": "2026-07-20T15:30:25+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "3f590ab2787b5d796793f5f8d2d550ca4106d578",
+          "recorded_at": "2026-07-20T15:29:54+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a577c3c400b11ef67da1f749303ea9470d41a725",
+          "recorded_at": "2026-07-20T15:29:29+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "3e11cd6f416591eade8b78e5b9088d39c373f651",
+          "recorded_at": "2026-07-20T15:29:03+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e30355e57b2fb21c29be6ab78497d77ca49fc9ce",
+          "recorded_at": "2026-07-20T15:28:36+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "5cf4fab605eed7c6882b3550919759fb3e8e3c34",
+          "recorded_at": "2026-07-20T15:28:09+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "95a5c3f3776bbbeb2cf29e9523abce8eb8125b17",
+          "recorded_at": "2026-07-20T15:27:35+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "fbf9643e466797fe02dc8685327ac6f6c4689c97",
+          "recorded_at": "2026-07-20T15:27:09+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b269f9a4e6afaf313a708541f2bb5fac2d19b3f3",
+          "recorded_at": "2026-07-20T15:25:22+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "41a9d4cf3040047ef4b17fc488c5290e8d54a90f",
+          "recorded_at": "2026-07-20T15:24:55+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "88b8dc541403bd4785569addd50fbfb13717c5df",
+          "recorded_at": "2026-07-20T15:24:29+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "46b3362b078f8dff145bffee875a5e12626ffff7",
+          "recorded_at": "2026-07-20T15:24:02+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c096a3b4a8edd29aaa1c1c3c5aba48c7f8d4ab9e",
+          "recorded_at": "2026-07-20T15:23:34+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "15cf7fcb939c62a7392026c18640792785c18118",
+          "recorded_at": "2026-07-20T15:23:07+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "324808b55b8cffb2ac86dc91ac4eb69fb9280cbb",
+          "recorded_at": "2026-07-20T15:22:42+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "af02ff44e26a168981ac83d3395bdc06fd4700a3",
+          "recorded_at": "2026-07-20T15:22:16+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "24f9d04b9ee64fb16b7a45fe0f41b52da405a953",
+          "recorded_at": "2026-07-20T15:21:50+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "88d9450637bc7f2ae7599a90f30a577ae31d174a",
+          "recorded_at": "2026-07-20T15:21:24+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "728382981cb1ca3be8d8d2f551237cf9b91234d8",
+          "recorded_at": "2026-07-20T15:21:20+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "fc5b8a502eea30dfcf2e6c4240179c548eb294d0",
+          "recorded_at": "2026-07-20T15:21:06+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "9071e99f25d51dbb40c8a377326af229abb7c7ed",
+          "recorded_at": "2026-07-20T15:21:00+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "276dbe58842e6a15a689c0679bdb71bd3e28f692",
+          "recorded_at": "2026-07-20T15:20:40+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "164a4082a1aff452b2897fe803c00fc590566f13",
+          "recorded_at": "2026-07-20T15:20:35+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "72fac8dc7e0f7417abc79d2669137df4e6f687f0",
+          "recorded_at": "2026-07-20T15:20:12+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "17214559de389a32cb20f11c6c521600f8ed7c20",
+          "recorded_at": "2026-07-20T15:20:08+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "1851c186e8b045016569f287fd30e65845afc5cf",
+          "recorded_at": "2026-07-20T15:19:47+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "1855bbdf3aea01146be7d11d7360154abf1c173f",
+          "recorded_at": "2026-07-20T15:19:42+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "097bb835d1f4ba1a049867750b5821cb03e5467d",
+          "recorded_at": "2026-07-20T15:19:21+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d3bd0714e745a81722d1865eb6c9b0c31d858a4d",
+          "recorded_at": "2026-07-20T15:19:17+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "33611fd0ac4ff5c10d133d3c3757bdc7b9c2e8f2",
+          "recorded_at": "2026-07-20T15:18:56+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0a9443bedce90d4aefe6c75ac157c5372c601e2d",
+          "recorded_at": "2026-07-20T15:18:51+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "af0c197f7c1a0a0317ec174296c49765e5a1dca9",
+          "recorded_at": "2026-07-20T15:18:29+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ede39bca7f4f413b10961e5b93583127226b561b",
+          "recorded_at": "2026-07-20T15:18:24+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "7121b32b4a86c40df05f54e7e621d8fd20075d1e",
+          "recorded_at": "2026-07-20T15:18:03+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a443282b3389e75cf78c286127ca624c8d7d88d3",
+          "recorded_at": "2026-07-20T15:17:53+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "4349264c3f9b200f34b7c4c9d9c6080db59fba47",
+          "recorded_at": "2026-07-20T15:17:32+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "28d637d29601a1e10e2ec38f98a825a5dfa60f4a",
+          "recorded_at": "2026-07-20T15:17:17+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "50f81ecf0fb3927f04d90822275c564d7bf8c1fc",
+          "recorded_at": "2026-07-20T15:16:52+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "5c2f0f0c1e300d9b589f96e9c694d171e27402d5",
+          "recorded_at": "2026-07-20T15:16:49+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "cb89456a034bc3215324fc38259a2b23cbfef54b",
+          "recorded_at": "2026-07-20T15:16:25+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "f93ea6b157bae365d6ad60dab36a0873e4946128",
+          "recorded_at": "2026-07-20T15:16:23+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "54eb47ba49749987d6aa3995fdb1d16c918109d2",
+          "recorded_at": "2026-07-20T15:15:58+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "23ee512e96282b3b4feb00697a12fc41894e4587",
+          "recorded_at": "2026-07-20T15:15:56+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "9dfdd5920ed215e02b3c4efe83ecc0022214a18c",
+          "recorded_at": "2026-07-20T15:15:32+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ec437109bdc73ca28cf3460a113701731d037ef6",
+          "recorded_at": "2026-07-20T15:15:06+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a02b0f86054a8f8f907dbd4fb2a897b415a93c12",
+          "recorded_at": "2026-07-20T15:14:27+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "64c9083768a3f13085f76b1a7e5cc2af305128cf",
+          "recorded_at": "2026-07-20T15:13:51+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e496870c49c7e089082dbdefa69014469adb693f",
+          "recorded_at": "2026-07-20T15:13:19+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "aa5d7a77e0450bbee9b5c0f6e808e7a078c9d6f1",
+          "recorded_at": "2026-07-20T15:12:53+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "afe943a938441a52bfcc335fa32e9ec96e6526af",
+          "recorded_at": "2026-07-20T15:12:26+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "040385d1a94489cab20489aee121016996bd4164",
+          "recorded_at": "2026-07-20T15:11:56+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "5389021ceb086bd37a1c1a9f73ccdfbe5112dd21",
+          "recorded_at": "2026-07-20T15:11:28+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "8d7d0f9d66e82d3592ae1e776e5506ff20a823d3",
+          "recorded_at": "2026-07-20T15:10:52+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a0bc7dd7cf991fda907e348d55192880b1d0cb32",
+          "recorded_at": "2026-07-20T15:10:25+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "6c90b543c76d4201492a7a2a2de106c2ba04abf7",
+          "recorded_at": "2026-07-20T15:09:41+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "6fde2b94b92f28678ef611b4c3618855f0719197",
+          "recorded_at": "2026-07-20T15:02:32+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "f08997a9dd114cb9c69e9a397cea049d2ebc6ef1",
+          "recorded_at": "2026-07-20T15:02:05+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ab3b5d5653428dc4a2946ba2cb30ecd14b91883d",
+          "recorded_at": "2026-07-20T15:01:39+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "7511b2a17e748c2665395146e392049ebe4a8c4d",
+          "recorded_at": "2026-07-20T15:01:13+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "93284b426196832251c0b03f26484aa045d64603",
+          "recorded_at": "2026-07-20T15:00:47+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "db6d5b2f1295547dc53ceabc1249f24c0b795230",
+          "recorded_at": "2026-07-20T14:59:35+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "28e795506652380263d9eb6ee57b51636f1e361d",
+          "recorded_at": "2026-07-20T14:57:58+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "39715496fa95e0ab3a4f17d4c1c851898077064d",
+          "recorded_at": "2026-07-20T14:57:19+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "cb05289b06a9649353f9cf2c8f7acc726621dc66",
+          "recorded_at": "2026-07-20T14:42:33+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ddbf133c166619b3a6aa756dff484cf3bb980964",
+          "recorded_at": "2026-07-20T14:33:47+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ea194076819fc19be50a0dd2947eea97e876d786",
+          "recorded_at": "2026-07-20T14:24:38+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c95d0e71fa5a5832aa4828833934a44a37c5bc70",
+          "recorded_at": "2026-07-20T14:24:10+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "feec4c7a2ffd5cdd9efc351446bce3f1b8faa8fe",
+          "recorded_at": "2026-07-20T14:23:45+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "60e700ee45be439cda9544ff466d91627cb2ea76",
+          "recorded_at": "2026-07-20T14:23:18+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "56b71fa70cb46afdaf12ef23920675606bd8bc66",
+          "recorded_at": "2026-07-20T14:22:52+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "728f37eb6657ec2c86be7194f2a9093fc8b226e9",
+          "recorded_at": "2026-07-20T14:22:25+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "972435c2abbc7f133dc06ae9aa5883ff2b36f96c",
+          "recorded_at": "2026-07-20T14:21:59+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c3e59476e3c8c07186bc85a3c99dd6e3142d375f",
+          "recorded_at": "2026-07-20T14:21:34+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d855596034284f2c9b1eff81965afc83b46632dc",
+          "recorded_at": "2026-07-20T14:21:06+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "bb45a43940ffdb70c80ddca1737c355496206c2f",
+          "recorded_at": "2026-07-20T14:20:40+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "622217aa6e7e4d8b00ef6d749973b0858c320511",
+          "recorded_at": "2026-07-20T14:20:15+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "58c0adc91c39b2363b58acc51922118c2fb86d07",
+          "recorded_at": "2026-07-20T14:19:50+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "181a7cc05a2f3b17f26ac5a5b465c993d9d9d98b",
+          "recorded_at": "2026-07-20T14:19:24+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "422397bd1a6bdf14316b6738fc052e2c70fa7619",
+          "recorded_at": "2026-07-20T14:18:59+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e09f41a62dbac4d7512beb4d2d970d6e019a1684",
+          "recorded_at": "2026-07-20T14:18:34+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "81f4be82c7323f4b7b28eb97c00b87be364c77e1",
+          "recorded_at": "2026-07-20T14:18:08+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d65fb405a80a1b85c7d7c3496e304fe06b7c72cd",
+          "recorded_at": "2026-07-20T14:17:44+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "553857311f0b77739d67ea2541dbe2942856758d",
+          "recorded_at": "2026-07-20T14:17:19+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "7ee07dba082dd3ca16ed88a77be725c652d6b3c4",
+          "recorded_at": "2026-07-20T14:16:54+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "78b5b043f2a46d382ad4fc7264b6a30c98f2059c",
+          "recorded_at": "2026-07-20T14:16:20+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "1e1c2c690b56c75ce77367d0d13ff6903e29be71",
+          "recorded_at": "2026-07-20T14:15:55+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "dfe1468a38009447e40c6709aac281bfc0278bb6",
+          "recorded_at": "2026-07-20T14:15:30+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "67372e9792bc818f69d2dc126b885c8c9722b5b2",
+          "recorded_at": "2026-07-20T14:14:57+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c94c4dda3586efbf87c6ca750754e1ac13ed0d55",
+          "recorded_at": "2026-07-20T14:14:31+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "f5c76dcadff6535be2d7ff59db5e36b8afd2a7c4",
+          "recorded_at": "2026-07-20T14:14:06+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "4b68f751400635fe55f926fab86596d06796d769",
+          "recorded_at": "2026-07-20T14:13:35+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "30aca8031d0d9c3b5ef4b459b320aedf6be28ed1",
+          "recorded_at": "2026-07-20T14:13:09+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "9010ef48de4974049d816c3666792d6a492d3635",
+          "recorded_at": "2026-07-20T14:12:43+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "f3d6149d0a61aae77049fd889db6c89325cd7702",
+          "recorded_at": "2026-07-20T14:12:12+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d2d2553808eebff3612c0a0457b220b7af8ce6f2",
+          "recorded_at": "2026-07-20T14:11:46+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "8bdd4077999e63cec67647908bc02ccb938871fe",
+          "recorded_at": "2026-07-20T14:11:14+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "6618ed49a96a9346f578e472e2bc79c10c7ebcb7",
+          "recorded_at": "2026-07-20T14:10:44+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d40daa096b0777b0d957f02640dd231671458f4e",
+          "recorded_at": "2026-07-20T14:09:58+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "7a1cdc15aa77967db94c8d161aab167329b9c766",
+          "recorded_at": "2026-07-20T14:09:12+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b13d0f86736154bee734c2736ebfe80fd117758d",
+          "recorded_at": "2026-07-20T13:55:30+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c5214c20eeb5b04002f57f519daab86547e4bee1",
+          "recorded_at": "2026-07-20T13:44:26+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "18befe4957282c93d38073ccb3e7574f916ec96f",
+          "recorded_at": "2026-07-20T13:43:53+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "29bbc1dafe7969838f6815cf684c281cd72c3bc4",
+          "recorded_at": "2026-07-20T13:38:03+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ee8f1f0b920e805ccf7b486fb2b72ebf50d9cbcc",
+          "recorded_at": "2026-07-20T13:37:32+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "4066eda08ca8040e6a705853474f0c9efae0f986",
+          "recorded_at": "2026-07-20T13:37:02+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c010e7ec3b9ab5854681e97d0433f444fda38e3a",
+          "recorded_at": "2026-07-20T13:28:39+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "35255f7521dffc18c9dc34d9723ecb6cdc76cb09",
+          "recorded_at": "2026-07-20T13:27:19+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "adc9d1456ab5c975354d33dae409cbfe4d440dd4",
+          "recorded_at": "2026-07-20T13:25:10+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "190acbd0e8415fd81de1cef36fcbba0ca115dbed",
+          "recorded_at": "2026-07-20T13:23:23+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "4bcec3c8ec44c42c6ac7a555395c46f31ad6b7e6",
+          "recorded_at": "2026-07-20T11:52:23+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "80697bbd39c56cdd346fb94076a76db48d17519f",
+          "recorded_at": "2026-07-20T10:41:12+10:00",
+          "subject": "run_c2rust_baseline: drop SLOW_FILES_EXCLUDED, awtoau/c2rust#4 is fixed"
+        },
+        {
+          "commit": "347a5ca0252c0f65297d9b223e0dd28cfd87d076",
+          "recorded_at": "2026-07-19T21:06:04+10:00",
+          "subject": "docs: lib/vdso/datastore.c boot-screening \u2014 real blocker, not landed (linux-rs#28, #43)"
+        },
+        {
+          "commit": "1af1c5ed76d63a075459920e7b03d2dd7faa56c5",
+          "recorded_at": "2026-07-19T21:03:18+10:00",
+          "subject": "boot-history: combined-c2rust-boot-23-final \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "64b593f34a562b629ad73e9a53040cce20edb3a8",
+          "recorded_at": "2026-07-19T21:01:23+10:00",
+          "subject": "docs: functional KUnit coverage for bunzip2/lz4_decompress, closes links-but-never-called gap (linux-rs#28)"
+        },
+        {
+          "commit": "e4da6e705315a6bc15296922f600a6d93604490c",
+          "recorded_at": "2026-07-19T20:59:22+10:00",
+          "subject": "boot-history: combined-boot-lz4_decompress-lz4test2 \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ca2116ca9dd656c9098a8f4208bc721503d0c18e",
+          "recorded_at": "2026-07-19T20:54:16+10:00",
+          "subject": "boot-history: combined-boot-lz4_decompress-lz4test \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "af461baf5147cf3b5b106b8a5f7ba4aa64369d34",
+          "recorded_at": "2026-07-19T20:51:28+10:00",
+          "subject": "boot-history: combined-c2rust-boot-23-dbg \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "bbfccf8eb572c9a3e528045836b07f975f7d432f",
+          "recorded_at": "2026-07-19T20:50:26+10:00",
+          "subject": "boot-history: combined-c2rust-boot-22-bunzip2test \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "bba4b12abac6c16faf9bc41e31c8eec92023c151",
+          "recorded_at": "2026-07-19T20:48:43+10:00",
+          "subject": "boot-history: combined-c2rust-boot-22-bunzip2test \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "aed5947ffc34aad29dbf305a6090dc04a7f5c88c",
+          "recorded_at": "2026-07-19T20:47:45+10:00",
+          "subject": "boot-history: combined-c2rust-boot-23 \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "d3ab4bca9f7660715b7da4b08fbd428747195fd5",
+          "recorded_at": "2026-07-19T20:46:57+10:00",
+          "subject": "Revert \"docs: land lib/decompress_unlz4.c combined-boot as 22nd c2rust boot-screening candidate (issue linux-rs#28)\""
+        },
+        {
+          "commit": "c07955e14090b28e9700757007d4a236eac20bc6",
+          "recorded_at": "2026-07-19T20:44:31+10:00",
+          "subject": "boot-history: combined-c2rust-boot-23-plain \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "9462839f22307678423ffea4e5656327bc9c0337",
+          "recorded_at": "2026-07-19T20:42:43+10:00",
+          "subject": "docs: land lib/decompress_unlz4.c combined-boot as 22nd c2rust boot-screening candidate (issue linux-rs#28)"
+        },
+        {
+          "commit": "6173cdb4ba6a3b62e720231de2e33c95eb437dc3",
+          "recorded_at": "2026-07-19T20:42:09+10:00",
+          "subject": "boot-history: combined-c2rust-boot-23 \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "d645fcbb34e42639edff2366e14a82442219e862",
+          "recorded_at": "2026-07-19T20:40:09+10:00",
+          "subject": "boot-history: combined-c2rust-boot-23 \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "6cab676c3f16bc02b0596b9ccd79ae84e91dd877",
+          "recorded_at": "2026-07-19T20:39:00+10:00",
+          "subject": "boot-history: combined-c2rust-boot-21 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "1b82bef8f322cf5f7f0c9833de2f918e9c9a580d",
+          "recorded_at": "2026-07-19T20:34:46+10:00",
+          "subject": "docs: land lib/decompress_bunzip2.c combined-boot as 21st c2rust boot-screening candidate (issue linux-rs#28)"
+        },
+        {
+          "commit": "1d4c18baf2bca74f1726489caa600859895e7591",
+          "recorded_at": "2026-07-19T20:33:13+10:00",
+          "subject": "boot-history: combined-c2rust-boot-22 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "276534d5b4cef75e940d46769a284363b25da730",
+          "recorded_at": "2026-07-19T20:31:14+10:00",
+          "subject": "docs: land lib/lz4/lz4_decompress.c as 20th c2rust boot-screening candidate (issue linux-rs#28)"
+        },
+        {
+          "commit": "fced205c58b96d07e070d882fd81752a1d4f49ac",
+          "recorded_at": "2026-07-19T20:30:21+10:00",
+          "subject": "scripts: mechanical scaffolding for combined-boot candidates (dev.py-adjacent)"
+        },
+        {
+          "commit": "0a5134642eda80d2c9899a94542c5c24703f44fd",
+          "recorded_at": "2026-07-19T20:29:59+10:00",
+          "subject": "boot-history: combined-boot-lz4_decompress \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "296177a6c98e17dfc63dd0117345a43ff1ad5449",
+          "recorded_at": "2026-07-19T20:17:02+10:00",
+          "subject": "reports: sync after closing #30/#36/#39 (linux-rs) and #27 (c2rust)"
+        },
+        {
+          "commit": "994a62552f3141bf9c5c2d6308fad55c294d17a7",
+          "recorded_at": "2026-07-19T20:15:23+10:00",
+          "subject": "reports: regenerate STATUS/HISTORY/dashboard against current DB state"
+        },
+        {
+          "commit": "51fbe938e3a29a02493a2379351e68da25622e46",
+          "recorded_at": "2026-07-19T17:40:30+10:00",
+          "subject": "docs: land lib/fonts/fonts.c combined-boot as 19th c2rust boot-screening candidate (issue linux-rs#28)"
+        },
+        {
+          "commit": "eeb0eb4efe4be059fdb353ac35fddfa3b5f01bff",
+          "recorded_at": "2026-07-19T17:38:50+10:00",
+          "subject": "docs: land lib/kfifo.c combined-boot as 17th c2rust boot-screening candidate (issue linux-rs#28)"
+        },
+        {
+          "commit": "96bf58b4f6ffa2d653199fa28b4e457cd7188773",
+          "recorded_at": "2026-07-19T17:36:53+10:00",
+          "subject": "boot-history: combined-c2rust-boot-20 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "71cfba41df47abb701656d75d14375ddd359c014",
+          "recorded_at": "2026-07-19T17:36:41+10:00",
+          "subject": "boot-history: combined-c2rust-boot-18 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b288b2a3dca0d4e2ddf4d3aad6c0a52737bc804a",
+          "recorded_at": "2026-07-19T17:36:32+10:00",
+          "subject": "boot-history: combined-c2rust-boot-19 \u2014 18 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "3ac82ceee588be227a2c9aa3ceef2721fd313aec",
+          "recorded_at": "2026-07-19T16:14:08+10:00",
+          "subject": "docs: retroactive fix for latent refcount.h overflow panic in klist.c"
+        },
+        {
+          "commit": "12106a465e0d989580e704d8516eda4323091d97",
+          "recorded_at": "2026-07-19T16:13:26+10:00",
+          "subject": "boot-history: klist-refcount-fix \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "04caa890cc8c9440e2ce3de12745e5612e3bcb54",
+          "recorded_at": "2026-07-19T15:11:49+10:00",
+          "subject": "docs: scope signed-overflow-wraparound detection for #36"
+        },
+        {
+          "commit": "913bbdd74088b7b9ac3eb95a7fea41554199aa46",
+          "recorded_at": "2026-07-19T15:03:33+10:00",
+          "subject": "docs: land lib/seq_buf.c combined-boot as 16th c2rust boot-screening candidate (issue linux-rs#28)"
+        },
+        {
+          "commit": "a0ecd1dd421ec75dc28eede3953bf158e00e6aa3",
+          "recorded_at": "2026-07-19T15:00:17+10:00",
+          "subject": "boot-history: combined-c2rust-boot-17 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "74b4878e23fa0a1d5a64a7c2f811db9acedc7117",
+          "recorded_at": "2026-07-19T15:00:05+10:00",
+          "subject": "docs: land lib/tests/test_sort.c combined-boot as 15th c2rust boot-screening candidate (issue linux-rs#28)"
+        },
+        {
+          "commit": "414c0de2a5ef510e088835a6458dfb4a748031b0",
+          "recorded_at": "2026-07-19T14:58:20+10:00",
+          "subject": "boot-history: combined-c2rust-boot-16 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b3b497c2c7c9c9e21fcf1d9bcaf56b2353448a22",
+          "recorded_at": "2026-07-19T14:56:44+10:00",
+          "subject": "docs: land lib/devmem_is_allowed.c combined-boot as 14th c2rust boot-screening candidate (issue linux-rs#28)"
+        },
+        {
+          "commit": "f21f168331f0603de066bd1a8e804d47a10039c6",
+          "recorded_at": "2026-07-19T14:56:30+10:00",
+          "subject": "boot-history: combined-c2rust-boot-16 \u2014 15 ok / 0 not ok"
+        },
+        {
+          "commit": "fa50e6a289ef5f4dafeea500e9b39ea7125b8f8a",
+          "recorded_at": "2026-07-19T14:55:29+10:00",
+          "subject": "boot-history: combined-c2rust-boot-15 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "2a134e5bfebfd390cf32d5dc42e0e00da6d5d351",
+          "recorded_at": "2026-07-19T14:53:24+10:00",
+          "subject": "docs: land virtio_blk.c const-qualifier fix evidence, closes linux-rs#35"
+        },
+        {
+          "commit": "83e381cc67ed9286f840b0bddd6c187e71b8d292",
+          "recorded_at": "2026-07-19T14:49:58+10:00",
+          "subject": "boot-history: virtio-blk-const-fix-verify \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "58ecee9c80ab9091371a440832104f23ed4addab",
+          "recorded_at": "2026-07-19T14:19:40+10:00",
+          "subject": "docs: fix adversarial-review findings in Rust Ion/uutils userspace plan"
+        },
+        {
+          "commit": "5e8a9050d79e9d536881a8c52204daec655b572c",
+          "recorded_at": "2026-07-19T14:09:18+10:00",
+          "subject": "docs: land lib/debug_locks.c combined-boot as 13th c2rust boot-screening candidate (issue linux-rs#28)"
+        },
+        {
+          "commit": "fb11e6f3cb30ac05e61d247b36a939416835edb8",
+          "recorded_at": "2026-07-19T14:07:36+10:00",
+          "subject": "docs: land lib/bust_spinlocks.c combined-boot as 12th c2rust boot-screening candidate (issue linux-rs#28)"
+        },
+        {
+          "commit": "b5a8b287d626cb6db0a80ad620b50fec89d19881",
+          "recorded_at": "2026-07-19T14:07:31+10:00",
+          "subject": "boot-history: combined-c2rust-boot-12 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e08dcd978402a7a9a8d604066fe67dad1567a932",
+          "recorded_at": "2026-07-19T14:06:24+10:00",
+          "subject": "boot-history: combined-c2rust-boot-13 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "57f924bd04e4be569280e8524d72df49da654137",
+          "recorded_at": "2026-07-19T14:06:22+10:00",
+          "subject": "docs: real-config c2rust repro for virtio_blk.c, closes awtoau/c2rust#23"
+        },
+        {
+          "commit": "2411f5d3ea38dc89b2930c24fb4b43a2e2dca59d",
+          "recorded_at": "2026-07-19T14:06:10+10:00",
+          "subject": "docs: land lib/uuid.c combined-boot as 11th c2rust boot-screening candidate (issue linux-rs#28)"
+        },
+        {
+          "commit": "750f3e46efc5f188475d0b9daf8abd425233a91f",
+          "recorded_at": "2026-07-19T14:04:06+10:00",
+          "subject": "boot-history: combined-c2rust-boot-14 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "16c043af41c93e329a52e5c91605f326ba561766",
+          "recorded_at": "2026-07-19T13:59:29+10:00",
+          "subject": "boot-history: virtio-main-tree-verify \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "bb946b2b66b1ffc953a7075812e709798147500c",
+          "recorded_at": "2026-07-19T13:59:01+10:00",
+          "subject": "docs: fix duplicate 'Eighth/Ninth candidate' headings from concurrent-agent race"
+        },
+        {
+          "commit": "17f40656a73e6db950b34d7c49be297d834fe0d1",
+          "recorded_at": "2026-07-19T13:54:58+10:00",
+          "subject": "docs: virtio Rust port scoping \u2014 block-mq glue vs virtqueue core"
+        },
+        {
+          "commit": "4f458bb54300fc3fe51f8db30a0f00b9034c8d29",
+          "recorded_at": "2026-07-19T13:40:13+10:00",
+          "subject": "block-layer: enable CONFIG_BLOCK+virtio-blk chain, boot_qemu.py --qemu-extra, rnull stretch goal"
+        },
+        {
+          "commit": "adf917ab43a8c9bbd490c37cf8e5e5bf67a01a41",
+          "recorded_at": "2026-07-19T13:39:21+10:00",
+          "subject": "boot-history: block-layer-enable-rnull \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "eddbaa282443c993d6fc9e1f8e777ad1da41b5aa",
+          "recorded_at": "2026-07-19T13:38:41+10:00",
+          "subject": "docs: PR #1037 rebase re-attempt confirms 2026-07-18 no-go, deeper evidence"
+        },
+        {
+          "commit": "ca0ff57060278ec9ddb92eb31c31e61292770adf",
+          "recorded_at": "2026-07-19T13:38:29+10:00",
+          "subject": "boot-history: block-layer-enable \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "50d440212166610ffe907bc87aca1615d70e6d6d",
+          "recorded_at": "2026-07-19T13:38:01+10:00",
+          "subject": "boot-history: qemu-extra-regression-check \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "839503ceb901ca7fae5e6d849e32bbe20cda36ed",
+          "recorded_at": "2026-07-19T13:31:58+10:00",
+          "subject": "docs: block-mq sync scoping \u2014 already in-tree, gap is Kconfig-only"
+        },
+        {
+          "commit": "38827c656d6d242cf6ef3f72fb003f3a087a4946",
+          "recorded_at": "2026-07-19T13:30:04+10:00",
+          "subject": "docs: multi-arch plan \u2014 terser rewrite with real code examples, add multi-candidate tracking"
+        },
+        {
+          "commit": "03a0358800d4edcb081da77fba2de39db2e84299",
+          "recorded_at": "2026-07-19T13:25:14+10:00",
+          "subject": "scripts: dev.py boot/check --run-id, thread through to boot_qemu.py"
+        },
+        {
+          "commit": "29bdbbc273d1836512efbd5916f29a3e15c8dfc7",
+          "recorded_at": "2026-07-19T13:25:03+10:00",
+          "subject": "boot-history: devpy-runid-test \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e038c2968a4cc71a7ad98bac68128a4c2c96d2b7",
+          "recorded_at": "2026-07-19T13:21:17+10:00",
+          "subject": "scripts: seed .config on worktree creation (closes linux-rs#33)"
+        },
+        {
+          "commit": "7bf16805b3d7040185ae0840821f5f3f969c809b",
+          "recorded_at": "2026-07-19T13:20:40+10:00",
+          "subject": "docs: lib/bucket_locks.c combined-boot section (8th file), closes linux-rs#28 candidate"
+        },
+        {
+          "commit": "3bd7e33f75ae1affe5b7bf6d75c14a01582cc6e2",
+          "recorded_at": "2026-07-19T13:18:20+10:00",
+          "subject": "boot-history: combined-c2rust-10-v2 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a5d7dab1f834012460ccad6f40bc63296af500eb",
+          "recorded_at": "2026-07-19T13:18:07+10:00",
+          "subject": "rulesdb: add rule 0031 + mechanical checker for fabricated register-variable statics"
+        },
+        {
+          "commit": "61ce034884b035ca32e3d2a6ec871557b238b8bd",
+          "recorded_at": "2026-07-19T13:16:00+10:00",
+          "subject": "boot-history: combined-c2rust-10-cbaseline \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "baf97fd9a67c9fb90d23242fb47eea9873e2bf9e",
+          "recorded_at": "2026-07-19T13:15:21+10:00",
+          "subject": "boot-history: combined-c2rust-9 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "2f51b6c61280ba13f6df2437be235b21449dc0e3",
+          "recorded_at": "2026-07-19T13:14:19+10:00",
+          "subject": "boot-history: combined-c2rust-10 \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "c367da64560591669e590675b4dd2ead46508076",
+          "recorded_at": "2026-07-19T13:14:03+10:00",
+          "subject": "boot-history: combined-c2rust-11 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b5b19568b5a1f35c6fd2044aec5770773075190a",
+          "recorded_at": "2026-07-19T13:13:27+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ee8d81f0388525d17c0fd65c6f418008d714cdd5",
+          "recorded_at": "2026-07-19T13:12:50+10:00",
+          "subject": "docs: fix latent null-deref in is_single_threaded.c's get_current(), closes linux-rs#31"
+        },
+        {
+          "commit": "5cefdce53dc3e9dcbd02351d889e72d9b5dc1ef1",
+          "recorded_at": "2026-07-19T13:12:42+10:00",
+          "subject": "boot-history: default \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "ff9ba665830de5530cd5f1b4ede11b62e2915084",
+          "recorded_at": "2026-07-19T13:10:37+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "87c9c298a4f5979dd0864d1137934a8a878a38e7",
+          "recorded_at": "2026-07-19T13:09:33+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "12ed87f945271f8e2e7ee70ce291b69d4fe3b6cb",
+          "recorded_at": "2026-07-19T13:08:42+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "43e4876a189b523e1349e4e35faaccd8cea2d91a",
+          "recorded_at": "2026-07-19T13:07:09+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "1507941ef55f9bf708da06f2185d4532b41a406d",
+          "recorded_at": "2026-07-19T13:03:12+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "07b68c388facffe6351f2d2e7d5c950be2ed24d7",
+          "recorded_at": "2026-07-19T12:52:06+10:00",
+          "subject": "docs: klist.c combined-boot attempt (linux-rs#28) \u2014 7th file, boots clean"
+        },
+        {
+          "commit": "74ee698a4eedc7cf279ac41f995be09025829637",
+          "recorded_at": "2026-07-19T12:49:34+10:00",
+          "subject": "boot-history: combined-c2rust-8 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "36f66d5752b9b7731c39fcbede3728ec04c20f31",
+          "recorded_at": "2026-07-19T12:48:59+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "8288ae10c9bd0f21699eb2a4856b0aa6b11977cf",
+          "recorded_at": "2026-07-19T12:45:38+10:00",
+          "subject": "boot-history: klist-fresh-rebuild \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "f997d4dc4c60c9027fafa80ee8397862db829400",
+          "recorded_at": "2026-07-19T12:41:34+10:00",
+          "subject": "boot-history: klist-clean-rebuild \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "505d30d1655f96b0d6c7be8b0e6a455e1cc4ba18",
+          "recorded_at": "2026-07-19T12:40:33+10:00",
+          "subject": "boot-history: klist-c-baseline \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "4507dfe2d06133d97766e2767f70641efb4c51e8",
+          "recorded_at": "2026-07-19T12:37:27+10:00",
+          "subject": "boot-history: klist-debug \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "bca587649c2a502610dc9744f89593123a9c68be",
+          "recorded_at": "2026-07-19T12:36:52+10:00",
+          "subject": "boot-history: default \u2014 0 ok / 0 not ok"
+        },
+        {
+          "commit": "700338ed36eeb23c4b6c5d38a782a7a87e4a8128",
+          "recorded_at": "2026-07-19T12:16:19+10:00",
+          "subject": "docs: add safety coverage baseline report (2026-07-19)"
+        },
+        {
+          "commit": "d19fcd9349e4860435d96cd6fda86d3e27327e79",
+          "recorded_at": "2026-07-19T12:08:05+10:00",
+          "subject": "safety: add per-function unsafe/safe scanner, land function_safety_status schema"
+        },
+        {
+          "commit": "5a8df1fd0f145a14d70702b149b38fda6beb1477",
+          "recorded_at": "2026-07-19T12:07:47+10:00",
+          "subject": "docs: lib/objpool.c combined-boot section (6th file), closes linux-rs#28 candidate"
+        },
+        {
+          "commit": "26b709a3f9c1dce6564676b72242c3c06335af30",
+          "recorded_at": "2026-07-19T12:06:29+10:00",
+          "subject": "boot-history: combined-c2rust-7 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "308927af57f688ccca6a8585c807de262a533039",
+          "recorded_at": "2026-07-19T12:05:07+10:00",
+          "subject": "docs: lib/timerqueue.c combined-boot section (5th file), closes linux-rs#28 candidate"
+        },
+        {
+          "commit": "28e787a032cd6ea36613a8ed843b7554824a65da",
+          "recorded_at": "2026-07-19T12:04:26+10:00",
+          "subject": "docs: audit top-level docs/ for staleness, consolidation, cross-references"
+        },
+        {
+          "commit": "95dff6e497add7b61a2af1ca0c1d10c20425bab7",
+          "recorded_at": "2026-07-19T12:04:02+10:00",
+          "subject": "boot-history: combined-c2rust-6 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "bbd4b48ab22183ee26b53598b12e852696db856d",
+          "recorded_at": "2026-07-19T12:02:24+10:00",
+          "subject": "docs: rewrite multi-arch plan cleanly, drop correction-note framing"
+        },
+        {
+          "commit": "596276d414eec7ebd21ecc6c397c2603664cf691",
+          "recorded_at": "2026-07-19T11:51:13+10:00",
+          "subject": "docs: correct multi-arch plan's central ambiguity resolution"
+        },
+        {
+          "commit": "2825a0ea0c0dd8a93737a70b33c5e4d7e64cbc56",
+          "recorded_at": "2026-07-19T11:45:55+10:00",
+          "subject": "dashboard: sync multi-arch/safety-tier tracking plan landing"
+        },
+        {
+          "commit": "7906216f74d530fe62001aa4543e453bb2dc8389",
+          "recorded_at": "2026-07-19T11:44:47+10:00",
+          "subject": "docs: plan safety-tier x arch/endian tracking, resolve \"3 versions\" ambiguity"
+        },
+        {
+          "commit": "68f8517f4cd1adef7489594510f23e222c1a2b9f",
+          "recorded_at": "2026-07-19T11:42:19+10:00",
+          "subject": "dashboard: sync c2rust profiling/gap-class/Complex-cast fixes (3 issues + doc)"
+        },
+        {
+          "commit": "c228f954a29c8554b782a1402541c27a5de25697",
+          "recorded_at": "2026-07-19T11:41:49+10:00",
+          "subject": "docs: note 3 combined-boot gap classes now fixed in c2rust itself"
+        },
+        {
+          "commit": "e2c7cd1412bdb26981a1048618082af0912a8946",
+          "recorded_at": "2026-07-18T19:22:34+10:00",
+          "subject": "docs: lib/lwq.c combined-boot section \u2014 fourth file, confirms issue #29 (Zabha) recurs for amoswap"
+        },
+        {
+          "commit": "8938674905b68b640784ed6dcb2431bde1a689e2",
+          "recorded_at": "2026-07-18T19:22:04+10:00",
+          "subject": "dashboard: sync python-transpiler-rewrite scoping doc landing"
+        },
+        {
+          "commit": "802b1e50a96f34cb122c5b2bf5aa02bbbaf3b1d0",
+          "recorded_at": "2026-07-18T19:20:02+10:00",
+          "subject": "boot-history: combined-c2rust-5 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "9ef913c65ee833b10f358fae4e54af6e44cc68a5",
+          "recorded_at": "2026-07-18T19:19:57+10:00",
+          "subject": "docs: scope Python rewrite of c2rust-transpile \u2014 recommend against, favor narrower rules/post-processing layer"
+        },
+        {
+          "commit": "f297318ee20cfb69c13b051a2ff4729f757b0edc",
+          "recorded_at": "2026-07-18T19:19:13+10:00",
+          "subject": "dashboard: sync is_single_threaded.c combined-boot landing"
+        },
+        {
+          "commit": "ac54b7a3c970c4912392683a2a9d6940fc93190e",
+          "recorded_at": "2026-07-18T19:17:49+10:00",
+          "subject": "docs: is_single_threaded.c combined-boot section \u2014 third file, clean boot"
+        },
+        {
+          "commit": "8f698955676f7051fc924060186c722a336c612e",
+          "recorded_at": "2026-07-18T19:16:28+10:00",
+          "subject": "boot-history: combined-c2rust-4 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d9cb97e787cd66a6ebd2e52e04e01fe3b02ce353",
+          "recorded_at": "2026-07-18T19:08:31+10:00",
+          "subject": "dashboard: sync KBUILD_RUSTFLAGS ISA-extension issue (#29) filed"
+        },
+        {
+          "commit": "88b7cb1e32ccc9684a4c940f0e63ff49093e4c43",
+          "recorded_at": "2026-07-18T19:07:02+10:00",
+          "subject": "docs: log second combined-image boot attempt (lib/lzo/lzo1x_decompress_safe.c, issue #28)"
+        },
+        {
+          "commit": "7bf9ffc5b323851819d92898bbecf9f2254141d3",
+          "recorded_at": "2026-07-18T19:06:22+10:00",
+          "subject": "docs: log second combined-image boot attempt (lib/rcuref.c, issue #28)"
+        },
+        {
+          "commit": "8f5e4d69dd8685254c6b83c7e2add94781424e6d",
+          "recorded_at": "2026-07-18T19:04:54+10:00",
+          "subject": "boot-history: combined-c2rust-3 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "09c8b8386e0ec556787b44eb4048c59dc85b20c7",
+          "recorded_at": "2026-07-18T19:04:30+10:00",
+          "subject": "boot-history: combined-c2rust-2 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "9de3bb8ab0642a8fe41607af8bd928e1bc28603e",
+          "recorded_at": "2026-07-18T18:47:35+10:00",
+          "subject": "dashboard: sync c2rust#20 filed (combined-boot findings)"
+        },
+        {
+          "commit": "8ee11ab50312b3cb7c678842ef8599b62f6ca935",
+          "recorded_at": "2026-07-18T18:46:07+10:00",
+          "subject": "docs: log first combined-image boot attempt (issue #28) + sync #26 closure"
+        },
+        {
+          "commit": "69dcf424cecb68c733747d0830c2efd851e585bf",
+          "recorded_at": "2026-07-18T18:45:31+10:00",
+          "subject": "docs: first real combined-image boot attempt with raw c2rust output (issue #28)"
+        },
+        {
+          "commit": "a6ae1aa2eaf3a0a542b54c5b97d8e37650d889c6",
+          "recorded_at": "2026-07-18T18:45:09+10:00",
+          "subject": "boot-history: pure-c-baseline \u2014 9 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ec4dbed0452f400458f307be9f479a5fffa846fb",
+          "recorded_at": "2026-07-18T18:43:55+10:00",
+          "subject": "boot-history: existing-hand-translated \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "6b789a4dd0cabc0e18abc0b5873d6f7afb17d99a",
+          "recorded_at": "2026-07-18T18:43:28+10:00",
+          "subject": "boot-history: combined-c2rust-1 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "3c41cea6b1c6b352218c3a9b0352542f2c00a6cf",
+          "recorded_at": "2026-07-18T18:28:44+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ec8932059bbf67b2a3a9a3f3033e929de78be3b6",
+          "recorded_at": "2026-07-18T18:27:29+10:00",
+          "subject": "c2rust: wire clippy into the baseline pipeline (closes linux-rs#26)"
+        },
+        {
+          "commit": "776fac2ed79d0db82cdb00deb87a6f4980e3a372",
+          "recorded_at": "2026-07-18T18:25:53+10:00",
+          "subject": "docs: log awtoau/c2rust#19 closure to HISTORY.md"
+        },
+        {
+          "commit": "4c4b480eac83f609de478cc63cc9fb51d324926a",
+          "recorded_at": "2026-07-18T18:23:39+10:00",
+          "subject": "docs: VFS abstraction rebase (PR #1037) attempted, found not viable \u2014 awto-au/linux-rs#4"
+        },
+        {
+          "commit": "9406912b5bff896e5810564df27ae34ba8285dfa",
+          "recorded_at": "2026-07-18T18:23:02+10:00",
+          "subject": "dashboard: sync export-symbol-gpl fix (#19) and _THIS_IP_ design resolution (#27)"
+        },
+        {
+          "commit": "b3c61409384bfbc9bd1de4dc00f7a0d79468f92b",
+          "recorded_at": "2026-07-18T18:22:03+10:00",
+          "subject": "run_c2rust_baseline: recognize #[export] as an own-TU-function marker"
+        },
+        {
+          "commit": "fccd5cfc8faabdcc68f34a60046f3d6ba9c203a8",
+          "recorded_at": "2026-07-18T18:19:36+10:00",
+          "subject": "rulesdb: resolve 0030 (_THIS_IP_/_RET_IP_) design decision, closes linux-rs#27"
+        },
+        {
+          "commit": "ed5d556d5709e771c73ff6c7a9f1595e365b0d18",
+          "recorded_at": "2026-07-18T18:02:53+10:00",
+          "subject": "dev.py: run pre-build checks before kmake+boot (fail fast, cheapest first)"
+        },
+        {
+          "commit": "3db94f0046ac90f5be019d48e8c41bd411e5bed8",
+          "recorded_at": "2026-07-18T18:02:01+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "37cda7312349f3148aaf6e6c60c2f81a6219e997",
+          "recorded_at": "2026-07-18T17:57:21+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "862df5cb8ceff957107734e184f8e8cabe2057fd",
+          "recorded_at": "2026-07-18T17:56:08+10:00",
+          "subject": "dashboard: sync issue #19 (c2rust export-symbol fix dispatched) and #28 (combined-image boot screening)"
+        },
+        {
+          "commit": "d4ed07581136c0ec94d0bc6444cc5e7e9f9c055c",
+          "recorded_at": "2026-07-18T17:46:32+10:00",
+          "subject": "dashboard: sync after c2rust corpus reaches 0 dropped_decls (issues #16/#17/#18 closed)"
+        },
+        {
+          "commit": "874b776a9dc106b78dd0fad23ec1694b26883e6a",
+          "recorded_at": "2026-07-18T17:45:37+10:00",
+          "subject": "c2rust-baseline: hard-fail on a dirty c2rust working tree, not warn-and-continue"
+        },
+        {
+          "commit": "a5018157dd73d9d52d8994da7f6c6cf72b2f6594",
+          "recorded_at": "2026-07-18T16:37:44+10:00",
+          "subject": "dashboard: sync after Tier C IRQ handler landing (TU 39)"
+        },
+        {
+          "commit": "808dcbd3fdd22851303541508906a4083b3f26d8",
+          "recorded_at": "2026-07-18T16:37:14+10:00",
+          "subject": "docs: refresh STATUS.md/status.png after merging Tier C IRQ worktree boot logs"
+        },
+        {
+          "commit": "a8946b6f12fe122c4275ad5ab7d4b5f66a347f26",
+          "recorded_at": "2026-07-18T16:36:08+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "bc57693f54dc9cdc20f1d93acae4201088655014",
+          "recorded_at": "2026-07-18T16:35:29+10:00",
+          "subject": "rulesdb: add c2rust_fix_patterns table for reference (not yet seeded)"
+        },
+        {
+          "commit": "5f30d76b6104c96f848992503fff16051faec01e",
+          "recorded_at": "2026-07-18T16:33:40+10:00",
+          "subject": "README: add the c2rust-breadth track as an explicit concept"
+        },
+        {
+          "commit": "93e16a11fbf19a2f957d114c7d957d05b7c4d0b3",
+          "recorded_at": "2026-07-18T16:33:11+10:00",
+          "subject": "docs: land 8250 Tier C serial8250_handle_irq_locked translation (linux-rs TU 39, awto-au/linux-rs#25)"
+        },
+        {
+          "commit": "f8c24dd5d3b254833a50ad40445ac1992d19f92a",
+          "recorded_at": "2026-07-18T16:31:49+10:00",
+          "subject": "docs: land 8250 Tier C serial8250_handle_irq_locked translation (linux-rs TU 39, awto-au/linux-rs#25)"
+        },
+        {
+          "commit": "1c4d964134f062b0f0bc236f4b5b65b9e8ab600b",
+          "recorded_at": "2026-07-18T16:29:42+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c581bb983eaa485f9c3a6c81a1a29718d0e58778",
+          "recorded_at": "2026-07-18T16:27:26+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c1c9a407a51335ab38000b5d6651d2d8998795dc",
+          "recorded_at": "2026-07-18T16:25:46+10:00",
+          "subject": "boot-history: tierc-irq-rust-4 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "cd4c77eab499012df267705724b158c449812ff8",
+          "recorded_at": "2026-07-18T16:25:30+10:00",
+          "subject": "boot-history: tierc-irq-rust-3 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "7ff43f4673e67350766acb9f04cc96213693ee94",
+          "recorded_at": "2026-07-18T16:25:15+10:00",
+          "subject": "boot-history: tierc-irq-rust-2 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "664b3dc816b94527c1df8a368b5b00e5fe559eb8",
+          "recorded_at": "2026-07-18T16:24:59+10:00",
+          "subject": "boot-history: tierc-irq-rust-1 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "6194f4dc7a65cfcf7fddefb7bdf0872cccaeba83",
+          "recorded_at": "2026-07-18T16:24:37+10:00",
+          "subject": "boot-history: tierc-irq-c-4 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b32ffe5317b79101de6bb8fe08de51c37fca2145",
+          "recorded_at": "2026-07-18T16:24:21+10:00",
+          "subject": "boot-history: tierc-irq-c-3 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "6b4f085be51f388a4991493664a84e2fd4ef29d2",
+          "recorded_at": "2026-07-18T16:24:06+10:00",
+          "subject": "boot-history: tierc-irq-c-2 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d037adda7fb340f7bb4a836d853831fab77a4d5e",
+          "recorded_at": "2026-07-18T16:23:50+10:00",
+          "subject": "boot-history: tierc-irq-c-1 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "cbd7a920770fabc5d7e44c99bda6d8a9fc4e4339",
+          "recorded_at": "2026-07-18T16:22:09+10:00",
+          "subject": "docs: refresh STATUS.md/status.png after dev.py check run"
+        },
+        {
+          "commit": "7e23497d7a7eab8cdca93d93934c7523e4f2aa6e",
+          "recorded_at": "2026-07-18T16:21:58+10:00",
+          "subject": "dashboard: sync after fork-policy CLAUDE.md landing + status snapshot"
+        },
+        {
+          "commit": "6bb0ae8e1458d64dad58ed6d687422adce0ee5d2",
+          "recorded_at": "2026-07-18T16:21:03+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0b6a4b5784172aeeafb63e0bf32fa08f718de816",
+          "recorded_at": "2026-07-18T16:20:38+10:00",
+          "subject": "report: boot-path wiring regex missed independently-gated Tier C slices"
+        },
+        {
+          "commit": "b0fc0ea36a8ebf3b17e0810a827c07a8769dc9d5",
+          "recorded_at": "2026-07-18T16:09:16+10:00",
+          "subject": "dashboard: sync issues #26 (clippy) and #27 (_THIS_IP_ design decision)"
+        },
+        {
+          "commit": "fc7791b6bfd4a307ff4ccd524de21c7a52f0133f",
+          "recorded_at": "2026-07-18T16:08:41+10:00",
+          "subject": "rulesdb: draft rule 0030 for _THIS_IP_/_RET_IP_, the largest uncovered failure pattern"
+        },
+        {
+          "commit": "b17f04ae50baed101e8bc19f724a09b963498957",
+          "recorded_at": "2026-07-18T16:06:12+10:00",
+          "subject": "tooling: fix 40 confirmed bugs/footguns found in a full scripts/ audit"
+        },
+        {
+          "commit": "e87b02b6dde0dd44379d53e9f3334e8afd31d8e8",
+          "recorded_at": "2026-07-18T16:03:53+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "02e33fc9314b711f4c349af2becfb879a84ec1d0",
+          "recorded_at": "2026-07-18T15:42:30+10:00",
+          "subject": "dashboard: refresh after c2rust#13/#14 landing + Tier C merge sync"
+        },
+        {
+          "commit": "9da179e4bd4e1c9d02a5e35c46fc028c30ed0bb0",
+          "recorded_at": "2026-07-18T15:41:45+10:00",
+          "subject": "c2rust: real build script + env-override for isolated-worktree baselines"
+        },
+        {
+          "commit": "1166c1d75c0e159bd6e3ee0f87a7f97775f25d61",
+          "recorded_at": "2026-07-18T15:11:43+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e318f3fed0f4863258fef2be27275a454eb96a20",
+          "recorded_at": "2026-07-18T15:02:43+10:00",
+          "subject": "docs: 8250 Tier C startup/shutdown lands live-wired, closes-slice-of awto-au/linux-rs#25"
+        },
+        {
+          "commit": "860c23df22829f6eac1a6712830aa88dcab62441",
+          "recorded_at": "2026-07-18T15:01:18+10:00",
+          "subject": "docs+scripts: remove name from comments; dev.py check becomes a real registry"
+        },
+        {
+          "commit": "568d1da7cb43783f285709ee7711e7d701634d1e",
+          "recorded_at": "2026-07-18T15:00:15+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "745f339e8d0431b12656638d26976148846b9ac8",
+          "recorded_at": "2026-07-18T14:58:53+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "99882f21d2ed9e4b1c62e513040b92527a8a26ea",
+          "recorded_at": "2026-07-18T14:56:43+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ad83a59b30fd9e979221c1a1e39560cbce715b61",
+          "recorded_at": "2026-07-18T14:55:19+10:00",
+          "subject": "boot-history: tierc-rust-3 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "eb520718086b8af9df6f237199ac871bfa7488d2",
+          "recorded_at": "2026-07-18T14:55:02+10:00",
+          "subject": "boot-history: tierc-rust-2 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ba829f8937041c52033546ca614f94c736d59d41",
+          "recorded_at": "2026-07-18T14:54:45+10:00",
+          "subject": "boot-history: tierc-rust-1 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "cb8bb8218884f40c603c21c3e64f98126b2525cd",
+          "recorded_at": "2026-07-18T14:54:20+10:00",
+          "subject": "boot-history: tierc-c-3 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0e5e5b844448f0a0e7928decb9a67ec7d31ededd",
+          "recorded_at": "2026-07-18T14:54:02+10:00",
+          "subject": "boot-history: tierc-c-2 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c3b77430fc2c571d966884b4c4aa92cc0b621810",
+          "recorded_at": "2026-07-18T14:53:41+10:00",
+          "subject": "boot-history: tierc-c-1 \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "9808e5f19eea127f62468b568bd8f740bcb40ebd",
+          "recorded_at": "2026-07-18T14:51:55+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "9a6361c43b407a14db72ce99b29b17a727ddbee8",
+          "recorded_at": "2026-07-18T14:48:12+10:00",
+          "subject": "investigate_c2rust_failure: add --preprocess, replaces hand-rolled clang -E"
+        },
+        {
+          "commit": "265580dda79a8da7daa9c292515c22e7d3467811",
+          "recorded_at": "2026-07-18T14:47:15+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "aa490ee48190961d2a5e22cb0568175660b1e9ad",
+          "recorded_at": "2026-07-18T14:44:20+10:00",
+          "subject": "docs: codify \"no KUnit fake != untestable\" as a general rule (streams.md)"
+        },
+        {
+          "commit": "bf3a5c2731c539b3a4eb9ee53160288ba866ecd9",
+          "recorded_at": "2026-07-18T14:42:43+10:00",
+          "subject": "docs: correct 8250 Tier C blocker doc \u2014 real boot IS a real integration test"
+        },
+        {
+          "commit": "00ca8eed1322514a167be2649a53dc415dbf3929",
+          "recorded_at": "2026-07-18T14:25:42+10:00",
+          "subject": "sync: dashboard active-worker count after Tier C worktree cleanup"
+        },
+        {
+          "commit": "4665f608e3090c9e0f479b351f322bdfe5b4fde0",
+          "recorded_at": "2026-07-18T14:24:49+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "d52bc7b3686dabea1ad6f8a55d4d633afeed8c74",
+          "recorded_at": "2026-07-18T14:22:21+10:00",
+          "subject": "docs: 8250 Tier C (startup/shutdown/set_termios/IRQ/autoconfig) evaluated, blocked"
+        },
+        {
+          "commit": "55534b6acf68d3c469fece86b74e11533369a70a",
+          "recorded_at": "2026-07-18T14:21:53+10:00",
+          "subject": "docs: add Standing Orders section; scripts: add ollama_queue_watch.py"
+        },
+        {
+          "commit": "627a74dc073bcb41d8626fb0781db269d2edefba",
+          "recorded_at": "2026-07-18T14:19:08+10:00",
+          "subject": "sync: land linux-rs#9 closure + #25 (Tier C standing issue) in dashboard"
+        },
+        {
+          "commit": "a254c3643bc01504154bdebcb6fc93994df7dc48",
+          "recorded_at": "2026-07-18T14:17:05+10:00",
+          "subject": "check_spdx_provenance: print a real per-file idiom-application table"
+        },
+        {
+          "commit": "69cf86d4df464329c8922b73feffea8eb88ceebd",
+          "recorded_at": "2026-07-18T14:16:28+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "2825942eb31408d05a5d07969931e5b51d9bee79",
+          "recorded_at": "2026-07-18T14:14:11+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "177586264f108ac78e9b9f0a94eae6005245ff6b",
+          "recorded_at": "2026-07-18T14:13:28+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a921d5852a2c44f3eeb7d13a1fcc5b8ad3882859",
+          "recorded_at": "2026-07-18T14:07:15+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "4e5ebe470a4d4156cf73813ce72d3c2fc9c1b6b7",
+          "recorded_at": "2026-07-18T14:06:48+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "412dc13a4608f6b447fce21bd80f937554fbaff8",
+          "recorded_at": "2026-07-18T14:06:14+10:00",
+          "subject": "scripts: add c2rust_baseline_watch.py \u2014 event-driven baseline re-run"
+        },
+        {
+          "commit": "5a771baa64d9b46f34d0e4cd370ea15130165d94",
+          "recorded_at": "2026-07-18T14:04:17+10:00",
+          "subject": "boot-history: verify-diff-a \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "38e54f4c496571c6ebc9493b6a668bb76394f86f",
+          "recorded_at": "2026-07-18T14:01:54+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "61892b592b323c9d081eba4c9517fe2463682d3f",
+          "recorded_at": "2026-07-18T13:59:07+10:00",
+          "subject": "sync: land linux-rs#7 (initramfs hard gate) closure in tracking DB + dashboard"
+        },
+        {
+          "commit": "be7b4a69382f3aa0d394f5555c28113152aad317",
+          "recorded_at": "2026-07-18T13:58:07+10:00",
+          "subject": "dev.py: promote missing initramfs reachability from warning to hard gate"
+        },
+        {
+          "commit": "8df569af64fd677b9c1f319af4709799ab4152d2",
+          "recorded_at": "2026-07-18T13:57:20+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "5af3d558506559ce939a79126d69d5ec4888bd53",
+          "recorded_at": "2026-07-18T13:57:14+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "0eac084cd437d4a709269bec1f9142d43eb8b841",
+          "recorded_at": "2026-07-18T13:54:35+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "05b682116cbb490a57e15dee390073c2f07805a8",
+          "recorded_at": "2026-07-18T13:51:25+10:00",
+          "subject": "docs: append TU 37 (usercopy) to HISTORY.md"
+        },
+        {
+          "commit": "870e1b33cec42ea473561cfdb805101eb9c55cd0",
+          "recorded_at": "2026-07-18T13:50:10+10:00",
+          "subject": "lib: add usercopy Rust translation oracle + rule extensions (linux-rs TU 37)"
+        },
+        {
+          "commit": "21d0d53a876b661d79d3ea6208d286822693dbdd",
+          "recorded_at": "2026-07-18T13:51:46+10:00",
+          "subject": "sync: land linux-rs#16 (8250 Tier B) closure in tracking DB + dashboard"
+        },
+        {
+          "commit": "dc8facc23fea1c62d19c8cb14cbdd7b346691aab",
+          "recorded_at": "2026-07-18T13:51:21+10:00",
+          "subject": "report: regenerate after 8250 Tier B merge"
+        },
+        {
+          "commit": "10ef617d67b74c3bf1aa4b98fb8d97d6dd64bfe8",
+          "recorded_at": "2026-07-18T13:50:29+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "94d12d7bd2e09d946304f60762b0e8291bb14e70",
+          "recorded_at": "2026-07-18T13:49:31+10:00",
+          "subject": "check_spdx_provenance: add 8250 Tier B exception-table entry"
+        },
+        {
+          "commit": "5ba85f982b8da97f59da35d08afa8e1e2eb967c9",
+          "recorded_at": "2026-07-18T13:47:35+10:00",
+          "subject": "docs: 8250 Tier B (mem_serial_in/mem_serial_out) lands, closes linux-rs#16"
+        },
+        {
+          "commit": "60368fc5b54ac014ef6e970158032c0d00635ca7",
+          "recorded_at": "2026-07-18T13:46:52+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "e20a9e02a2ff1df66aca78b367e8e051a1576dc6",
+          "recorded_at": "2026-07-18T13:44:01+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "031d62d049f4c5478942bcb751828e2a817ec277",
+          "recorded_at": "2026-07-18T13:43:43+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "7dd6b32e413fb31fb04f9379f3ab00535aff694d",
+          "recorded_at": "2026-07-18T13:42:09+10:00",
+          "subject": "gitignore: add quarantine/ for stale regenerable tmp/ content"
+        },
+        {
+          "commit": "056648e83d2c5d3273473d79d3a3a0f2f1350ae9",
+          "recorded_at": "2026-07-18T13:41:55+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "7ff4c75db582277a184a10ade23cb72321cf9100",
+          "recorded_at": "2026-07-18T13:40:56+10:00",
+          "subject": "boot-history: move archived logs from gitignored tmp/ to tracked docs/status/boot-logs/"
+        },
+        {
+          "commit": "e703f28215f069e0f9170a409ca9ef2e99db175f",
+          "recorded_at": "2026-07-18T13:40:26+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "36bbf3f99a8f861110d2ca981087551683370e5a",
+          "recorded_at": "2026-07-18T13:39:57+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "1e6e14badb3612180225efee8535cbd8b7417e45",
+          "recorded_at": "2026-07-18T13:39:55+10:00",
+          "subject": "boot-history: default \u2014 17 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "f13e6cd7b70c34e4bee74ac881cf2ddc9d25d9a0",
+          "recorded_at": "2026-07-18T13:39:07+10:00",
+          "subject": "boot-history: post-migration-test \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "360170349004c1ba3a3df02390e9dc94adc2e2c2",
+          "recorded_at": "2026-07-18T13:36:04+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "38ed9eff2aeb14615fc3a747571fb40af14ed492",
+          "recorded_at": "2026-07-18T13:25:42+10:00",
+          "subject": "sync: land linux-rs#15 (a4+a5 gating, PR #18) closure in tracking DB + dashboard"
+        },
+        {
+          "commit": "525a0f0c3496e64ed64afd678579f2c16ca13909",
+          "recorded_at": "2026-07-18T13:24:55+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a362668e377c8c2fde7433466292446aa39d52e6",
+          "recorded_at": "2026-07-18T13:14:50+10:00",
+          "subject": "report: regenerate after TU35 merge"
+        },
+        {
+          "commit": "c448c5624683a6986eeb37a9e122d849dce1fdc7",
+          "recorded_at": "2026-07-18T13:14:14+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "2c05b722e67eec28eae83712236e56eafcdc144e",
+          "recorded_at": "2026-07-18T13:10:33+10:00",
+          "subject": "lib: translate strncpy_from_user to Rust (linux-rs TU 35)"
+        },
+        {
+          "commit": "c3ed97e1d70aa397377359e29afb98199c440fef",
+          "recorded_at": "2026-07-18T03:10:25Z",
+          "subject": "a4+a5: gate bench_math checksum MISMATCH + c2rust compile-pass-rate regression check"
+        },
+        {
+          "commit": "c7d32a611ee92294092a278d5af08e625d2d6d5a",
+          "recorded_at": "2026-07-18T13:07:51+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "ed05b7542ea2cdc200b766db574341322610c913",
+          "recorded_at": "2026-07-18T13:06:21+10:00",
+          "subject": "report: live-computed boot-path wiring metric (in-place vs whole-file swap)"
+        },
+        {
+          "commit": "91b6d8b6520fe2519daf91638673d29950543a36",
+          "recorded_at": "2026-07-18T13:05:56+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "7dde9362f60a1eeaa34c618bd9870b63db5f6e87",
+          "recorded_at": "2026-07-18T13:01:41+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a28a77c49a1c7a27400517019f8617603f803b3f",
+          "recorded_at": "2026-07-18T12:59:04+10:00",
+          "subject": "scripts: generalize c2rust original path mapping"
+        },
+        {
+          "commit": "616c41f1c8e3a56f73efc0f15cf99a5f24764349",
+          "recorded_at": "2026-07-18T02:58:31Z",
+          "subject": "Fix integrate_tu zero-ok oracle failure"
+        },
+        {
+          "commit": "9adcc888d6bebb5c54896b0459a3c5a6acc5f720",
+          "recorded_at": "2026-07-18T12:53:36+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b80e09568364bdaa8c155215e7d46d88916a675c",
+          "recorded_at": "2026-07-18T12:51:41+10:00",
+          "subject": "boot-history: post-rebase re-verify \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "74c712c54ba07ce60628f4fb71a3cae3b2c869fc",
+          "recorded_at": "2026-07-18T12:51:09+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "1fd25b6d43e082aa2190a415e8f28666ebf77d2d",
+          "recorded_at": "2026-07-18T12:50:10+10:00",
+          "subject": "docs: HISTORY entries for kunit-oracle dedup + export-symbol-gpl check landings"
+        },
+        {
+          "commit": "6b66160a69404e1f773fa6c8360a58580d9c69f5",
+          "recorded_at": "2026-07-18T12:49:56+10:00",
+          "subject": "export-symbol-gpl: mechanical EXPORT_SYMBOL->_GPL silent-upgrade check"
+        },
+        {
+          "commit": "db700845bac7f5b26a31bd37568ccdd3a1cfd778",
+          "recorded_at": "2026-07-18T12:49:10+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "54547c8d48c5d085df4352f7b908278e09f6bed1",
+          "recorded_at": "2026-07-18T12:43:51+10:00",
+          "subject": "kunit-oracle: dedup dev.py/integrate_tu.py boot-gate regex + rulesdb 0028"
+        },
+        {
+          "commit": "148f0ee4c742f9efffc18e22b79c86ae96d4dc8f",
+          "recorded_at": "2026-07-18T12:42:58+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "8ed90b3c156cd4eacffcc6e9c74b58c575ce2150",
+          "recorded_at": "2026-07-18T12:44:57+10:00",
+          "subject": "check_c2rust_output_compiles: derive C2RUST_REV from the live checkout"
+        },
+        {
+          "commit": "72540871a40a15151eb31127e73c386deaff4e84",
+          "recorded_at": "2026-07-18T12:38:31+10:00",
+          "subject": "docs: linux-riscv/ now pushed to a real fork (awtoau/linux), not local-only"
+        },
+        {
+          "commit": "2676704968011fec624cc9509be368b253d5b427",
+          "recorded_at": "2026-07-18T12:34:51+10:00",
+          "subject": "sync: land linux-rs#7, #8 (P4 hardening notes) + #6 (pipeline audit) in dashboard"
+        },
+        {
+          "commit": "63c441303f7527dc87555d248f31c1518507f71f",
+          "recorded_at": "2026-07-18T12:34:02+10:00",
+          "subject": "rules: make SPDX provenance a real idiom (0029), not a dev.py-only script"
+        },
+        {
+          "commit": "42f7db654abd6738adfaf0871219257f18715c40",
+          "recorded_at": "2026-07-18T12:31:14+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c6672ac50f2ed6bf34b1a509530b5b052af47dab",
+          "recorded_at": "2026-07-18T12:28:44+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "2118f39d07d9d1418b675c75e644df6dbe7cf129",
+          "recorded_at": "2026-07-18T12:25:52+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "158b986d9c033d2c254d964602613fa16aea9a6a",
+          "recorded_at": "2026-07-18T12:23:50+10:00",
+          "subject": "report: regenerate after SPDX-check merge"
+        },
+        {
+          "commit": "161305985578dfae28b23e30c8380f85cbcde1c8",
+          "recorded_at": "2026-07-18T12:22:26+10:00",
+          "subject": "report: regenerate status snapshot"
+        },
+        {
+          "commit": "0ef6c8e37cb79332e3ebaedf333a9fd543124016",
+          "recorded_at": "2026-07-18T12:22:11+10:00",
+          "subject": "scripts: add linux_riscv_worktree.py \u2014 isolated kernel-tree worktrees for agents"
+        },
+        {
+          "commit": "6ee993d86edddcee3bb583b00d369d58fff256b6",
+          "recorded_at": "2026-07-18T12:19:47+10:00",
+          "subject": "scripts: add check_spdx_provenance.py, wire as hard gate in dev.py check"
+        },
+        {
+          "commit": "9c8e31e411b63f10f54e2b97c9021bd31c54dcf2",
+          "recorded_at": "2026-07-18T12:19:54+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "8e4786ff9ffae2d91e4f8fae5da926578c6639c2",
+          "recorded_at": "2026-07-18T12:19:02+10:00",
+          "subject": "scripts: add check_spdx_provenance.py, wire as hard gate in dev.py check"
+        },
+        {
+          "commit": "02fdf27f621c84cd4bf6131e2f762afb90552e03",
+          "recorded_at": "2026-07-18T12:19:02+10:00",
+          "subject": "sync: land linux-rs#3 (8250 remainder) closure in tracking DB + dashboard"
+        },
+        {
+          "commit": "a1fe1cfde9ad91fc4445fc939c2277e4ab6cb17c",
+          "recorded_at": "2026-07-18T12:18:21+10:00",
+          "subject": "boot-history: post-8250-verify \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "541614a69d3d395fffd618d76544709118b7b7b8",
+          "recorded_at": "2026-07-18T12:17:44+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "edcb6305564c922700096b639dd5fab5c2425815",
+          "recorded_at": "2026-07-18T12:17:29+10:00",
+          "subject": "sync: land c2rust#11 and #12 closures in tracking DB + dashboard"
+        },
+        {
+          "commit": "1556505c1d5169694adcc4176f7f6c1be2f8d56d",
+          "recorded_at": "2026-07-18T12:16:50+10:00",
+          "subject": "docs: 8250 RX-trigger helpers wired to Rust, closes linux-rs#3"
+        },
+        {
+          "commit": "a8a95ba3b264759e3dc65468041a8793d356e51e",
+          "recorded_at": "2026-07-18T12:14:41+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "15433f2da66a23ea576a6f3cea972cbcb122e3a8",
+          "recorded_at": "2026-07-18T12:14:31+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "77f7e0765f881285c670f695848793c3bb3281ca",
+          "recorded_at": "2026-07-18T12:13:01+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "b0989c4e2a9cf71a2b4f7c7812e8d0ae4e9c0d1a",
+          "recorded_at": "2026-07-18T12:12:14+10:00",
+          "subject": "sync_work_items: remove target_compile_test.py from KERNEL_WORK_ITEMS, now a real issue"
+        },
+        {
+          "commit": "d74c9368b6b62969347ace878f7746292267cc8a",
+          "recorded_at": "2026-07-18T12:10:29+10:00",
+          "subject": "boot-history: post-spdx-check \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "a8ec045179a2b086a4f62b09260d17d2072ae406",
+          "recorded_at": "2026-07-18T12:08:34+10:00",
+          "subject": "licensing: DCO policy note + concrete rule-0001 GPL-export caveat (closes remainder of #1)"
+        },
+        {
+          "commit": "ee79437f860d17312a5333cd80f7d94eaf67d11e",
+          "recorded_at": "2026-07-18T12:05:52+10:00",
+          "subject": "scripts: add target_compile_test.py \u2014 riscv64-emulated diff-oracle backend"
+        },
+        {
+          "commit": "7099ffda360de505a77235e4cf9dab182413b56e",
+          "recorded_at": "2026-07-18T12:05:43+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "c8eb3a494bd87c503a06e32c5bc9f68c46041722",
+          "recorded_at": "2026-07-18T12:04:14+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "69473160197be0ef30b232fca5859c21725e3d7e",
+          "recorded_at": "2026-07-18T12:04:00+10:00",
+          "subject": "boot-history: default \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "880f9336f8cd8155b96791d5b114de355e2fa2cc",
+          "recorded_at": "2026-07-18T11:49:49+10:00",
+          "subject": "docs: credit Ollama and its models in README, require attribution in commits"
+        },
+        {
+          "commit": "b74a300a2f8f18806732811a2e86bec131eebfa5",
+          "recorded_at": "2026-07-18T11:47:16+10:00",
+          "subject": "scripts: add c2rust_worktree.py to fix real agent workspace collision"
+        },
+        {
+          "commit": "492359b8ab03335148ac03225f8f68a39f6d2f52",
+          "recorded_at": "2026-07-18T11:34:39+10:00",
+          "subject": "streams: make Ollama offload a standing policy on c2rust-breadth, not a one-off"
+        },
+        {
+          "commit": "9345b9a9f4da2141b8a1e501c2f60f9f186c2c5e",
+          "recorded_at": "2026-07-18T11:29:58+10:00",
+          "subject": "docs: move milestone table to HISTORY.md; track kernel work items via real GitHub issues"
+        },
+        {
+          "commit": "90236d753f255e210214b5ba1d3160163c5ffd82",
+          "recorded_at": "2026-07-18T11:28:21+10:00",
+          "subject": "boot-history: boot-check \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "563de77f85225d1f75e8b8d06161959b828c9752",
+          "recorded_at": "2026-07-18T11:22:46+10:00",
+          "subject": "c2rust: track issue #10 asm fix (1a06f7af6), refresh tracking DB + dashboard"
+        },
+        {
+          "commit": "03845db7bf5b24d7427361031a26ecad05c7598e",
+          "recorded_at": "2026-07-18T11:22:10+10:00",
+          "subject": "dashboard: add live TU-growth chart, replace hardcoded TU stat tile"
+        },
+        {
+          "commit": "d89877aed63e9205ec283b17566bee2ae413e1b4",
+          "recorded_at": "2026-07-18T11:13:46+10:00",
+          "subject": "boot-history: autopushtest \u2014 16 ok / 0 not ok, INIT REACHED"
+        },
+        {
+          "commit": "1c254804d56f7e0d088cd6efbaa12f4664562d5d",
+          "recorded_at": "2026-07-18T11:13:22+10:00",
+          "subject": "boot_qemu+render_boot_log: diff/browse boot history, auto-commit+push every boot"
+        },
+        {
+          "commit": "2db5f0bb8710be611ce1827a5af544dcf938c929",
+          "recorded_at": "2026-07-18T11:06:40+10:00",
+          "subject": "check_c2rust_output_compiles: bump tracked c2rust rev to 1a06f7af6"
+        },
+        {
+          "commit": "65aa1dcce7ec89925b0cd849eeaf72c290d68037",
+          "recorded_at": "2026-07-18T11:02:32+10:00",
+          "subject": "work_items: mark interactive-console milestone done (linux-rs 72bebc7)"
+        },
+        {
+          "commit": "72bebc7a9df4191b304952422c5d258d4f917f71",
+          "recorded_at": "2026-07-18T11:01:46+10:00",
+          "subject": "configs: initramfs /init drops to interactive shell instead of poweroff"
+        },
+        {
+          "commit": "d093fa4454718b74ab47b56f416a99c6bd126995",
+          "recorded_at": "2026-07-18T10:59:21+10:00",
+          "subject": "docs: scope a host-cross-compile + riscv64-emulated execute test loop"
+        },
+        {
+          "commit": "c41ae4a971f2777a98a1bf83de97816571605ede",
+          "recorded_at": "2026-07-18T10:55:20+10:00",
+          "subject": "docs: explicitly sequence console-milestone before KUnit-from-console"
+        },
+        {
+          "commit": "abf13583f570bd72e16e1da89396b37106e0d035",
+          "recorded_at": "2026-07-18T10:52:30+10:00",
+          "subject": "docs: add stream 3, hybrid-boot-backwards \u2014 start from a boot-verified minimal kernel, add translations back in"
+        },
+        {
+          "commit": "87d932e33c4726dea6573cd1e574e2e6b701a4dc",
+          "recorded_at": "2026-07-18T10:48:32+10:00",
+          "subject": "docs: define the 5 parallel work streams + close out issue #10"
+        },
+        {
+          "commit": "665b7a8659179e0ac803c8efd622f8752a034126",
+          "recorded_at": "2026-07-18T10:40:24+10:00",
+          "subject": "dashboard+tooling: sync to final consolidated state after all agents landed"
+        },
+        {
+          "commit": "257d5bc2a0dbeac4f4a9490c621cb15d34ae4e4f",
+          "recorded_at": "2026-07-18T10:39:25+10:00",
+          "subject": "boot_qemu: archive every boot log + append to a tracked history CSV"
+        },
+        {
+          "commit": "dadcc2aac5a1235b639a72d65e7040525a8057d8",
+          "recorded_at": "2026-07-18T10:39:13+10:00",
+          "subject": "docs: catch up README status table to 2026-07-17/18 milestones"
+        },
+        {
+          "commit": "204aa94f6e197c420f4bc7fe393f6d3bc9aa8e6e",
+          "recorded_at": "2026-07-18T10:36:33+10:00",
+          "subject": "scripts: add render_boot_log.py for a scannable boot-log HTML viewer"
+        },
+        {
+          "commit": "2d069bb5c89f5baed0196a4fe69c9cf0182e1909",
+          "recorded_at": "2026-07-18T10:34:21+10:00",
+          "subject": "status: regenerate \u2014 TU 31 (8250 serial helper) + TU 32 (iomem_copy) landed"
+        },
+        {
+          "commit": "606fc0fd0c8425776c303505f1e79cf787cdd064",
+          "recorded_at": "2026-07-18T10:33:04+10:00",
+          "subject": "lib: translate iomem_copy to Rust (linux-rs TU 32)"
+        },
+        {
+          "commit": "31715ea8c820c8a348d91511cc5716f056647a68",
+          "recorded_at": "2026-07-18T10:31:47+10:00",
+          "subject": "dashboard: regenerate with tmpfs-scoping work item synced"
+        },
+        {
+          "commit": "18eb1de732f2325ab881fc083c679d845d442e04",
+          "recorded_at": "2026-07-18T10:30:29+10:00",
+          "subject": "docs: hybrid boot-path milestone \u2014 first Rust code in a live driver (linux-rs TU 31)"
+        },
+        {
+          "commit": "8eba53c4ee5c82fb683984557be21d533bf3db2f",
+          "recorded_at": "2026-07-18T10:29:59+10:00",
+          "subject": "docs: scope tmpfs-in-Rust \u2014 blocked on missing VFS abstractions"
+        },
+        {
+          "commit": "2b3b12b24892e1e6f55e8f56b5e7880d6ebe35ca",
+          "recorded_at": "2026-07-18T10:29:53+10:00",
+          "subject": "boot_qemu: support isolated per-run logs for parallel QEMU boots"
+        },
+        {
+          "commit": "90abae41faa286a50f963c0c32e238125f1ca820",
+          "recorded_at": "2026-07-18T10:28:28+10:00",
+          "subject": "status: regenerate"
+        },
+        {
+          "commit": "f92c31eef5bab0a0860760221983080da466561b",
+          "recorded_at": "2026-07-18T10:27:18+10:00",
+          "subject": "dashboard: surface active background workers at the top"
+        },
+        {
+          "commit": "2460377972d8a407a8a9e52640637668f2d1505f",
+          "recorded_at": "2026-07-18T10:16:32+10:00",
+          "subject": "status: regenerate after issue #9 (enum forward-decl) fix closed"
+        },
+        {
+          "commit": "16dee4b90de2d53628220afd0c3894f198b2b39b",
+          "recorded_at": "2026-07-18T10:12:47+10:00",
+          "subject": "docs: scope 8250/16550 serial driver hand-translation (first slice)"
+        },
+        {
+          "commit": "78136f79b2fd40dd5bc1ec7cb62187dee7168947",
+          "recorded_at": "2026-07-18T10:11:42+10:00",
+          "subject": "docs: research report on c2rust foundation soundness + pipeline/unsafe-narrowing directions"
+        },
+        {
+          "commit": "7054f1b19b9910dd2b59ba12d19855ed5200a77d",
+          "recorded_at": "2026-07-18T10:08:04+10:00",
+          "subject": "docs: kernel test harness research \u2014 kselftest/KUnit/LTP/syzkaller/RfL"
+        },
+        {
+          "commit": "e6a04106fd6734d7318484f9d78ca49ca938575a",
+          "recorded_at": "2026-07-18T10:03:59+10:00",
+          "subject": "status: regenerate after work_items/dashboard-track session activity"
+        },
+        {
+          "commit": "9a34c36478cd28bca114a4eee379471f5974e4b2",
+          "recorded_at": "2026-07-18T10:03:05+10:00",
+          "subject": "status: add live two-track dashboard (work_items queue + c2rust issue timeline)"
+        },
+        {
+          "commit": "3ff722eb1be8a57e336432d61f19de75da7eae72",
+          "recorded_at": "2026-07-18T09:58:15+10:00",
+          "subject": "docs: session report + c2rust progress charts (2026-07-17/18)"
+        },
+        {
+          "commit": "146de31e48e32cdf521086919da7cbcc47f13e4f",
+          "recorded_at": "2026-07-18T09:56:51+10:00",
+          "subject": "rulesdb: add work_items table \u2014 single index for both tracks' priorities"
+        },
+        {
+          "commit": "78c1131b364a62303b5ff42f552896e1a0fdb6f7",
+          "recorded_at": "2026-07-18T09:49:54+10:00",
+          "subject": "sync_linux_kernel: rebuild patterns.db as part of the sync"
+        },
+        {
+          "commit": "c38c5a9108e17f4adc6bd97e861adcf0238dcca4",
+          "recorded_at": "2026-07-18T09:40:04+10:00",
+          "subject": "c2rust: warn loudly on empty-corpus conformance check runs"
+        },
+        {
+          "commit": "76fb7e4a8749b7b510adcb4cc6bcb80c08b56f15",
+          "recorded_at": "2026-07-18T09:38:47+10:00",
+          "subject": "readiness: fix stale \"6 translated TUs\" docstring number"
+        },
+        {
+          "commit": "78d6066642b1e987c4294e20aca54a5b24fecbbe",
+          "recorded_at": "2026-07-18T09:37:36+10:00",
+          "subject": "c2rust: warn loudly when the baseline binary is stale vs its source"
+        },
+        {
+          "commit": "73277afc347f060003fb92dcca2565fb5b37addd",
+          "recorded_at": "2026-07-18T09:35:49+10:00",
+          "subject": "scripts: dedupe tu_args/normalize_path, fix dev.py docstring drift"
+        },
+        {
+          "commit": "f2350712566300c7e10433b73e0b7ab3efe49640",
+          "recorded_at": "2026-07-18T09:36:04+10:00",
+          "subject": "docs: document c2rust/progress/doc_sources tables added to patterns.db"
+        },
+        {
+          "commit": "4975b025f7035d1b88b2bcc520cb2af6cde49e82",
+          "recorded_at": "2026-07-18T09:36:02+10:00",
+          "subject": "docs: clarify phase0-environment.md documents linux/, not linux-riscv/"
+        },
+        {
+          "commit": "e7168367dd77f9fdd777c377034d71d3142cade1",
+          "recorded_at": "2026-07-18T09:35:58+10:00",
+          "subject": "docs: note c2rust \"not a foundation\" verdict superseded by the fork"
+        },
+        {
+          "commit": "c2f93de4534fb77936b7f675a263d8578bbac84e",
+          "recorded_at": "2026-07-18T09:35:56+10:00",
+          "subject": "rulesdb: update README rule count (5\u219227) + document c2rust fork integration"
+        },
+        {
+          "commit": "1bd49037a7552f468682a1b2507d0405bce610b9",
+          "recorded_at": "2026-07-18T09:36:23+10:00",
+          "subject": "status: regenerate after upstream kernel sync (15,717 commits, nightly Rust)"
+        },
+        {
+          "commit": "963ec99b83174194be00e97b09a0cd86c4ea0ef4",
+          "recorded_at": "2026-07-18T09:31:18+10:00",
+          "subject": "scripts: add sync_linux_kernel.py for tracking upstream torvalds/linux"
+        },
+        {
+          "commit": "74b68c176ccd2dcff4d0043a36a84957af480ada",
+          "recorded_at": "2026-07-18T09:24:51+10:00",
+          "subject": "docs: note linux-riscv/ now builds with nightly Rust"
+        },
+        {
+          "commit": "94521e5eac7b606515ca0e154518d958d579ff3e",
+          "recorded_at": "2026-07-18T00:38:16+10:00",
+          "subject": "scripts: add diff_c2rust_comments.py for future comment-restoration work"
+        },
+        {
+          "commit": "26bd85dd9b8243c9ed4152ebcdf2b95fd5c9a2dd",
+          "recorded_at": "2026-07-17T22:30:26+10:00",
+          "subject": "build_db: surface dropped-table warnings on stdout, not just the log"
+        },
+        {
+          "commit": "fda62cb6defd9b5980bd8e32afe282e4f577b2fa",
+          "recorded_at": "2026-07-17T22:23:01+10:00",
+          "subject": "scripts: add investigate_c2rust_failure.py for per-file c2rust triage"
+        },
+        {
+          "commit": "56464e47eb255a2f9c893be6d6a78ceb0ad61de2",
+          "recorded_at": "2026-07-17T22:10:46+10:00",
+          "subject": "rulesdb: sync c2rust_attempts/c2rust_decl_outcomes schema with actual usage"
+        },
+        {
+          "commit": "57e316e867f8f1b0b50ba3a61f039c52602812e7",
+          "recorded_at": "2026-07-17T22:08:36+10:00",
+          "subject": "rulesdb: add doc_sources table cataloguing authoritative references"
+        },
+        {
+          "commit": "f35c27f2350a99410dad97aeda0c356198fac028",
+          "recorded_at": "2026-07-17T21:52:19+10:00",
+          "subject": "c2rust: skip stable files in routine baseline runs (542 -> ~30 files)"
+        },
+        {
+          "commit": "0002fc25302576f2d7e012969b23f16f91e26c44",
+          "recorded_at": "2026-07-17T18:42:57+10:00",
+          "subject": "lib: fix string_rs.rs to implement the correct CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS #else arm"
+        },
+        {
+          "commit": "f6d50889771b8bd22c84f8daf8795cdb89d3564a",
+          "recorded_at": "2026-07-17T18:14:18+10:00",
+          "subject": "lib: fix decompress_rs decompressor cfg-gating; add initramfs userspace boot verification"
+        },
+        {
+          "commit": "c54fb4c97e139c2e7e08119c9fde42c27577e045",
+          "recorded_at": "2026-07-17T17:20:47+10:00",
+          "subject": "c2rust: opt into kernel-idiom rules explicitly, fix __ffs conformance check"
+        },
+        {
+          "commit": "8277b05402d7fa50851d0feeb562f829b2681314",
+          "recorded_at": "2026-07-17T16:28:50+10:00",
+          "subject": "c2rust: exclude known-slow files pending locate_comments perf fix"
+        },
+        {
+          "commit": "b68fa0b7bd6acaa0d482b95ae45f710f7123d9db",
+          "recorded_at": "2026-07-17T15:56:48+10:00",
+          "subject": "c2rust: raise per-file timeout, add whole-batch stall watchdog + global cap"
+        },
+        {
+          "commit": "b8e81145216bd6be94de05891c0531e732fc2af0",
+          "recorded_at": "2026-07-17T15:46:57+10:00",
+          "subject": "c2rust: recover from work/ vanishing mid-run instead of crashing the batch"
+        },
+        {
+          "commit": "b4028ef929010da876610bc7fd20e21ef71d5fec",
+          "recorded_at": "2026-07-17T15:11:49+10:00",
+          "subject": "c2rust: add --batch-mode, closing out the process-spawn-overhead question"
+        },
+        {
+          "commit": "917552743ff1199429db54b95677be10cc0a97ca",
+          "recorded_at": "2026-07-17T14:12:54+10:00",
+          "subject": "c2rust: PCH support (0/455 divergence, verified), full-corpus scope, parallel sparse"
+        },
+        {
+          "commit": "d3674a514d4eb09100387dc7695fbd9e86379c1d",
+          "recorded_at": "2026-07-17T11:43:41+10:00",
+          "subject": "c2rust: per-decl regression tracking, adaptive job scaling, DB-only baseline"
+        },
+        {
+          "commit": "830102fb9cafd22ae98871d9db6ea590e73c5983",
+          "recorded_at": "2026-07-17T10:47:21+10:00",
+          "subject": "bench: fix hex_to_bin oracle copy to match hand-translation fix"
+        },
+        {
+          "commit": "77f71aa75c1c9ffc66225e0438c82911d30c737e",
+          "recorded_at": "2026-07-17T10:45:13+10:00",
+          "subject": "lib: translate bitmap-str (partial) to Rust (linux-rs TU 30)"
+        },
+        {
+          "commit": "e8e33d7eab79d02bc67f68b91c51f9345265ee66",
+          "recorded_at": "2026-07-17T10:25:50+10:00",
+          "subject": "lib: translate kstrtox to Rust (linux-rs TU 29)"
+        },
+        {
+          "commit": "e01e9c563b56c2ac5685ab214fbe2fa676b62398",
+          "recorded_at": "2026-07-17T08:47:23+10:00",
+          "subject": "lib: translate bitmap (partial) to Rust (linux-rs TU 28)"
+        },
+        {
+          "commit": "211636f39b351deb06d539d1c4337499ceabf060",
+          "recorded_at": "2026-07-17T08:18:23+10:00",
+          "subject": "rulesdb: track c2rust baseline/failure history + upstream fork/issue intel"
+        },
+        {
+          "commit": "9bccbb4354bb39c27cd0624fc625e11d05405394",
+          "recorded_at": "2026-07-16T16:51:48+10:00",
+          "subject": "lib: translate string to Rust (linux-rs TU 27)"
+        },
+        {
+          "commit": "a8f5ac1ea015934f10476688ed169b6c3c8f1b2a",
+          "recorded_at": "2026-07-16T16:44:33+10:00",
+          "subject": "lib: translate parser to Rust (linux-rs TU 26)"
+        },
+        {
+          "commit": "75c99deeb3d72bdbe3684894fc56450b2ee5d1d6",
+          "recorded_at": "2026-07-16T16:40:27+10:00",
+          "subject": "lib/math: translate div64 to Rust (linux-rs TU 25)"
+        },
+        {
+          "commit": "f02c4aef5a98e50dd78daff8546d2b16eb5c3a88",
+          "recorded_at": "2026-07-16T16:31:07+10:00",
+          "subject": "lib: translate hexdump to Rust (linux-rs TU 24)"
+        },
+        {
+          "commit": "4ad232ab8139e713ae0d8ce7611ef20d9480a687",
+          "recorded_at": "2026-07-16T16:22:42+10:00",
+          "subject": "TU 23 earlycpio + exact-bindgen-type export requirement + pr_warn shim"
+        },
+        {
+          "commit": "d6ba92a04e55ae455e72daf84a5a6f0fae17455f",
+          "recorded_at": "2026-07-16T16:16:40+10:00",
+          "subject": "TU 22 decompress + pr_debug shim pattern (rule 0014 extended)"
+        },
+        {
+          "commit": "18497a7b2843532c41137e2c610e98dc0c6cc2ba",
+          "recorded_at": "2026-07-16T16:10:41+10:00",
+          "subject": "TU 21 checksum + rule 0026 (arch-override detection before translating #ifndef-guarded fns)"
+        },
+        {
+          "commit": "a065423550e831805f0f59d488fb110825ee391d",
+          "recorded_at": "2026-07-16T16:02:04+10:00",
+          "subject": "patterns.db: WAL journal mode (concurrent reads during rebuild)"
+        },
+        {
+          "commit": "3c1db37aae1fdebc3cfb83f172a2253ad7e57b2b",
+          "recorded_at": "2026-07-16T14:25:21+10:00",
+          "subject": "patterns.db: cscope + sparse integration (research-agent top 2 recommendations)"
+        },
+        {
+          "commit": "4af05d66a1479860da5ada2e44c9704b5b2811bb",
+          "recorded_at": "2026-07-16T13:57:18+10:00",
+          "subject": "patterns.db: SQLite pattern database over rules + kernel census (Dan's request)"
+        },
+        {
+          "commit": "482057f3d46ce0435516470cb4efe8c39528446b",
+          "recorded_at": "2026-07-16T13:52:24+10:00",
+          "subject": "Rules 0023-0025: Stage-3 safe-lift target shapes from upstream research (deferred)"
+        },
+        {
+          "commit": "309c6cbde0eb7f31834c969f1576b04629c24883",
+          "recorded_at": "2026-07-16T13:49:46+10:00",
+          "subject": "Dashboard refresh: 20 TUs, 15 suites/132 vectors, 22 rules"
+        },
+        {
+          "commit": "7ab5d846ef5ac1f6a16a61d6a55a3c40416fb75b",
+          "recorded_at": "2026-07-16T13:47:59+10:00",
+          "subject": "lib: translate memweight to Rust (linux-rs TU 20)"
+        },
+        {
+          "commit": "7e36226a9d410720491ff1ba8cfc16b493d61f1d",
+          "recorded_at": "2026-07-16T13:42:32+10:00",
+          "subject": "lib: translate cmdline to Rust (linux-rs TU 19)"
+        },
+        {
+          "commit": "ef5b696ee9f41a306ab319ca390758b950fda114",
+          "recorded_at": "2026-07-16T13:32:17+10:00",
+          "subject": "lib: translate find_bit to Rust (linux-rs TU 18)"
+        },
+        {
+          "commit": "97df28f7f84bb5911ab73dcb89f843dd534e496f",
+          "recorded_at": "2026-07-16T13:13:23+10:00",
+          "subject": "Local-model offload experiment: harness built, honest mixed result"
+        },
+        {
+          "commit": "2ad9e20947e23566eaa72befbcf8707579ce6063",
+          "recorded_at": "2026-07-16T12:57:23+10:00",
+          "subject": "Rule 0006: tighten fls/__fls emit spec after a real local-model near-miss"
+        },
+        {
+          "commit": "91fa834979b16fe3c50bab6c6dbd3f5a1e453e88",
+          "recorded_at": "2026-07-16T12:52:01+10:00",
+          "subject": "TUs 16-17 (memcat_p, argv_split) + rule 0018 (C ABI allocator contract) + tier-2.5 extension"
+        },
+        {
+          "commit": "3e0ad8d79ac45f16d9a282584bf2b7e0b4561fd8",
+          "recorded_at": "2026-07-16T12:44:42+10:00",
+          "subject": "Tier-2.5 oracle: extend to win_minmax + ucs2_string, both PASS byte-identical"
+        },
+        {
+          "commit": "0018ae92164f7329e1262bbbdf2044d1a75162b3",
+          "recorded_at": "2026-07-16T12:40:41+10:00",
+          "subject": "Oracle tier 2.5: host differential harness (dev.py diff), base64 first target"
+        },
+        {
+          "commit": "ceb9090334d65c82398a4dc079492f9a76ac5b25",
+          "recorded_at": "2026-07-16T12:38:23+10:00",
+          "subject": "TU 15 reciprocal_div; group_cpus deferred (SMP-heavy, wrong fit)"
+        },
+        {
+          "commit": "8ba1bdd40ddf4489cc23c9684222b2f3571784ba",
+          "recorded_at": "2026-07-16T12:32:54+10:00",
+          "subject": "TU 14 llist: first tier-3 (lock-free) translation via LKMM shims; rule 0017"
+        },
+        {
+          "commit": "0981549ca8c8bd4772e8dbf14445f45073fc8132",
+          "recorded_at": "2026-07-16T12:26:43+10:00",
+          "subject": "TUs 12-13 (base64, win_minmax) + dev.py land command + rule 0016"
+        },
+        {
+          "commit": "8ea3a52202355f5435722557ec046b009ab1a0a2",
+          "recorded_at": "2026-07-16T12:19:06+10:00",
+          "subject": "TU 11 ucs2_string via one-command integrate; report regenerated (11 TUs)"
+        },
+        {
+          "commit": "9f0854aeed76a140ccedf7da2ca4f0bb32ca5017",
+          "recorded_at": "2026-07-16T12:15:37+10:00",
+          "subject": "Automatic report generation: dev.py report / check -> docs/STATUS.md + graphs"
+        },
+        {
+          "commit": "04299452192c5f49414d5090eb0f5090c3b73579",
+          "recorded_at": "2026-07-16T12:06:20+10:00",
+          "subject": "TU 10 list_sort (intrusive lists) + mechanisation: dev.py, integrate_tu.py"
+        },
+        {
+          "commit": "f2b2e49230a0470e784dd5dcfd7f3d3641d2d396",
+          "recorded_at": "2026-07-16T12:00:12+10:00",
+          "subject": "Batch 3 via readiness ranking: 9 Rust TUs, transfer metric live"
+        },
+        {
+          "commit": "99be00d5bafd9c464027c5102d8cf2fcd90b36ef",
+          "recorded_at": "2026-07-16T11:51:27+10:00",
+          "subject": "Rule 0015: USERSPACE_TYPED_COPY \u2014 first multi-stage tier-2 rule"
+        },
+        {
+          "commit": "8b58607a9b06e6e0e7665ea82092bef1d7dba46c",
+          "recorded_at": "2026-07-16T11:50:14+10:00",
+          "subject": "TU 6: lib/sort heapsort in Rust \u2014 first tier-2 translation, ok 11 lib_sort"
+        },
+        {
+          "commit": "f7542effc4d0762d015eb07c5ebd1398913568c1",
+          "recorded_at": "2026-07-16T11:41:11+10:00",
+          "subject": "Licensing (#1): GPL-2.0-only LICENSE + SPDX headers on all tooling"
+        },
+        {
+          "commit": "d4adb4c0ebf52e7510d27540f1a70c9501f6ee40",
+          "recorded_at": "2026-07-16T11:37:21+10:00",
+          "subject": "Perf gate: riscv64 cross-bench (qemu-user) \u2014 variant rankings are ISA-dependent"
+        },
+        {
+          "commit": "4e775a192bbd0877c3d028d90129805dcb04b61a",
+          "recorded_at": "2026-07-16T11:31:55+10:00",
+          "subject": "Rule 0011: \u00b110% perf-parity gate (Dan) + stabilised benchmark numbers"
+        },
+        {
+          "commit": "343519bc46f6b6604e2cb5819832198a6e1c86f3",
+          "recorded_at": "2026-07-16T11:25:48+10:00",
+          "subject": "Bench doc: the losing 'idiomatic' gcd is kernel commit fff7fb0b2d90's rejected gcd1"
+        },
+        {
+          "commit": "647f88c5297f0b068780d6c772c1c448cc509f64",
+          "recorded_at": "2026-07-16T11:18:32+10:00",
+          "subject": "Batch 2 (4 TUs, 58/58 KUnit), rules 0006-0010, host benchmark, Phase 2.5 lane"
+        },
+        {
+          "commit": "6db81d73f2c8e6c89c5b42da64d5b1f6d5b1bbb3",
+          "recorded_at": "2026-07-16T11:06:37+10:00",
+          "subject": "README: translation discipline \u2014 faithful construct-by-construct, no optimisation"
+        },
+        {
+          "commit": "3574da6b93c9a560335fcfb5477d0d05d1c44bbe",
+          "recorded_at": "2026-07-16T10:56:35+10:00",
+          "subject": "Phase 2 milestone: first translated TU (gcd) in-tree, KUnit-validated on booted riscv64 kernel"
+        },
+        {
+          "commit": "73c84b12cbf78903de44df73b3be9cb082a4839b",
+          "recorded_at": "2026-07-16T10:41:48+10:00",
+          "subject": "Correctness review: census v1.1 + compositionality v2.1 (corrected), reference corpus"
+        },
+        {
+          "commit": "5f3756070ceacdfce1c86a9cd7a44890c539891d",
+          "recorded_at": "2026-07-16T10:20:38+10:00",
+          "subject": "Phase 1 v2 compositionality (tail = 2 glue nodes) + Phase 2 riscv64 target measured and booting"
+        },
+        {
+          "commit": "834990a116107283dd4357703dba0bd3a2a245b4",
+          "recorded_at": "2026-07-16T09:58:44+10:00",
+          "subject": "Phase 1 v1 census: GATE GO \u2014 199 statement families cover 50% of 1.44M instances"
+        },
+        {
+          "commit": "f71f246c02595c6936b9c7b86954649a696af4db",
+          "recorded_at": "2026-07-16T09:50:57+10:00",
+          "subject": "Phase 1 v0: whole-function fingerprint census over full corpus"
+        },
+        {
+          "commit": "bbc66987f909e1cdcddd5cc9affcc954b2a6f68e",
+          "recorded_at": "2026-07-16T09:42:21+10:00",
+          "subject": "Phase 0: plan, pinned v7.1 corpus environment, tool evaluations"
+        }
+      ]
+    }
+  ]
+}
