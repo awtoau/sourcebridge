@@ -27,6 +27,7 @@ from sourcebridge.reporting import (
 )
 from sourcebridge.execution import run_approved
 from sourcebridge.proposal_evaluation import evaluate
+from sourcebridge.pipeline import EvidencePipelineError, import_json, initialize
 
 
 def _proposal_parser() -> argparse.ArgumentParser:
@@ -127,6 +128,32 @@ def _evaluate_proposal(arguments: list[str]) -> int:
     return 0 if result["eligible_for_human_rule_review"] else 1
 
 
+def _init_db(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge init-db")
+    parser.add_argument("--database", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    try:
+        initialize(args.database)
+    except EvidencePipelineError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(args.database)
+    return 0
+
+
+def _import_json(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge import-json")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--root", type=Path, default=Path("."))
+    args = parser.parse_args(arguments)
+    try:
+        print(json.dumps(import_json(args.database, args.root), indent=2, sort_keys=True))
+    except EvidencePipelineError as error:
+        print(error, file=sys.stderr)
+        return 1
+    return 0
+
+
 def _legacy_command(arguments: list[str]) -> int:
     sys.argv = [sys.argv[0], *arguments]
     return manifest_cli.main()
@@ -146,6 +173,10 @@ def main() -> int:
         return _run_approved(arguments[1:])
     if arguments and arguments[0] == "evaluate-proposal":
         return _evaluate_proposal(arguments[1:])
+    if arguments and arguments[0] == "init-db":
+        return _init_db(arguments[1:])
+    if arguments and arguments[0] == "import-json":
+        return _import_json(arguments[1:])
     return _legacy_command(arguments)
 
 

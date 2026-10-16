@@ -234,3 +234,36 @@ CREATE TABLE sourcebridge_work_item (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+
+-- Schema adapters record their version before importing operational evidence.
+CREATE TABLE sourcebridge_schema_metadata (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+-- Every imported legacy JSON record retains its original relative path, exact
+-- bytes, and digest. Typed tables may project facts from this immutable source.
+CREATE TABLE sourcebridge_imported_record (
+    id TEXT PRIMARY KEY,
+    source_path TEXT NOT NULL UNIQUE,
+    source_sha256 TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    imported_at TEXT NOT NULL
+);
+
+CREATE TABLE sourcebridge_rule_proposal (
+    id TEXT PRIMARY KEY,
+    imported_record_id TEXT NOT NULL REFERENCES sourcebridge_imported_record(id),
+    status TEXT NOT NULL CHECK (
+        status IN ('unvalidated-llm-proposal', 'rejected-llm-proposal')
+    ),
+    model_name TEXT,
+    model_digest TEXT,
+    prompt_template_version TEXT,
+    payload_sha256 TEXT NOT NULL,
+    proposal_json TEXT NOT NULL,
+    raw_response_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (imported_record_id)
+);

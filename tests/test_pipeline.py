@@ -1,0 +1,71 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import sqlite3
+import tempfile
+import unittest
+
+from sourcebridge.pipeline import import_json, initialize
+
+
+class PipelineTests(unittest.TestCase):
+    def test_imports_legacy_json_with_provenance_and_is_idempotent(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            evidence = {
+                "cluster_id": "scalar-v1",
+                "source_language": "delphi",
+                "variant": {"compiler": {"target_cpu": "x86_64", "target_os": "linux"}},
+                "source_facts": {
+                    "source_path": "scalars.pas",
+                    "functions": [{"name": "Add", "operation": "Result := Left + Right"}],
+                },
+                "observed_behavior": {"non_overflow_examples": [{"result": 3}]},
+                "active_rule_digest": "none",
+                "target_context": {"backend": "rust"},
+            }
+            proposal = {
+                "status": "unvalidated-llm-proposal",
+                "payload_sha256": "a" * 64,
+                "model": {"name": "local", "digest": "sha256:test"},
+                "prompt_template_version": "v1",
+                "proposal": {},
+                "raw_response": {},
+            }
+            profile = {
+                "id": "delphi-to-rust",
+                "source_frontend": "sourcebridge-delphi",
+                "target_backend": "sourcebridge-rust",
+                "rule_layers": [],
+                "runtime_adapters": [],
+                "options": {},
+            }
+            (root / "evidence").mkdir()
+            (root / "evidence" / "facts.json").write_text(json.dumps(evidence), encoding="utf-8")
+            (root / "evidence" / "proposal.json").write_text(json.dumps(proposal), encoding="utf-8")
+            (root / "examples").mkdir()
+            (root / "examples" / "profile.json").write_text(json.dumps(profile), encoding="utf-8")
+            database = root / "evidence.db"
+
+            initialize(database)
+            first = import_json(database, root)
+            second = import_json(database, root)
+            profile["options"] = {"updated": True}
+            (root / "examples" / "profile.json").write_text(json.dumps(profile), encoding="utf-8")
+            updated = import_json(database, root)
+            with sqlite3.connect(database) as connection:
+                imported = connection.execute(
+                    "SELECT COUNT(*) FROM sourcebridge_imported_record"
+                ).fetchone()[0]
+                proposals = connection.execute(
+                    "SELECT COUNT(*) FROM sourcebridge_rule_proposal"
+                ).fetchone()[0]
+                units = connection.execute(
+                    "SELECT COUNT(*) FROM sourcebridge_source_unit"
+                ).fetchone()[0]
+
+        self.assertEqual(first, {"imported": 3, "projected": 3, "skipped": 0})
+        self.assertEqual(second, {"imported": 0, "projected": 3, "skipped": 3})
+        self.assertEqual(updated, {"imported": 1, "projected": 3, "skipped": 2})
+        self.assertEqual((imported, proposals, units), (3, 1, 1))

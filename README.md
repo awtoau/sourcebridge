@@ -238,3 +238,20 @@ message, profile-side validation reference, and raw evidence path. The
 workbench consumes the same records for click-through review.
 
 See [PLAN.md](PLAN.md) for the staged implementation plan.
+
+## SQL evidence pipeline
+
+Operational evidence is stored in SQLite using the portable contract in
+[`core/schema/evidence.sql`](core/schema/evidence.sql). Initialize a database
+and import the repository's legacy JSON records with immutable path and
+SHA-256 provenance:
+
+```text
+sourcebridge init-db --database evidence/sourcebridge.db
+sourcebridge import-json --database evidence/sourcebridge.db --root .
+```
+
+The importer is idempotent. It retains every JSON record in SQL, projects
+profiles, fact-grounded evidence, and rule proposals into typed tables where
+the neutral contract applies, and keeps JSON schemas, manifests, examples, and
+committed source evidence as portable audit inputs rather than deleting them.
