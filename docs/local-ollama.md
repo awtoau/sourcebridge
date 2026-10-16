@@ -54,6 +54,36 @@ neither larger models nor deeper reasoning reliably preserved all free-form
 test fields. That result reinforces deterministic field validation rather than
 model-size escalation.
 
+## Prompt optimization is part of conversion
+
+Prompt templates are versioned conversion inputs, not operator preferences.
+Each template targets one task shape and source language, such as Delphi
+compiler-test triage, C AST-gap analysis, or C# Roslyn-gap analysis. A worker
+processes one such queue serially, with 10 requests as the normal batch size
+and 20 as the maximum, then unloads before a queue for another language starts.
+
+Every batch record must include the prompt-template version and digest, model
+digest, fixed generation options, evidence digest, queue/session identifier,
+per-request elapsed time, total batch time, and the deterministic validation
+outcome. Retain raw responses for both staged and rejected records.
+
+Tune a prompt only against a fixed, language-specific evaluation queue. Compare
+it with the existing template using:
+
+- literal evidence-reference fidelity and abstention precision;
+- rate of deterministic validation pass and rejection;
+- downstream proposal-readiness acceptance;
+- request and batch wall-clock time, generated-token count, and local GPU
+  time; and
+- the resulting cost per evidence-grounded, ready proposal.
+
+A new template may replace the current one only when it does not reduce
+grounding fidelity or abstention quality and produces a measured improvement
+for the declared task. It must not rely on corpus-specific invented facts,
+weaken the validators, or bypass target/oracle validation. This makes prompt
+optimization a cost-reduction mechanism for every conversion stage without
+turning model output into an authority.
+
 ## Required evaluation before changing a model
 
 Evaluate every candidate with the same pinned cases:
