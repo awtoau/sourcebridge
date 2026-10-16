@@ -7,10 +7,11 @@ import hashlib
 import json
 from pathlib import Path
 import sqlite3
+import subprocess
 from typing import Any, Iterable
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 _ROOT = Path(__file__).parents[1]
 _SCHEMA = _ROOT / "core" / "schema" / "evidence.sql"
 
@@ -56,6 +57,16 @@ def initialize(database: Path) -> None:
                     "INSERT INTO sourcebridge_schema_metadata (key, value) VALUES (?, ?)",
                     ("schema_version", str(SCHEMA_VERSION)),
                 )
+            elif existing[0] == "1":
+                connection.execute(
+                    "ALTER TABLE sourcebridge_imported_record "
+                    "ADD COLUMN source_repository TEXT NOT NULL DEFAULT 'sourcebridge'"
+                )
+                connection.execute(
+                    "UPDATE sourcebridge_schema_metadata SET value = ? "
+                    "WHERE key = 'schema_version'",
+                    (str(SCHEMA_VERSION),),
+                )
             elif existing[0] != str(SCHEMA_VERSION):
                 raise EvidencePipelineError(
                     f"{database}: unsupported schema version `{existing[0]}`"
@@ -64,14 +75,17 @@ def initialize(database: Path) -> None:
         raise EvidencePipelineError(f"{database}: cannot initialize evidence database: {error}") from error
 
 
-def import_json(database: Path, root: Path) -> dict[str, int]:
+def import_json(
+    database: Path, root: Path, *, repository: str | None = None, tracked_only: bool = False
+) -> dict[str, int]:
     if not root.is_dir():
         raise EvidencePipelineError(f"{root}: JSON root must be an existing directory")
     initialize(database)
+    repository = repository or _repository_name(root)
     imported = projected = skipped = 0
     with sqlite3.connect(database) as connection:
         connection.execute("PRAGMA foreign_keys = ON")
-        for path in _json_files(root):
+        for path in _json_files(root, tracked_only=tracked_only):
             payload = path.read_bytes()
             relative = path.relative_to(root).as_posix()
             try:
@@ -80,21 +94,23 @@ def import_json(database: Path, root: Path) -> dict[str, int]:
                 raise EvidencePipelineError(f"{path}: invalid JSON: {error}") from error
             canonical = json.dumps(record, sort_keys=True, separators=(",", ":"))
             digest = _digest(payload)
-            record_id = _id("json", relative)
+            source_key = f"{repository}:{relative}"
+            record_id = _id("json", source_key)
             kind = _kind(relative, record)
             result = connection.execute(
                 """
                 INSERT INTO sourcebridge_imported_record
-                    (id, source_path, source_sha256, kind, payload_json, imported_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                    (id, source_repository, source_path, source_sha256, kind, payload_json, imported_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(source_path) DO UPDATE SET
+                    source_repository = excluded.source_repository,
                     source_sha256 = excluded.source_sha256,
                     kind = excluded.kind,
                     payload_json = excluded.payload_json,
                     imported_at = excluded.imported_at
                 WHERE sourcebridge_imported_record.source_sha256 != excluded.source_sha256
                 """,
-                (record_id, relative, digest, kind, canonical, _now()),
+                (record_id, repository, source_key, digest, kind, canonical, _now()),
             )
             if result.rowcount:
                 imported += 1
@@ -109,13 +125,56 @@ def import_json(database: Path, root: Path) -> dict[str, int]:
             elif kind == "profile":
                 _import_profile(connection, record_id, record)
                 projected += 1
-    return {"imported": imported, "projected": projected, "skipped": skipped}
+    return {
+        "repository": repository,
+        "imported": imported,
+        "projected": projected,
+        "skipped": skipped,
+    }
 
 
-def _json_files(root: Path) -> Iterable[Path]:
+def _json_files(root: Path, *, tracked_only: bool) -> Iterable[Path]:
+    if tracked_only:
+        yield from _tracked_json_files(root)
+        return
     for path in sorted(root.rglob("*.json"), key=lambda candidate: candidate.as_posix()):
         if path.is_file() and ".git" not in path.parts:
             yield path
+
+
+def _tracked_json_files(root: Path) -> Iterable[Path]:
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "-z", "--", "*.json"],
+            cwd=root,
+            check=False,
+            capture_output=True,
+        )
+    except OSError as error:
+        raise EvidencePipelineError(f"{root}: cannot enumerate tracked JSON: {error}") from error
+    if result.returncode:
+        raise EvidencePipelineError(f"{root}: tracked-only import requires a Git repository")
+    for relative in sorted(
+        (Path(item.decode("utf-8")) for item in result.stdout.split(b"\0") if item),
+        key=lambda path: path.as_posix(),
+    ):
+        yield root / relative
+
+
+def _repository_name(root: Path) -> str:
+    try:
+        result = subprocess.run(
+            ["git", "config", "--get", "remote.origin.url"],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return root.name
+    if result.returncode or not result.stdout.strip():
+        return root.name
+    return result.stdout.strip().removesuffix(".git")
 
 
 def _kind(relative: str, record: Any) -> str:

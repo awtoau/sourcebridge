@@ -144,10 +144,18 @@ def _init_db(arguments: list[str]) -> int:
 def _import_json(arguments: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="sourcebridge import-json")
     parser.add_argument("--database", type=Path, required=True)
-    parser.add_argument("--root", type=Path, default=Path("."))
+    parser.add_argument("--root", type=Path, action="append")
+    parser.add_argument("--tracked-only", action="store_true")
     args = parser.parse_args(arguments)
     try:
-        print(json.dumps(import_json(args.database, args.root), indent=2, sort_keys=True))
+        reports = [
+            {
+                "root": str(root),
+                **import_json(args.database, root, tracked_only=args.tracked_only),
+            }
+            for root in args.root or [Path(".")]
+        ]
+        print(json.dumps(reports, indent=2, sort_keys=True))
     except EvidencePipelineError as error:
         print(error, file=sys.stderr)
         return 1

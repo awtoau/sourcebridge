@@ -248,10 +248,23 @@ SHA-256 provenance:
 
 ```text
 sourcebridge init-db --database evidence/sourcebridge.db
-sourcebridge import-json --database evidence/sourcebridge.db --root .
+sourcebridge import-json --database evidence/sourcebridge.db --root . --tracked-only
 ```
 
 The importer is idempotent. It retains every JSON record in SQL, projects
 profiles, fact-grounded evidence, and rule proposals into typed tables where
 the neutral contract applies, and keeps JSON schemas, manifests, examples, and
 committed source evidence as portable audit inputs rather than deleting them.
+Repeat `--root` to consolidate several Git pack repositories; `--tracked-only`
+imports only committed JSON and records the Git remote as source provenance.
+For example, the current Delphi and C# conversion evidence can be consolidated
+without ingesting build products or uncommitted work:
+
+```text
+sourcebridge import-json --database evidence/sourcebridge.db --tracked-only \
+  --root . \
+  --root ../sourcebridge-delphi \
+  --root ../sourcebridge-rust \
+  --root ../../csharp2rust \
+  --root ../sourcebridge-csharp
+```

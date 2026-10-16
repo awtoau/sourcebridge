@@ -49,11 +49,11 @@ class PipelineTests(unittest.TestCase):
             database = root / "evidence.db"
 
             initialize(database)
-            first = import_json(database, root)
-            second = import_json(database, root)
+            first = import_json(database, root, repository="fixture")
+            second = import_json(database, root, repository="fixture")
             profile["options"] = {"updated": True}
             (root / "examples" / "profile.json").write_text(json.dumps(profile), encoding="utf-8")
-            updated = import_json(database, root)
+            updated = import_json(database, root, repository="fixture")
             with sqlite3.connect(database) as connection:
                 imported = connection.execute(
                     "SELECT COUNT(*) FROM sourcebridge_imported_record"
@@ -65,7 +65,13 @@ class PipelineTests(unittest.TestCase):
                     "SELECT COUNT(*) FROM sourcebridge_source_unit"
                 ).fetchone()[0]
 
-        self.assertEqual(first, {"imported": 3, "projected": 3, "skipped": 0})
-        self.assertEqual(second, {"imported": 0, "projected": 3, "skipped": 3})
-        self.assertEqual(updated, {"imported": 1, "projected": 3, "skipped": 2})
+        self.assertEqual(
+            first, {"repository": "fixture", "imported": 3, "projected": 3, "skipped": 0}
+        )
+        self.assertEqual(
+            second, {"repository": "fixture", "imported": 0, "projected": 3, "skipped": 3}
+        )
+        self.assertEqual(
+            updated, {"repository": "fixture", "imported": 1, "projected": 3, "skipped": 2}
+        )
         self.assertEqual((imported, proposals, units), (3, 1, 1))

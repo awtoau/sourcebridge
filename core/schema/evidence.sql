@@ -245,6 +245,7 @@ CREATE TABLE sourcebridge_schema_metadata (
 -- bytes, and digest. Typed tables may project facts from this immutable source.
 CREATE TABLE sourcebridge_imported_record (
     id TEXT PRIMARY KEY,
+    source_repository TEXT NOT NULL,
     source_path TEXT NOT NULL UNIQUE,
     source_sha256 TEXT NOT NULL,
     kind TEXT NOT NULL,
