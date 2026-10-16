@@ -55,6 +55,20 @@ Each profile may choose different runtime adapters and target-oriented rules,
 but all three begin from the same pinned Delphi corpus facts. The same applies
 to C#, C, and future source languages.
 
+### First executable pack path
+
+The initial public packs are now available:
+
+- [`awtoau/sourcebridge-delphi`](https://github.com/awtoau/sourcebridge-delphi)
+  extracts the Stage-1 Delphi scalar fixture and validates it with Free Pascal
+  3.2.3 on x86_64 Linux in Delphi mode.
+- [`awtoau/sourcebridge-rust`](https://github.com/awtoau/sourcebridge-rust)
+  emits and compiles Rust for the corresponding verified non-overflow scalar
+  addition facts.
+
+This is deliberately a narrow end-to-end proof, not a claim that general
+Delphi-to-Rust conversion or overflow behavior is validated.
+
 ## The C# to Rust naming exception
 
 `sourcebridge-csharp` will become the canonical C# to Rust pack. It will

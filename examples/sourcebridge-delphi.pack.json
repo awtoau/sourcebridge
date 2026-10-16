@@ -8,6 +8,6 @@
     "target_environments": []
   },
   "entrypoints": {
-    "extract": "sourcebridge_delphi.extract:run"
+    "extract": "sourcebridge-delphi-extract"
   }
 }

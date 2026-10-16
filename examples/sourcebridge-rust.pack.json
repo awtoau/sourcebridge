@@ -8,7 +8,7 @@
     "target_environments": ["rust"]
   },
   "entrypoints": {
-    "emit": "sourcebridge_rust.emit:run",
-    "validate": "sourcebridge_rust.validate:run"
+    "emit": "sourcebridge-rust-emit",
+    "validate": "cargo test"
   }
 }
