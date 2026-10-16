@@ -42,3 +42,31 @@ class ReportingTests(unittest.TestCase):
         self.assertEqual(occurrences[0]["generated_excerpt"], "unimplemented!()")
         self.assertEqual(occurrences[0]["evidence_path"], "log.txt")
         self.assertEqual(activity, [])
+
+    def test_execution_activity_includes_run_and_worker_events(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            database = Path(temporary) / "evidence.db"
+            schema = (Path(__file__).parents[1] / "core" / "schema" / "evidence.sql").read_text()
+            connection = sqlite3.connect(database)
+            connection.executescript(schema)
+            connection.executescript(
+                """
+                INSERT INTO sourcebridge_corpus VALUES ('c', 'fixture', 'r1', NULL, 'd', 't');
+                INSERT INTO sourcebridge_variant VALUES ('v', 'c', 'frontend', NULL, NULL, NULL, NULL, 'd', NULL, 't');
+                INSERT INTO sourcebridge_profile VALUES ('p', 'profile', 'frontend', NULL, 'backend', 'd', 'd', 'd', 't');
+                INSERT INTO sourcebridge_execution_run VALUES
+                    ('run', 'p', 'v', 'analyze', 1, 'passed', '{"argv":["tool"]}', 'tester', 't', 't', 't');
+                INSERT INTO sourcebridge_execution_worker VALUES
+                    ('worker', 'run', 0, 'completed', NULL, NULL, 1, 't');
+                INSERT INTO sourcebridge_execution_event VALUES
+                    ('run-event', 'run', NULL, '2026-10-16T00:00:00+00:00', 'progress', 'starting', '{}'),
+                    ('worker-event', 'run', 'worker', '2026-10-16T00:01:00+00:00', 'completed', 'done', '{}');
+                """
+            )
+            connection.close()
+            activity = execution_activity(database)
+
+        self.assertEqual(
+            [(item["worker_slot"], item["event_kind"], item["message"]) for item in activity],
+            [(None, "progress", "starting"), (0, "completed", "done")],
+        )

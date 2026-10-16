@@ -86,15 +86,34 @@ def diagnostic_occurrences(database: Path, signature: str) -> list[dict[str, Any
 def execution_activity(database: Path) -> list[dict[str, Any]]:
     query = text(
         """
-        SELECT run.id AS run_id, run.action, run.status AS run_status,
-               run.requested_workers, worker.worker_slot, worker.status AS worker_status,
-               worker.units_completed, source.source_path, event.occurred_at,
-               event.kind AS event_kind, event.message, event.metrics_json
-        FROM sourcebridge_execution_run AS run
-        LEFT JOIN sourcebridge_execution_worker AS worker ON worker.run_id = run.id
-        LEFT JOIN sourcebridge_source_unit AS source ON source.id = worker.source_unit_id
-        LEFT JOIN sourcebridge_execution_event AS event ON event.worker_id = worker.id
-        ORDER BY run.created_at DESC, worker.worker_slot, event.occurred_at DESC
+        WITH activity AS (
+            SELECT run.id AS run_id, run.action, run.status AS run_status,
+                   run.requested_workers, worker.worker_slot, worker.status AS worker_status,
+                   worker.units_completed, source.source_path, event.occurred_at,
+                   event.kind AS event_kind, event.message, event.metrics_json
+            FROM sourcebridge_execution_run AS run
+            JOIN sourcebridge_execution_event AS event ON event.run_id = run.id
+            LEFT JOIN sourcebridge_execution_worker AS worker ON worker.id = event.worker_id
+            LEFT JOIN sourcebridge_source_unit AS source ON source.id = worker.source_unit_id
+
+            UNION ALL
+
+            SELECT run.id AS run_id, run.action, run.status AS run_status,
+                   run.requested_workers, worker.worker_slot, worker.status AS worker_status,
+                   worker.units_completed, source.source_path, NULL AS occurred_at,
+                   NULL AS event_kind, NULL AS message, NULL AS metrics_json
+            FROM sourcebridge_execution_run AS run
+            JOIN sourcebridge_execution_worker AS worker ON worker.run_id = run.id
+            LEFT JOIN sourcebridge_source_unit AS source ON source.id = worker.source_unit_id
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM sourcebridge_execution_event AS event
+                WHERE event.worker_id = worker.id
+            )
+        )
+        SELECT *
+        FROM activity
+        ORDER BY run_id DESC, worker_slot, occurred_at DESC
         """
     )
     with _engine(database).connect() as connection:
