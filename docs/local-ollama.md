@@ -24,9 +24,10 @@ A proposal request contains a bounded evidence package:
 - positive/negative context and requested target backend;
 - fixed prompt-template version and fixed generation options.
 
-The client uses temperature zero, an explicit seed, and a bounded context
-window. It sends the JSON schema in `core/schema/rule-proposal.schema.json` to
-Ollama's structured-output interface.
+The client uses temperature zero, an explicit seed, an 8,192-token context
+window, a 1,024-token output ceiling, and a five-minute local request ceiling.
+It sends the JSON schema in `core/schema/rule-proposal.schema.json` to Ollama's
+structured-output interface.
 
 ## Result contract
 

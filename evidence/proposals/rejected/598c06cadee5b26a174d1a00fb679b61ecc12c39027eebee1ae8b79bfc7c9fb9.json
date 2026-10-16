@@ -1,0 +1,117 @@
+{
+  "evidence": {
+    "active_rule_digest": "no-promoted-rule-yet",
+    "cluster_id": "delphi-fpc-3.2.3-scalar-addition-v1",
+    "negative_context": [
+      "Do not make an overflow claim; no overflow observation exists.",
+      "Do not map pointer arithmetic or non-32-bit Delphi scalar types.",
+      "Do not claim Embarcadero Delphi compatibility from this Free Pascal result."
+    ],
+    "observed_behavior": {
+      "cardinal_bytes": 4,
+      "integer_bytes": 4,
+      "non_overflow_examples": [
+        {
+          "function": "AddSigned",
+          "input": [
+            1,
+            2
+          ],
+          "result": 3
+        },
+        {
+          "function": "AddUnsigned",
+          "input": [
+            1,
+            2
+          ],
+          "result": 3
+        }
+      ]
+    },
+    "source_facts": {
+      "functions": [
+        {
+          "name": "AddSigned",
+          "operation": "Result := Left + Right",
+          "parameters": [
+            {
+              "name": "Left",
+              "type": "integer"
+            },
+            {
+              "name": "Right",
+              "type": "integer"
+            }
+          ],
+          "return_type": "integer"
+        },
+        {
+          "name": "AddUnsigned",
+          "operation": "Result := Left + Right",
+          "parameters": [
+            {
+              "name": "Left",
+              "type": "cardinal"
+            },
+            {
+              "name": "Right",
+              "type": "cardinal"
+            }
+          ],
+          "return_type": "cardinal"
+        }
+      ],
+      "source_path": "fixtures/scalars.pas"
+    },
+    "source_language": "delphi",
+    "target_context": {
+      "backend": "rust",
+      "target_validation": "Generated i32/u32 functions compiled with rustc and returned 3 for the observed ordinary inputs.",
+      "verified_mappings": {
+        "cardinal": "u32",
+        "integer": "i32"
+      }
+    },
+    "variant": {
+      "compiler": {
+        "family": "free-pascal",
+        "mode": "delphi",
+        "target_cpu": "x86_64",
+        "target_os": "linux",
+        "version": "3.2.3"
+      },
+      "status": "source-compiled"
+    }
+  },
+  "generation_options": {
+    "num_ctx": 8192,
+    "num_predict": 768,
+    "seed": 42,
+    "temperature": 0
+  },
+  "model": {
+    "digest": "9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849",
+    "name": "qwen2.5-coder:14b"
+  },
+  "payload_sha256": "598c06cadee5b26a174d1a00fb679b61ecc12c39027eebee1ae8b79bfc7c9fb9",
+  "prompt_template_version": "local-rule-proposal-v1",
+  "proposal": null,
+  "raw_response": {
+    "created_at": "2026-10-16T01:43:13.019659238Z",
+    "done": true,
+    "done_reason": "length",
+    "eval_count": 768,
+    "eval_duration": 162220030688,
+    "load_duration": 84506031,
+    "message": {
+      "content": "{\n  \"applicability\": {\n    \"rationale\": \"The observed behavior involves basic scalar addition without overflow, and the target context verifies mappings to Rust's i32 and u32 types. The source language is Delphi, compiled with Free Pascal in Delphi mode.\",\n    \"source_language\": \"delphi\",\n    \"variant_selector\": {\n      \"compiler_family\": \"free-pascal\",\n      \"compiler_mode\": \"delphi\",\n      \"target_cpu\": \"x86_64\",\n      \"target_os\": \"linux\",\n      \"version\": \"3.2.3\"\n    }\n ,\n  \"version_selector\": {\n    \"prompt_template_version\": \"local-rule-proposal-v1\"\n  }\n}\n\n  , \"description\": \"This rule applies when the source code involves basic scalar addition operations without overflow, compiled with Free Pascal in Delphi mode on an x86_64 Linux system. The target context should map Delphi's integer and cardinal types to Rust's i32 and u32 types, respectively.\",\n  \"family\": \"rule-proposal\",\n  \"negative_patterns\": [\n    {\n      \"snippet\": \"Do not make an overflow claim; no overflow observation exists.\"\n    ,\n    \"why_it_must_not_match\": \"The observed behavior does not involve any overflow.\"\n  }\n,\n    {\n      \"snippet\": \"Do not map pointer arithmetic or non-32-bit Delphi scalar types.\",\n      \"why_it_must_not_match\": \"The observed behavior involves only basic scalar addition with 32-bit integer and cardinal types.\"\n  }\n,\n    {\n      \"snippet\": \"Do not claim Embarcadero Delphi compatibility from this Free Pascal result.\",\n      \"why_it_must_not_match\": \"The rule proposal is specific to the observed behavior and does not make claims about broader compatibility.\"\n  }\n]\n  , \"open_questions\": [\n    \"How should we handle cases where the addition operation might overflow in the future?\",\n    \"Are there any specific optimizations or considerations for mapping Delphi's scalar types to Rust's integer types?\"\n  ]\n  , \"positive_patterns\": [\n    {\n      \"snippet\": \"The observed behavior involves basic scalar addition without overflow.\",\n      \"why_it_matches\": \"This pattern matches the observed behavior where both AddSigned and AddUnsigned functions return expected results without overflow.\"\n  }\n,\n    {\n      \"snippet\": \"The target context verifies mappings to Rust's i32/u32 functions.\",\n      \"why_it_matches\": \"The verified_mappings in the target_context indicate that Delphi's integer and cardinal types are correctly mapped to Rust's i32 and u32 types.\"\n  }\n,\n    {\n      \"snippet\": \"The source code is compiled with Free Pascal in Delphi mode on an x86_64 Linux system.\",\n      \"why_it_matches\": \"The variant selector specifies the compiler family, mode, target CPU, target OS, and version used to compile the source code.\"\n  }\n]\n  , \"rule_name\": \"BasicScalarAdditionWithoutOverflow\",\n  \"status_claim\": \"unvalidated-llm-proposal\"\n  , \"suggested_tests\": [\n    {\n      \"expected_result\": \"The generated Rust functions should return the correct results for a range of ordinary inputs without overflow.\",\n      \"source_input\": \"fixtures/scalars.pas\"\n    }\n,\n    {\n      \"expected_result\": \"The rule proposal should be validated by compiling and testing the generated Rust code with various inputs.\",\n      \"source_input\": \"rule-proposal-validation-script.sh\"\n    }\n  ]\n",
+      "role": "assistant"
+    },
+    "model": "qwen2.5-coder:14b",
+    "prompt_eval_count": 463,
+    "prompt_eval_duration": 790388622,
+    "total_duration": 173317550580
+  },
+  "status": "unvalidated-llm-proposal"
+}

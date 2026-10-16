@@ -21,6 +21,7 @@ from sourcebridge.proposals import (
 )
 from sourcebridge.reporting import EvidenceReportError, diagnostic_groups, diagnostic_occurrences
 from sourcebridge.execution import run_approved
+from sourcebridge.proposal_evaluation import evaluate
 
 
 def _proposal_parser() -> argparse.ArgumentParser:
@@ -95,6 +96,19 @@ def _run_approved(arguments: list[str]) -> int:
         return 1
 
 
+def _evaluate_proposal(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge evaluate-proposal")
+    parser.add_argument("proposal", type=Path)
+    args = parser.parse_args(arguments)
+    try:
+        result = evaluate(args.proposal)
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0 if result["eligible_for_human_rule_review"] else 1
+
+
 def _legacy_command(arguments: list[str]) -> int:
     sys.argv = [sys.argv[0], *arguments]
     return manifest_cli.main()
@@ -110,6 +124,8 @@ def main() -> int:
         return _report_diagnostics(arguments[1:])
     if arguments and arguments[0] == "run-approved":
         return _run_approved(arguments[1:])
+    if arguments and arguments[0] == "evaluate-proposal":
+        return _evaluate_proposal(arguments[1:])
     return _legacy_command(arguments)
 
 

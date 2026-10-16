@@ -1,0 +1,161 @@
+{
+  "evidence": {
+    "active_rule_digest": "no-promoted-rule-yet",
+    "cluster_id": "delphi-fpc-3.2.3-scalar-addition-v1",
+    "negative_context": [
+      "Do not make an overflow claim; no overflow observation exists.",
+      "Do not map pointer arithmetic or non-32-bit Delphi scalar types.",
+      "Do not claim Embarcadero Delphi compatibility from this Free Pascal result."
+    ],
+    "observed_behavior": {
+      "cardinal_bytes": 4,
+      "integer_bytes": 4,
+      "non_overflow_examples": [
+        {
+          "function": "AddSigned",
+          "input": [
+            1,
+            2
+          ],
+          "result": 3
+        },
+        {
+          "function": "AddUnsigned",
+          "input": [
+            1,
+            2
+          ],
+          "result": 3
+        }
+      ]
+    },
+    "source_facts": {
+      "functions": [
+        {
+          "name": "AddSigned",
+          "operation": "Result := Left + Right",
+          "parameters": [
+            {
+              "name": "Left",
+              "type": "integer"
+            },
+            {
+              "name": "Right",
+              "type": "integer"
+            }
+          ],
+          "return_type": "integer"
+        },
+        {
+          "name": "AddUnsigned",
+          "operation": "Result := Left + Right",
+          "parameters": [
+            {
+              "name": "Left",
+              "type": "cardinal"
+            },
+            {
+              "name": "Right",
+              "type": "cardinal"
+            }
+          ],
+          "return_type": "cardinal"
+        }
+      ],
+      "source_path": "fixtures/scalars.pas"
+    },
+    "source_language": "delphi",
+    "target_context": {
+      "backend": "rust",
+      "target_validation": "Generated i32/u32 functions compiled with rustc and returned 3 for the observed ordinary inputs.",
+      "verified_mappings": {
+        "cardinal": "u32",
+        "integer": "i32"
+      }
+    },
+    "variant": {
+      "compiler": {
+        "family": "free-pascal",
+        "mode": "delphi",
+        "target_cpu": "x86_64",
+        "target_os": "linux",
+        "version": "3.2.3"
+      },
+      "status": "source-compiled"
+    }
+  },
+  "generation_options": {
+    "num_ctx": 8192,
+    "num_predict": 1024,
+    "seed": 42,
+    "temperature": 0
+  },
+  "model": {
+    "digest": "9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849",
+    "name": "qwen2.5-coder:14b"
+  },
+  "payload_sha256": "d136c1f0df455b1cc6260c8b5dd788e216103ce0cba8b06426f450bbab775328",
+  "prompt_template_version": "local-rule-proposal-v1",
+  "proposal": {
+    "applicability": {
+      "rationale": "The observed behavior involves basic arithmetic operations on integer and cardinal types without overflow, which is a common scenario in Delphi programming. The target context specifies Rust as the backend with verified mappings for integer and cardinal types to i32 and u32 respectively.",
+      "source_language": "delphi",
+      "variant_selector": {
+        "compiler_family": "free-pascal",
+        "compiler_mode": "delphi",
+        "target_cpu": "x86_64",
+        "target_os": "linux",
+        "version": "3.2.3"
+      },
+      "version_selector": {
+        "prompt_template_version": "local-rule-proposal-v1"
+      }
+    },
+    "description": "Propose a rule to map Delphi's integer and cardinal types to Rust's i32 and u32 respectively for addition operations without overflow, ensuring compatibility between the two languages in this specific context.",
+    "family": "rule-proposal",
+    "negative_patterns": [
+      {
+        "snippet": "Do not make an overflow claim; no overflow observation exists.",
+        "why_it_must_not_match": "The observed behavior does not involve any overflow, so claims of overflow should be avoided."
+      },
+      {
+        "snippet": "Do not map pointer arithmetic or non-32-bit Delphi scalar types.",
+        "why_it_must_not_match": "The operations in the observed behavior are basic addition on integer and cardinal types, which are both 32-bit."
+      }
+    ],
+    "open_questions": [
+      "How should we handle potential edge cases or additional operations beyond simple addition?"
+    ],
+    "positive_patterns": [
+      {
+        "snippet": "Generated i32/u32 functions compiled with rustc and returned 3 for the observed ordinary inputs.",
+        "why_it_matches": "This confirms that the mapping of Delphi's integer and cardinal types to Rust's i32 and u32 works correctly for the given operations."
+      }
+    ],
+    "rule_name": "Map Delphi Integer/Unsigned Types to Rust i32/u32 for Addition Without Overflow",
+    "status_claim": "unvalidated-llm-proposal",
+    "suggested_tests": [
+      {
+        "expected_result": "true",
+        "source_input": "fixtures/scalars.pas"
+      }
+    ]
+  },
+  "raw_response": {
+    "created_at": "2026-10-16T01:45:21.407813199Z",
+    "done": true,
+    "done_reason": "stop",
+    "eval_count": 519,
+    "eval_duration": 99116399225,
+    "load_duration": 57317890,
+    "message": {
+      "content": "{\n  \"applicability\": {\n    \"rationale\": \"The observed behavior involves basic arithmetic operations on integer and cardinal types without overflow, which is a common scenario in Delphi programming. The target context specifies Rust as the backend with verified mappings for integer and cardinal types to i32 and u32 respectively.\",\n    \"source_language\": \"delphi\",\n    \"variant_selector\": {\n      \"compiler_family\": \"free-pascal\",\n      \"compiler_mode\": \"delphi\",\n      \"target_cpu\": \"x86_64\",\n      \"target_os\": \"linux\",\n      \"version\": \"3.2.3\"\n    }\n ,\n  \"version_selector\": {\n    \"prompt_template_version\": \"local-rule-proposal-v1\"\n  }\n}\n\n  , \"description\": \"Propose a rule to map Delphi's integer and cardinal types to Rust's i32 and u32 respectively for addition operations without overflow, ensuring compatibility between the two languages in this specific context.\",\n  \"family\": \"rule-proposal\",\n  \"negative_patterns\": [\n    {\n      \"snippet\": \"Do not make an overflow claim; no overflow observation exists.\"\n    ,\n    \"why_it_must_not_match\": \"The observed behavior does not involve any overflow, so claims of overflow should be avoided.\"\n  }\n,\n    {\n      \"snippet\": \"Do not map pointer arithmetic or non-32-bit Delphi scalar types.\",\n      \"why_it_must_not_match\": \"The operations in the observed behavior are basic addition on integer and cardinal types, which are both 32-bit.\"\n  }\n]\n,\n  \"open_questions\": [\n    \"How should we handle potential edge cases or additional operations beyond simple addition?\"\n  ]\n,\n  \"positive_patterns\": [\n    {\n      \"snippet\": \"Generated i32/u32 functions compiled with rustc and returned 3 for the observed ordinary inputs.\",\n      \"why_it_matches\": \"This confirms that the mapping of Delphi's integer and cardinal types to Rust's i32 and u32 works correctly for the given operations.\"\n  }\n]\n,\n  \"rule_name\": \"Map Delphi Integer/Unsigned Types to Rust i32/u32 for Addition Without Overflow\",\n  \"status_claim\": \"unvalidated-llm-proposal\",\n  \"suggested_tests\": [\n    {\n      \"expected_result\": \"true\",\n      \"source_input\": \"fixtures/scalars.pas\"\n    }\n  ]\n}",
+      "role": "assistant"
+    },
+    "model": "qwen2.5-coder:14b",
+    "prompt_eval_count": 496,
+    "prompt_eval_duration": 1964669654,
+    "total_duration": 107511209145
+  },
+  "status": "unvalidated-llm-proposal"
+}

@@ -13,7 +13,8 @@ from urllib.request import Request, urlopen
 
 DEFAULT_MODEL = "qwen2.5-coder:14b"
 PROMPT_TEMPLATE_VERSION = "local-rule-proposal-v1"
-GENERATION_OPTIONS = {"temperature": 0, "seed": 42, "num_ctx": 8192}
+GENERATION_OPTIONS = {"temperature": 0, "seed": 42, "num_ctx": 8192, "num_predict": 1024}
+REQUEST_TIMEOUT_SECONDS = 300
 _LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 _REQUIRED_PROPOSAL_FIELDS = {
     "rule_name",
@@ -67,7 +68,7 @@ def _request_json(url: str, payload: dict[str, Any] | None = None) -> dict[str, 
         method="POST" if data is not None else "GET",
     )
     try:
-        with urlopen(request, timeout=120) as response:
+        with urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             decoded = json.loads(response.read().decode("utf-8"))
     except OSError as error:
         raise ValueError(f"Ollama request failed: {error}") from error
@@ -147,6 +148,7 @@ def _proposal_schema() -> dict[str, Any]:
             "description": {"type": "string"},
             "positive_patterns": {
                 "type": "array",
+                "maxItems": 1,
                 "items": {
                     "type": "object",
                     "required": ["snippet", "why_it_matches"],
@@ -156,6 +158,7 @@ def _proposal_schema() -> dict[str, Any]:
             },
             "negative_patterns": {
                 "type": "array",
+                "maxItems": 2,
                 "items": {
                     "type": "object",
                     "required": ["snippet", "why_it_must_not_match"],
@@ -165,6 +168,7 @@ def _proposal_schema() -> dict[str, Any]:
             },
             "suggested_tests": {
                 "type": "array",
+                "maxItems": 1,
                 "items": {
                     "type": "object",
                     "required": ["source_input", "expected_result"],
@@ -172,7 +176,7 @@ def _proposal_schema() -> dict[str, Any]:
                     "additionalProperties": False,
                 },
             },
-            "open_questions": {"type": "array", "items": {"type": "string"}},
+            "open_questions": {"type": "array", "maxItems": 1, "items": {"type": "string"}},
         },
         "additionalProperties": False,
     }
@@ -238,7 +242,10 @@ def stage_proposal(
                 "role": "system",
                 "content": (
                     "Return only one JSON object matching the supplied schema. "
-                    "Propose a rule candidate; never claim validation or write code."
+                    "Propose one concise rule candidate; never claim validation or write code. "
+                    "Use exact source snippets or committed fixture paths, not prose summaries. "
+                    "Suggested tests must name a fixture path and a concrete expected value. "
+                    "Keep every explanation concise."
                 ),
             },
             {

@@ -1,0 +1,85 @@
+{
+  "cluster_id": "delphi-fpc-3.2.3-scalar-addition-v1",
+  "source_language": "delphi",
+  "variant": {
+    "compiler": {
+      "family": "free-pascal",
+      "mode": "delphi",
+      "target_cpu": "x86_64",
+      "target_os": "linux",
+      "version": "3.2.3"
+    },
+    "status": "source-compiled"
+  },
+  "source_facts": {
+    "source_path": "fixtures/scalars.pas",
+    "functions": [
+      {
+        "name": "AddSigned",
+        "parameters": [
+          {
+            "name": "Left",
+            "type": "integer"
+          },
+          {
+            "name": "Right",
+            "type": "integer"
+          }
+        ],
+        "return_type": "integer",
+        "operation": "Result := Left + Right"
+      },
+      {
+        "name": "AddUnsigned",
+        "parameters": [
+          {
+            "name": "Left",
+            "type": "cardinal"
+          },
+          {
+            "name": "Right",
+            "type": "cardinal"
+          }
+        ],
+        "return_type": "cardinal",
+        "operation": "Result := Left + Right"
+      }
+    ]
+  },
+  "observed_behavior": {
+    "integer_bytes": 4,
+    "cardinal_bytes": 4,
+    "non_overflow_examples": [
+      {
+        "function": "AddSigned",
+        "input": [
+          1,
+          2
+        ],
+        "result": 3
+      },
+      {
+        "function": "AddUnsigned",
+        "input": [
+          1,
+          2
+        ],
+        "result": 3
+      }
+    ]
+  },
+  "active_rule_digest": "no-promoted-rule-yet",
+  "negative_context": [
+    "Do not make an overflow claim; no overflow observation exists.",
+    "Do not map pointer arithmetic or non-32-bit Delphi scalar types.",
+    "Do not claim Embarcadero Delphi compatibility from this Free Pascal result."
+  ],
+  "target_context": {
+    "backend": "rust",
+    "verified_mappings": {
+      "integer": "i32",
+      "cardinal": "u32"
+    },
+    "target_validation": "Generated i32/u32 functions compiled with rustc and returned 3 for the observed ordinary inputs."
+  }
+}
