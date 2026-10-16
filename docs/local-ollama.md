@@ -14,6 +14,61 @@ Cloud-routed tags, including any `:cloud` suffix, are rejected. Source or
 corpus content must not leave the local host unless a future profile explicitly
 records a different privacy policy.
 
+## Chosen operating model
+
+The model is a proposal worker, never an authority. It handles a batch of
+similar evidence packages in one long-lived local session so the model load is
+amortized. Each request remains independently reproducible: it records the
+resolved digest, prompt-template version, evidence digest, generation options,
+and raw response.
+
+The worker must use a ground-or-abstain contract:
+
+- weak evidence produces no positive pattern and no executable test;
+- compiler-grounded evidence may produce a narrowly scoped candidate;
+- source paths, symbols, inputs, observed results, compiler fields, and target
+  claims must be copied exactly from the evidence;
+- executable-test fields are reconstructed and checked deterministically, not
+  trusted as free-form model text.
+
+This policy is necessary because a model can produce schema-valid JSON while
+still inventing a fixture path, test input, expected result, source variant, or
+target semantic claim.
+
+## What users may optimize
+
+Users may optimize a local deployment for their own hardware, but must measure
+quality and retain provenance before changing the selected configuration.
+
+| Setting | Default or policy | Permitted optimization |
+|---|---|---|
+| Model | `qwen2.5-coder:14b` is the current approved baseline | Compare a candidate only with digest pinning, local-only transport, and the evaluation matrix below. |
+| Worker lifetime | One loaded worker processes a related batch | Keep the process/model loaded when cold-start cost is unimportant. Record session load time separately from request time. |
+| Reasoning level | Use the model's practical, measured setting | Do not select a deeper setting merely because it is available. It must improve evidence fidelity or readiness acceptance. |
+| Context and output limits | 8,192 input tokens and 1,024 output tokens | Increase only for evidence packages that demonstrate truncation; preserve fixed limits for a measured comparison. |
+| Parallelism | One proposal stream per loaded model | Prefer serial related requests over competing memory-heavy model loads. |
+| Heavyweight model | Optional adjudicator only | Use only when it demonstrates a material quality gain over the primary worker; paging-bound throughput alone is not a reason to select it. |
+
+The current local trial found that a grounding prompt improved abstention, but
+neither larger models nor deeper reasoning reliably preserved all free-form
+test fields. That result reinforces deterministic field validation rather than
+model-size escalation.
+
+## Required evaluation before changing a model
+
+Evaluate every candidate with the same pinned cases:
+
+1. a weak-evidence case, where correct behavior is abstention;
+2. a compiler-grounded case, where every literal reference can be checked; and
+3. a repeated related-task batch, where session warm-up and per-request timing
+   are recorded separately.
+
+Record schema validity, abstention precision, literal-reference fidelity,
+deterministic field-validation pass rate, proposal-readiness acceptance,
+prompt-evaluation time, generation time, and generated-token count. Select a
+primary worker from those measures rather than parameter count, apparent
+fluency, or raw throughput.
+
 ## Request contract
 
 A proposal request contains a bounded evidence package:
@@ -39,3 +94,8 @@ ownership.
 Promotion requires a separate reviewer action, rule/corpus checks, target
 checks, and the strongest applicable oracle. A proposal client never writes
 under generated-artifact directories.
+
+The active optimization work is tracked in
+[#12](https://github.com/awtoau/sourcebridge/issues/12). No inference may be
+run merely to tune a configuration: every request must be an explicitly
+authorized, local-only evaluation or proposal run.

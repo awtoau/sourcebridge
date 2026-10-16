@@ -153,6 +153,10 @@ JSON evidence to 256 KiB, uses fixed generation options, schema-checks the
 response, and writes the result only under `evidence/proposals/`. A staged
 result is always labelled `unvalidated-llm-proposal`.
 
+See [the local Ollama operating guide](docs/local-ollama.md) for the selected
+baseline, fixed safety/evidence constraints, and the hardware/workload settings
+users may measure and optimize without weakening proposal validation.
+
 ## Dependencies are user-controlled decisions
 
 Sourcebridge does not automatically convert every library or silently replace
