@@ -19,7 +19,12 @@ from sourcebridge.proposals import (
     write_staged_proposal,
     write_rejected_proposal,
 )
-from sourcebridge.reporting import EvidenceReportError, diagnostic_groups, diagnostic_occurrences
+from sourcebridge.reporting import (
+    EvidenceReportError,
+    diagnostic_groups,
+    diagnostic_occurrences,
+    report_packs,
+)
 from sourcebridge.execution import run_approved
 from sourcebridge.proposal_evaluation import evaluate
 
@@ -84,6 +89,19 @@ def _report_diagnostics(arguments: list[str]) -> int:
     return 0
 
 
+def _report_packs(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-packs")
+    parser.add_argument("roots", metavar="ROOT", type=Path, nargs="+")
+    args = parser.parse_args(arguments)
+    try:
+        report = report_packs(args.roots)
+    except (EvidenceReportError, OSError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0
+
+
 def _run_approved(arguments: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="sourcebridge run-approved")
     parser.add_argument("--database", type=Path, required=True)
@@ -122,6 +140,8 @@ def main() -> int:
         return _model_digest(arguments[1:])
     if arguments and arguments[0] == "report-diagnostics":
         return _report_diagnostics(arguments[1:])
+    if arguments and arguments[0] == "report-packs":
+        return _report_packs(arguments[1:])
     if arguments and arguments[0] == "run-approved":
         return _run_approved(arguments[1:])
     if arguments and arguments[0] == "evaluate-proposal":

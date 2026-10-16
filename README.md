@@ -157,6 +157,26 @@ See [the local Ollama operating guide](docs/local-ollama.md) for the selected
 baseline, fixed safety/evidence constraints, and the hardware/workload settings
 users may measure and optimize without weakening proposal validation.
 
+## Cross-pack committed-evidence reports
+
+`report-packs` reads committed JSON evidence only below the supplied pack roots.
+It never creates a database or modifies an input. Its deterministic JSON keeps
+source validation, extracted C facts, target oracle manifests, current compiler
+metrics, and staged/rejected local-model proposals separate. Every artifact
+includes its root-name repository label, path relative to that root, SHA-256,
+recognized kind, and source schema version. Files reached through overlapping
+roots are reported once.
+
+```text
+sourcebridge report-packs ../sourcebridge-c ../sourcebridge-delphi \
+  ../sourcebridge-csharp .
+```
+
+`compile_baseline.json` is deliberately not a current compiler metric. It
+remains in `unrecognized_artifacts` with a historical kind and provenance.
+Unrecognized or malformed JSON evidence is retained there too; non-JSON source
+and build files are outside this committed-evidence report.
+
 ## Dependencies are user-controlled decisions
 
 Sourcebridge does not automatically convert every library or silently replace
