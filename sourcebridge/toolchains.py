@@ -53,7 +53,10 @@ def validate_toolchain_report(
         raise ToolchainReportError(
             f"{label}: missing required field(s): {', '.join(missing)}"
         )
-    if report["schema_version"] != TOOLCHAIN_REPORT_SCHEMA_VERSION:
+    if (
+        type(report["schema_version"]) is not int
+        or report["schema_version"] != TOOLCHAIN_REPORT_SCHEMA_VERSION
+    ):
         raise ToolchainReportError(f"{label}: unsupported schema_version")
     if report["report_type"] != TOOLCHAIN_REPORT_TYPE:
         raise ToolchainReportError(f"{label}: unsupported report_type")

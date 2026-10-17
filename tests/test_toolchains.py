@@ -67,3 +67,11 @@ class ToolchainReportTests(unittest.TestCase):
         report["conversion_capability"] = {"status": "supported"}
         with self.assertRaisesRegex(ToolchainReportError, "not_claimed"):
             validate_toolchain_report(report)
+
+    def test_schema_version_rejects_boolean_values(self) -> None:
+        for value in (True, False):
+            with self.subTest(value=value):
+                report = _report()
+                report["schema_version"] = value
+                with self.assertRaisesRegex(ToolchainReportError, "schema_version"):
+                    validate_toolchain_report(report)
