@@ -210,7 +210,8 @@ sourcebridge propose-rule evidence/unmatched-cluster.json \
   --model-digest sha256:<value printed by model-digest>
 ```
 
-It permits only the approved, locally installed `qwen2.5-coder:14b` model on a
+It permits only approved, locally installed models—defaulting to
+`qwen3-coder:30b` with `qwen2.5-coder:14b` as a lower-cost fallback—on a
 loopback Ollama endpoint, pins the response to its digest, limits the supplied
 JSON evidence to 256 KiB, uses fixed generation options, schema-checks the
 response, and writes the result only under `evidence/proposals/`. A staged

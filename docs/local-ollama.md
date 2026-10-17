@@ -5,9 +5,11 @@ automatic conversion approval.
 
 ## Allowed model
 
-The initial approved model is `qwen2.5-coder:14b`, selected because it fits a
-16 GiB local GPU with context headroom and demonstrated schema-conforming JSON
-under fixed options. The engine resolves the model tag to a local digest before
+The default approved model is `qwen3-coder:30b`. It is the current provisional
+default after a local-only Delphi inventory comparison using versioned prompts:
+under the curriculum-constrained prompt it stayed within the required feature
+vocabulary for all five fixtures. `qwen2.5-coder:14b` remains approved as a
+lower-cost fallback. The engine resolves the model tag to a local digest before
 each proposal and stores that digest with the result.
 
 Cloud-routed tags, including any `:cloud` suffix, are rejected. Source or
@@ -42,7 +44,7 @@ quality and retain provenance before changing the selected configuration.
 
 | Setting | Default or policy | Permitted optimization |
 |---|---|---|
-| Model | `qwen2.5-coder:14b` is the current approved baseline | Compare a candidate only with digest pinning, local-only transport, and the evaluation matrix below. |
+| Model | `qwen3-coder:30b` is the provisional default; `qwen2.5-coder:14b` is an approved lower-cost fallback | Compare a candidate only with digest pinning, local-only transport, and the evaluation matrix below. |
 | Worker lifetime | One loaded worker processes a related batch | Keep the process/model loaded when cold-start cost is unimportant. Record session load time separately from request time. |
 | Reasoning level | Use the model's practical, measured setting | Do not select a deeper setting merely because it is available. It must improve evidence fidelity or readiness acceptance. |
 | Context and output limits | 8,192 input tokens and 1,024 output tokens | Increase only for evidence packages that demonstrate truncation; preserve fixed limits for a measured comparison. |

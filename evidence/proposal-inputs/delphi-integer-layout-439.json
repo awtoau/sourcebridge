@@ -1,0 +1,40 @@
+{
+  "cluster_id": "delphi-basics-integer-layout-439",
+  "source_language": "delphi",
+  "variant": {
+    "compiler": {
+      "family": "free-pascal",
+      "mode": "delphi",
+      "target_cpu": "x86_64",
+      "target_os": "linux",
+      "version": "3.2.3"
+    }
+  },
+  "source_facts": {
+    "source_path": "fixtures/scalar_layout.pas",
+    "constructs": [
+      "program",
+      "SizeOf(Integer)",
+      "SizeOf(Cardinal)",
+      "Integer cast",
+      "Cardinal cast"
+    ],
+    "source_sha256": "1eb0c0223706b10b8355a3b2f2b515d3ba2d33bb2d201927dd9193a3fccabb54"
+  },
+  "observed_behavior": {},
+  "engine_test": {
+    "id": 439,
+    "source": "passed",
+    "extraction": {
+      "status": "failed",
+      "diagnostic": "missing unit declaration"
+    },
+    "target": "blocked",
+    "oracle": "skipped"
+  },
+  "active_rule_digest": "none",
+  "target_context": {
+    "backend": "rust",
+    "status": "blocked"
+  }
+}

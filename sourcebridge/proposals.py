@@ -14,8 +14,8 @@ from urllib.request import Request, urlopen
 import uuid
 
 
-DEFAULT_MODEL = "qwen2.5-coder:14b"
-APPROVED_MODELS = frozenset({DEFAULT_MODEL})
+DEFAULT_MODEL = "qwen3-coder:30b"
+APPROVED_MODELS = frozenset({DEFAULT_MODEL, "qwen2.5-coder:14b"})
 PROMPT_TEMPLATE_VERSION = "local-rule-proposal-v1"
 PROMPT_TEMPLATE_TEXT = (
     "Return only one JSON object matching the supplied schema. "
@@ -124,7 +124,10 @@ def validate_model_name(model: str) -> None:
     if ":cloud" in model:
         raise ValueError("cloud-routed Ollama models are not allowed")
     if model not in APPROVED_MODELS:
-        raise ValueError(f"model must be the approved local model `{DEFAULT_MODEL}`")
+        raise ValueError(
+            "model must be an approved local model: "
+            + ", ".join(sorted(APPROVED_MODELS))
+        )
 
 
 def _request_json(url: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
