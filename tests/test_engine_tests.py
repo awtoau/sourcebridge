@@ -9,7 +9,7 @@ import sys
 import tempfile
 import unittest
 
-from sourcebridge.cli import _test
+from sourcebridge.cli import _dev, _test
 from sourcebridge.engine_tests import EngineTestError, import_catalogue, list_tests, register, run
 from sourcebridge.pipeline import initialize
 
@@ -250,3 +250,64 @@ class EngineTestTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertEqual(result["status"], "passed")
+
+    def test_dev_command_imports_pack_and_runs_one_case(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = root / "case.py"
+            fixture.write_text("print('dev')", encoding="utf-8")
+            catalogue = root / "engine-tests.json"
+            catalogue.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "pack_id": "sourcebridge-csharp",
+                        "adapter": {
+                            "id": "command",
+                            "config": {"argv": [sys.executable, "{fixture_path}"]},
+                        },
+                        "tests": [
+                            {
+                                "id": 434,
+                                "name": "dev-case",
+                                "fixture": "case.py",
+                                "expected": {"exit_code": 0, "stdout": "dev\n"},
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            manifest = root / "sourcebridge-csharp.pack.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "id": "sourcebridge-csharp",
+                        "kind": "frontend",
+                        "version": "0.1.0",
+                        "provides": {
+                            "source_languages": ["csharp"],
+                            "target_environments": [],
+                        },
+                        "entrypoints": {"engine_tests": "engine-tests.json"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            database = root / "evidence.db"
+
+            with redirect_stdout(StringIO()):
+                exit_code = _dev(
+                    [
+                        "sourcebridge-csharp",
+                        "test",
+                        "434",
+                        "--database",
+                        str(database),
+                        "--pack-manifest",
+                        str(manifest),
+                    ]
+                )
+
+        self.assertEqual(exit_code, 0)
