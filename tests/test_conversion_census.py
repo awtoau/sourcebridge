@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from contextlib import redirect_stdout
+from io import StringIO
+import json
 from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest import mock
 
 from sourcebridge.conversion_census import ConversionCensusError, record_outcome, report
+from sourcebridge.cli import main
 from sourcebridge.pipeline import initialize
 
 
@@ -175,6 +180,28 @@ class ConversionCensusTests(unittest.TestCase):
                         "message": "fixture operation is unsupported",
                     }],
                 )
+
+    def test_cli_reports_persisted_census(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            database = self._database(Path(temporary))
+            record_outcome(
+                database,
+                decision_id="decision",
+                artifact_path="generated/fixture.rs",
+                artifact_content="fn main() {}",
+                generator_digest="generator-v1",
+                validations=self._validations(),
+            )
+            output = StringIO()
+            with redirect_stdout(output):
+                with mock.patch(
+                    "sys.argv",
+                    ["sourcebridge", "report-conversion-census", "--database", str(database)],
+                ):
+                    exit_code = main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(json.loads(output.getvalue())["generated_artifacts"], 1)
 
 
 if __name__ == "__main__":
