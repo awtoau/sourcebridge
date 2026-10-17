@@ -74,6 +74,16 @@ class ProposalTests(unittest.TestCase):
                 "http://127.0.0.1:11434", "qwen2.5-coder:14b", "sha256:ok")
         self.assertEqual(model.digest, "sha256:ok")
 
+    def test_resolves_provisional_default_model(self) -> None:
+        with patch(
+            "sourcebridge.proposals._request_json",
+            return_value={"models": [{"name": "qwen3-coder:30b", "digest": "sha256:best"}]},
+        ):
+            model = resolve_model(
+                "http://127.0.0.1:11434", "qwen3-coder:30b", "sha256:best"
+            )
+        self.assertEqual(model.name, "qwen3-coder:30b")
+
     def test_reports_installed_model_digest(self) -> None:
         with patch(
             "sourcebridge.proposals._request_json",
@@ -135,7 +145,7 @@ class ProposalTests(unittest.TestCase):
         with patch(
             "sourcebridge.proposals._request_json",
             side_effect=[
-                {"models": [{"name": "qwen2.5-coder:14b", "digest": "sha256:ok"}]},
+                {"models": [{"name": "qwen3-coder:30b", "digest": "sha256:ok"}]},
                 response,
                 response,
             ],
@@ -377,7 +387,7 @@ class ProposalTests(unittest.TestCase):
             database = Path(temporary) / "evidence.db"
             with patch(
                 "sourcebridge.proposals._request_json",
-                return_value={"models": [{"name": "qwen2.5-coder:14b", "digest": "sha256:ok"}]},
+                return_value={"models": [{"name": "qwen3-coder:30b", "digest": "sha256:ok"}]},
             ):
                 first = ProposalWorker(
                     "http://127.0.0.1:11434",
@@ -471,7 +481,7 @@ class ProposalTests(unittest.TestCase):
             with patch(
                 "sourcebridge.proposals._request_json",
                 side_effect=[
-                    {"models": [{"name": "qwen2.5-coder:14b", "digest": "sha256:ok"}]},
+                    {"models": [{"name": "qwen3-coder:30b", "digest": "sha256:ok"}]},
                     ValueError("Ollama unavailable"),
                 ],
             ), redirect_stderr(stderr):
