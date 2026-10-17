@@ -15,7 +15,7 @@ from sourcebridge.database import (
 )
 
 
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 12
 _ROOT = Path(__file__).parents[1]
 _SCHEMA = _ROOT / "core" / "schema" / "evidence.sql"
 
@@ -1107,6 +1107,53 @@ def initialize(database: Path) -> None:
                 """
                 _run_atomic_migration(connection, ddl, "10")
                 version = "10"
+            if version == "10":
+                _run_atomic_migration(
+                    connection,
+                    """
+                    CREATE TABLE IF NOT EXISTS sourcebridge_ollama_test_inventory (
+                        id TEXT PRIMARY KEY,
+                        imported_record_id TEXT NOT NULL UNIQUE
+                            REFERENCES sourcebridge_imported_record(id),
+                        pack_id TEXT NOT NULL,
+                        test_id INTEGER NOT NULL
+                            REFERENCES sourcebridge_engine_test(id),
+                        fixture_path TEXT NOT NULL,
+                        fixture_digest TEXT NOT NULL,
+                        model_name TEXT NOT NULL,
+                        model_digest TEXT NOT NULL,
+                        prompt_template_version TEXT NOT NULL,
+                        prompt_template_digest TEXT NOT NULL,
+                        prompt_json TEXT NOT NULL,
+                        prompt_sha256 TEXT NOT NULL,
+                        raw_response_json TEXT NOT NULL,
+                        inventory_json TEXT NOT NULL,
+                        statuses_json TEXT NOT NULL,
+                        status_source TEXT NOT NULL,
+                        recorded_at TEXT NOT NULL
+                    );
+                    CREATE INDEX IF NOT EXISTS sourcebridge_ollama_test_inventory_test_idx
+                        ON sourcebridge_ollama_test_inventory
+                            (pack_id, test_id, recorded_at);
+                    """,
+                    "11",
+                )
+                version = "11"
+            if version == "11":
+                columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(sourcebridge_ollama_test_inventory)"
+                    )
+                }
+                ddl = ""
+                if "prompt_template_digest" not in columns:
+                    ddl = (
+                        "ALTER TABLE sourcebridge_ollama_test_inventory "
+                        "ADD COLUMN prompt_template_digest TEXT NOT NULL DEFAULT 'unknown';"
+                    )
+                _run_atomic_migration(connection, ddl, "12")
+                version = "12"
             _create_diagnostic_review_objects(connection)
             _create_rule_runtime_objects(connection)
             _create_validation_objects(connection)
@@ -1168,6 +1215,9 @@ def import_json(
             elif kind == "profile":
                 _import_profile(connection, record_id, record)
                 projected += 1
+            elif kind == "ollama_test_inventory":
+                _import_ollama_test_inventory(connection, record_id, record)
+                projected += 1
     return {
         "repository": repository,
         "imported": imported,
@@ -1227,6 +1277,8 @@ def _kind(relative: str, record: Any) -> str:
         return "profile"
     if isinstance(record, dict) and {"proposal", "raw_response", "payload_sha256"} <= set(record):
         return "rule_proposal"
+    if isinstance(record, dict) and record.get("kind") == "ollama_test_inventory":
+        return "ollama_test_inventory"
     if isinstance(record, dict) and {"source_facts", "observed_behavior"} <= set(record):
         return "fact_grounded_evidence"
     if relative.startswith("examples/"):
@@ -1290,6 +1342,126 @@ def _import_proposal(connection: sqlite3.Connection, record_id: str, record: dic
             record["payload_sha256"],
             json.dumps(record.get("proposal", {}), sort_keys=True, separators=(",", ":")),
             json.dumps(record.get("raw_response", {}), sort_keys=True, separators=(",", ":")),
+            _now(),
+        ),
+    )
+
+
+def _import_ollama_test_inventory(
+    connection: sqlite3.Connection, record_id: str, record: dict[str, Any]
+) -> None:
+    required = {
+        "kind",
+        "pack_id",
+        "test_id",
+        "fixture_path",
+        "fixture_sha256",
+        "model",
+        "prompt_template_version",
+        "prompt_template_digest",
+        "prompt",
+        "prompt_sha256",
+        "raw_response",
+        "inventory",
+        "statuses",
+        "status_source",
+    }
+    if set(record) != required or record["kind"] != "ollama_test_inventory":
+        raise EvidencePipelineError(
+            "Ollama test inventory must contain exactly the supported provenance fields"
+        )
+    if not isinstance(record["pack_id"], str) or not record["pack_id"]:
+        raise EvidencePipelineError("Ollama test inventory requires a non-empty pack ID")
+    if not isinstance(record["test_id"], int) or record["test_id"] <= 0:
+        raise EvidencePipelineError("Ollama test inventory requires a positive numeric test ID")
+    if not isinstance(record["fixture_path"], str) or not record["fixture_path"]:
+        raise EvidencePipelineError("Ollama test inventory requires a fixture path")
+    if not isinstance(record["fixture_sha256"], str) or len(record["fixture_sha256"]) != 64:
+        raise EvidencePipelineError("Ollama test inventory requires a SHA-256 fixture digest")
+    if not isinstance(record["prompt_template_version"], str) or not record["prompt_template_version"]:
+        raise EvidencePipelineError("Ollama test inventory requires a prompt template version")
+    if (
+        not isinstance(record["prompt_template_digest"], str)
+        or len(record["prompt_template_digest"]) != 64
+    ):
+        raise EvidencePipelineError(
+            "Ollama test inventory requires a SHA-256 prompt template digest"
+        )
+    if not isinstance(record["prompt_sha256"], str) or len(record["prompt_sha256"]) != 64:
+        raise EvidencePipelineError("Ollama test inventory requires a SHA-256 prompt digest")
+    model = record["model"]
+    if (
+        not isinstance(model, dict)
+        or set(model) != {"name", "digest"}
+        or not all(isinstance(model[key], str) and model[key] for key in model)
+    ):
+        raise EvidencePipelineError("Ollama test inventory requires model name and digest")
+    for key in ("prompt", "raw_response", "inventory", "statuses"):
+        if not isinstance(record[key], (dict, list, str)):
+            raise EvidencePipelineError(f"Ollama test inventory `{key}` must be JSON data")
+    if not isinstance(record["status_source"], str) or not record["status_source"]:
+        raise EvidencePipelineError("Ollama test inventory requires a status source")
+
+    registered = connection.execute(
+        """
+        SELECT fixture_digest
+        FROM sourcebridge_engine_test
+        WHERE id = ? AND pack_id = ?
+        """,
+        (record["test_id"], record["pack_id"]),
+    ).fetchone()
+    if registered is None:
+        raise EvidencePipelineError(
+            f"Ollama test inventory references an unregistered test "
+            f"`{record['pack_id']}`/{record['test_id']}"
+        )
+    if registered[0] != record["fixture_sha256"]:
+        raise EvidencePipelineError(
+            f"Ollama test inventory fixture digest does not match registered test "
+            f"`{record['pack_id']}`/{record['test_id']}"
+        )
+    connection.execute(
+        """
+        INSERT INTO sourcebridge_ollama_test_inventory
+            (id, imported_record_id, pack_id, test_id, fixture_path,
+             fixture_digest, model_name, model_digest, prompt_template_version,
+             prompt_template_digest, prompt_json, prompt_sha256, raw_response_json, inventory_json,
+             statuses_json, status_source, recorded_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(imported_record_id) DO UPDATE SET
+            pack_id = excluded.pack_id,
+            test_id = excluded.test_id,
+            fixture_path = excluded.fixture_path,
+            fixture_digest = excluded.fixture_digest,
+            model_name = excluded.model_name,
+            model_digest = excluded.model_digest,
+            prompt_template_version = excluded.prompt_template_version,
+            prompt_template_digest = excluded.prompt_template_digest,
+            prompt_json = excluded.prompt_json,
+            prompt_sha256 = excluded.prompt_sha256,
+            raw_response_json = excluded.raw_response_json,
+            inventory_json = excluded.inventory_json,
+            statuses_json = excluded.statuses_json,
+            status_source = excluded.status_source,
+            recorded_at = excluded.recorded_at
+        """,
+        (
+            _id("ollama-inventory", record_id),
+            record_id,
+            record["pack_id"],
+            record["test_id"],
+            record["fixture_path"],
+            record["fixture_sha256"],
+            model["name"],
+            model["digest"],
+            record["prompt_template_version"],
+            record["prompt_template_digest"],
+            json.dumps(record["prompt"], sort_keys=True, separators=(",", ":")),
+            record["prompt_sha256"],
+            json.dumps(record["raw_response"], sort_keys=True, separators=(",", ":")),
+            json.dumps(record["inventory"], sort_keys=True, separators=(",", ":")),
+            json.dumps(record["statuses"], sort_keys=True, separators=(",", ":")),
+            record["status_source"],
             _now(),
         ),
     )

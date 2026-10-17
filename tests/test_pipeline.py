@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+import hashlib
 import json
 from pathlib import Path
 import sqlite3
@@ -8,10 +9,132 @@ import tempfile
 import threading
 import unittest
 
-from sourcebridge.pipeline import import_json, initialize
+from sourcebridge.engine_tests import import_catalogue
+from sourcebridge.pipeline import EvidencePipelineError, import_json, initialize
 
 
 class PipelineTests(unittest.TestCase):
+    def test_imports_ollama_inventory_with_registered_fixture_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixtures = root / "fixtures"
+            fixtures.mkdir()
+            fixture = fixtures / "scalar.pas"
+            fixture.write_text("function Add: Integer; begin Result := 1 + 2; end;", encoding="utf-8")
+            fixture_digest = hashlib.sha256(fixture.read_bytes()).hexdigest()
+            catalogue = {
+                "schema_version": 1,
+                "pack_id": "sourcebridge-delphi",
+                "adapter": {"id": "fpc", "config": {"argv": ["fpc"]}},
+                "tests": [
+                    {
+                        "id": 437,
+                        "name": "scalar addition",
+                        "fixture": "fixtures/scalar.pas",
+                        "expected": {},
+                    }
+                ],
+            }
+            catalogue_path = root / "engine-tests.json"
+            catalogue_path.write_text(json.dumps(catalogue), encoding="utf-8")
+            report = {
+                "kind": "ollama_test_inventory",
+                "pack_id": "sourcebridge-delphi",
+                "test_id": 437,
+                "fixture_path": "fixtures/scalar.pas",
+                "fixture_sha256": fixture_digest,
+                "model": {"name": "local", "digest": "sha256:model"},
+                "prompt_template_version": "delphi-engine-test-inventory/v1",
+                "prompt_template_digest": "c" * 64,
+                "prompt": {"text": "classify fixture"},
+                "prompt_sha256": "a" * 64,
+                "raw_response": "{\"language_features\": [\"integer\"]}",
+                "inventory": {"language_features": ["integer"]},
+                "statuses": {
+                    "source": {"status": "passed"},
+                    "extraction": {"status": "passed"},
+                    "target": {"status": "blocked"},
+                    "oracle": {"status": "skipped"},
+                },
+                "status_source": "structured_adapter",
+            }
+            evidence_path = root / "evidence" / "ollama-test-inventory" / "model" / "437.json"
+            evidence_path.parent.mkdir(parents=True)
+            evidence_path.write_text(json.dumps(report), encoding="utf-8")
+            database = root / "evidence.db"
+
+            initialize(database)
+            import_catalogue(database, catalogue_path)
+            first = import_json(database, root, repository="fixture")
+            second = import_json(database, root, repository="fixture")
+            with sqlite3.connect(database) as connection:
+                inventory = connection.execute(
+                    """
+                    SELECT pack_id, test_id, fixture_digest, model_name, model_digest,
+                           prompt_template_version, prompt_template_digest, prompt_json, raw_response_json,
+                           inventory_json, statuses_json, status_source
+                    FROM sourcebridge_ollama_test_inventory
+                    """
+                ).fetchone()
+
+        self.assertEqual(first["projected"], 1)
+        self.assertEqual(second["imported"], 0)
+        self.assertEqual(inventory[:6], (
+            "sourcebridge-delphi",
+            437,
+            fixture_digest,
+            "local",
+            "sha256:model",
+            "delphi-engine-test-inventory/v1",
+        ))
+        self.assertEqual(inventory[6], "c" * 64)
+        self.assertEqual(json.loads(inventory[7]), {"text": "classify fixture"})
+        self.assertEqual(json.loads(inventory[8]), report["raw_response"])
+        self.assertEqual(json.loads(inventory[9]), report["inventory"])
+        self.assertEqual(json.loads(inventory[10]), report["statuses"])
+        self.assertEqual(inventory[11], "structured_adapter")
+
+    def test_rejects_ollama_inventory_with_wrong_fixture_digest(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = root / "fixture.pas"
+            fixture.write_text("begin end.", encoding="utf-8")
+            catalogue = {
+                "schema_version": 1,
+                "pack_id": "sourcebridge-delphi",
+                "adapter": {"id": "fpc", "config": {"argv": ["fpc"]}},
+                "tests": [{"id": 437, "name": "fixture", "fixture": "fixture.pas", "expected": {}}],
+            }
+            catalogue_path = root / "engine-tests.json"
+            catalogue_path.write_text(json.dumps(catalogue), encoding="utf-8")
+            (root / "report.json").write_text(
+                json.dumps(
+                    {
+                        "kind": "ollama_test_inventory",
+                        "pack_id": "sourcebridge-delphi",
+                        "test_id": 437,
+                        "fixture_path": "fixture.pas",
+                        "fixture_sha256": "b" * 64,
+                        "model": {"name": "local", "digest": "sha256:model"},
+                        "prompt_template_version": "v1",
+                        "prompt_template_digest": "c" * 64,
+                        "prompt": {"text": "classify"},
+                        "prompt_sha256": "a" * 64,
+                        "raw_response": "{}",
+                        "inventory": {},
+                        "statuses": {},
+                        "status_source": "structured_adapter",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            database = root / "evidence.db"
+            initialize(database)
+            import_catalogue(database, catalogue_path)
+
+            with self.assertRaises(EvidencePipelineError):
+                import_json(database, root, repository="fixture")
+
     def test_simultaneous_initialization_serializes_legacy_migration(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             database = Path(temporary) / "evidence.db"
@@ -62,7 +185,7 @@ class PipelineTests(unittest.TestCase):
             finally:
                 connection.close()
 
-        self.assertEqual(version, "10")
+        self.assertEqual(version, "12")
         self.assertTrue({"catalogue_path", "catalogue_digest"} <= columns)
 
     def test_initialize_recovers_interrupted_v3_migration(self) -> None:
@@ -106,7 +229,7 @@ class PipelineTests(unittest.TestCase):
             finally:
                 connection.close()
 
-        self.assertEqual(version, "10")
+        self.assertEqual(version, "12")
         self.assertTrue({"catalogue_path", "catalogue_digest"} <= columns)
 
     def test_imports_legacy_json_with_provenance_and_is_idempotent(self) -> None:
