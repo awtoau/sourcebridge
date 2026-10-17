@@ -250,7 +250,7 @@ class PipelineTests(unittest.TestCase):
             finally:
                 connection.close()
 
-        self.assertEqual(version, "14")
+        self.assertEqual(version, "16")
         self.assertTrue({"catalogue_path", "catalogue_digest"} <= columns)
 
     def test_initialize_recovers_interrupted_v3_migration(self) -> None:
@@ -294,7 +294,7 @@ class PipelineTests(unittest.TestCase):
             finally:
                 connection.close()
 
-        self.assertEqual(version, "14")
+        self.assertEqual(version, "16")
         self.assertTrue({"catalogue_path", "catalogue_digest"} <= columns)
 
     def test_imports_legacy_json_with_provenance_and_is_idempotent(self) -> None:

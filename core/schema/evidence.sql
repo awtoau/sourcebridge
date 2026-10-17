@@ -399,6 +399,78 @@ CREATE TABLE sourcebridge_work_item_evidence (
 CREATE INDEX sourcebridge_work_item_evidence_run_idx
     ON sourcebridge_work_item_evidence (execution_run_id, work_item_id);
 
+-- Local workers append lifecycle events instead of mutating job history.
+CREATE TABLE sourcebridge_local_worker_job (
+    id TEXT PRIMARY KEY,
+    work_item_id TEXT NOT NULL REFERENCES sourcebridge_work_item(id),
+    phase TEXT NOT NULL CHECK (phase IN ('generator', 'critic', 'repair', 'validation')),
+    input_digest TEXT NOT NULL,
+    model_name TEXT NOT NULL,
+    model_digest TEXT NOT NULL,
+    prompt_template_version TEXT NOT NULL,
+    prompt_template_digest TEXT NOT NULL,
+    max_attempts INTEGER NOT NULL CHECK (max_attempts > 0),
+    created_at TEXT NOT NULL,
+    UNIQUE (work_item_id, phase, input_digest, model_digest, prompt_template_digest)
+);
+
+CREATE TABLE sourcebridge_local_worker_job_dependency (
+    job_id TEXT NOT NULL REFERENCES sourcebridge_local_worker_job(id),
+    prerequisite_job_id TEXT NOT NULL REFERENCES sourcebridge_local_worker_job(id),
+    PRIMARY KEY (job_id, prerequisite_job_id),
+    CHECK (job_id != prerequisite_job_id)
+);
+
+CREATE TABLE sourcebridge_local_worker_job_event (
+    id TEXT PRIMARY KEY,
+    job_id TEXT NOT NULL REFERENCES sourcebridge_local_worker_job(id),
+    sequence INTEGER NOT NULL CHECK (sequence > 0),
+    status TEXT NOT NULL CHECK (
+        status IN ('queued', 'claimed', 'completed', 'failed', 'blocked')
+    ),
+    owner TEXT,
+    lease_expires_at TEXT,
+    attempt INTEGER NOT NULL CHECK (attempt >= 0),
+    result_digest TEXT,
+    rationale TEXT NOT NULL,
+    recorded_at TEXT NOT NULL,
+    UNIQUE (job_id, sequence)
+);
+
+CREATE INDEX sourcebridge_local_worker_job_event_latest_idx
+    ON sourcebridge_local_worker_job_event (job_id, sequence DESC);
+
+CREATE TABLE sourcebridge_agent_exchange (
+    id TEXT PRIMARY KEY,
+    work_item_id TEXT REFERENCES sourcebridge_work_item(id),
+    local_worker_job_id TEXT REFERENCES sourcebridge_local_worker_job(id),
+    prior_exchange_id TEXT REFERENCES sourcebridge_agent_exchange(id),
+    role TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    endpoint TEXT,
+    local_only INTEGER NOT NULL CHECK (local_only IN (0, 1)),
+    model_name TEXT,
+    model_digest TEXT,
+    prompt_template_version TEXT,
+    prompt_template_digest TEXT,
+    request_json TEXT NOT NULL,
+    request_digest TEXT NOT NULL,
+    response_json TEXT NOT NULL,
+    response_digest TEXT NOT NULL,
+    artifact_path TEXT,
+    artifact_digest TEXT,
+    status TEXT NOT NULL CHECK (status IN ('completed', 'rejected', 'failed', 'blocked')),
+    prompt_tokens INTEGER CHECK (prompt_tokens IS NULL OR prompt_tokens >= 0),
+    generated_tokens INTEGER CHECK (generated_tokens IS NULL OR generated_tokens >= 0),
+    elapsed_ms REAL CHECK (elapsed_ms IS NULL OR elapsed_ms >= 0),
+    error_json TEXT,
+    recorded_at TEXT NOT NULL,
+    CHECK (work_item_id IS NOT NULL OR local_worker_job_id IS NOT NULL)
+);
+
+CREATE INDEX sourcebridge_agent_exchange_scope_idx
+    ON sourcebridge_agent_exchange (work_item_id, local_worker_job_id, recorded_at);
+
 CREATE TRIGGER sourcebridge_execution_run_provenance_immutable_update
 BEFORE UPDATE ON sourcebridge_execution_run_provenance
 BEGIN

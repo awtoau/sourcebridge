@@ -15,7 +15,7 @@ from sourcebridge.database import (
 )
 
 
-SCHEMA_VERSION = 14
+SCHEMA_VERSION = 16
 _ROOT = Path(__file__).parents[1]
 _SCHEMA = _ROOT / "core" / "schema" / "evidence.sql"
 
@@ -1234,6 +1234,132 @@ def initialize(database: Path) -> None:
                     "14",
                 )
                 version = "14"
+            if version == "14":
+                _run_atomic_migration(
+                    connection,
+                    """
+                    CREATE TABLE IF NOT EXISTS sourcebridge_local_worker_job (
+                        id TEXT PRIMARY KEY,
+                        work_item_id TEXT NOT NULL REFERENCES sourcebridge_work_item(id),
+                        phase TEXT NOT NULL CHECK (
+                            phase IN ('generator', 'critic', 'repair', 'validation')
+                        ),
+                        input_digest TEXT NOT NULL,
+                        model_name TEXT NOT NULL,
+                        model_digest TEXT NOT NULL,
+                        prompt_template_version TEXT NOT NULL,
+                        prompt_template_digest TEXT NOT NULL,
+                        max_attempts INTEGER NOT NULL CHECK (max_attempts > 0),
+                        created_at TEXT NOT NULL,
+                        UNIQUE (
+                            work_item_id, phase, input_digest, model_digest,
+                            prompt_template_digest
+                        )
+                    );
+                    CREATE TABLE IF NOT EXISTS sourcebridge_local_worker_job_dependency (
+                        job_id TEXT NOT NULL REFERENCES sourcebridge_local_worker_job(id),
+                        prerequisite_job_id TEXT NOT NULL
+                            REFERENCES sourcebridge_local_worker_job(id),
+                        PRIMARY KEY (job_id, prerequisite_job_id),
+                        CHECK (job_id != prerequisite_job_id)
+                    );
+                    CREATE TABLE IF NOT EXISTS sourcebridge_local_worker_job_event (
+                        id TEXT PRIMARY KEY,
+                        job_id TEXT NOT NULL REFERENCES sourcebridge_local_worker_job(id),
+                        sequence INTEGER NOT NULL CHECK (sequence > 0),
+                        status TEXT NOT NULL CHECK (
+                            status IN ('queued', 'claimed', 'completed', 'failed', 'blocked')
+                        ),
+                        owner TEXT,
+                        lease_expires_at TEXT,
+                        attempt INTEGER NOT NULL CHECK (attempt >= 0),
+                        result_digest TEXT,
+                        rationale TEXT NOT NULL,
+                        recorded_at TEXT NOT NULL,
+                        UNIQUE (job_id, sequence)
+                    );
+                    CREATE INDEX IF NOT EXISTS sourcebridge_local_worker_job_event_latest_idx
+                        ON sourcebridge_local_worker_job_event (job_id, sequence DESC);
+                    CREATE TRIGGER sourcebridge_local_worker_job_immutable_update
+                    BEFORE UPDATE ON sourcebridge_local_worker_job
+                    BEGIN
+                        SELECT RAISE(ABORT, 'sourcebridge_local_worker_job is append-only');
+                    END;
+                    CREATE TRIGGER sourcebridge_local_worker_job_immutable_delete
+                    BEFORE DELETE ON sourcebridge_local_worker_job
+                    BEGIN
+                        SELECT RAISE(ABORT, 'sourcebridge_local_worker_job is append-only');
+                    END;
+                    CREATE TRIGGER sourcebridge_local_worker_job_event_immutable_update
+                    BEFORE UPDATE ON sourcebridge_local_worker_job_event
+                    BEGIN
+                        SELECT RAISE(ABORT, 'sourcebridge_local_worker_job_event is append-only');
+                    END;
+                    CREATE TRIGGER sourcebridge_local_worker_job_event_immutable_delete
+                    BEFORE DELETE ON sourcebridge_local_worker_job_event
+                    BEGIN
+                        SELECT RAISE(ABORT, 'sourcebridge_local_worker_job_event is append-only');
+                    END;
+                    """,
+                    "15",
+                )
+                version = "15"
+            if version == "15":
+                _run_atomic_migration(
+                    connection,
+                    """
+                    CREATE TABLE IF NOT EXISTS sourcebridge_agent_exchange (
+                        id TEXT PRIMARY KEY,
+                        work_item_id TEXT REFERENCES sourcebridge_work_item(id),
+                        local_worker_job_id TEXT
+                            REFERENCES sourcebridge_local_worker_job(id),
+                        prior_exchange_id TEXT
+                            REFERENCES sourcebridge_agent_exchange(id),
+                        role TEXT NOT NULL,
+                        provider TEXT NOT NULL,
+                        endpoint TEXT,
+                        local_only INTEGER NOT NULL CHECK (local_only IN (0, 1)),
+                        model_name TEXT,
+                        model_digest TEXT,
+                        prompt_template_version TEXT,
+                        prompt_template_digest TEXT,
+                        request_json TEXT NOT NULL,
+                        request_digest TEXT NOT NULL,
+                        response_json TEXT NOT NULL,
+                        response_digest TEXT NOT NULL,
+                        artifact_path TEXT,
+                        artifact_digest TEXT,
+                        status TEXT NOT NULL CHECK (
+                            status IN ('completed', 'rejected', 'failed', 'blocked')
+                        ),
+                        prompt_tokens INTEGER CHECK (
+                            prompt_tokens IS NULL OR prompt_tokens >= 0
+                        ),
+                        generated_tokens INTEGER CHECK (
+                            generated_tokens IS NULL OR generated_tokens >= 0
+                        ),
+                        elapsed_ms REAL CHECK (elapsed_ms IS NULL OR elapsed_ms >= 0),
+                        error_json TEXT,
+                        recorded_at TEXT NOT NULL,
+                        CHECK (work_item_id IS NOT NULL OR local_worker_job_id IS NOT NULL)
+                    );
+                    CREATE INDEX IF NOT EXISTS sourcebridge_agent_exchange_scope_idx
+                        ON sourcebridge_agent_exchange
+                            (work_item_id, local_worker_job_id, recorded_at);
+                    CREATE TRIGGER IF NOT EXISTS sourcebridge_agent_exchange_immutable_update
+                    BEFORE UPDATE ON sourcebridge_agent_exchange
+                    BEGIN
+                        SELECT RAISE(ABORT, 'sourcebridge_agent_exchange is append-only');
+                    END;
+                    CREATE TRIGGER IF NOT EXISTS sourcebridge_agent_exchange_immutable_delete
+                    BEFORE DELETE ON sourcebridge_agent_exchange
+                    BEGIN
+                        SELECT RAISE(ABORT, 'sourcebridge_agent_exchange is append-only');
+                    END;
+                    """,
+                    "16",
+                )
+                version = "16"
             _create_diagnostic_review_objects(connection)
             _create_rule_runtime_objects(connection)
             _create_validation_objects(connection)
