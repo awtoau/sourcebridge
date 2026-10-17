@@ -123,6 +123,56 @@ Every source unit receives a recorded disposition:
 “Complete” means every unit has an evidence-backed disposition. It does not
 mean every line was emitted mechanically.
 
+## Agent-native, versioned conversion engine
+
+Sourcebridge is an interactive conversion engine operated primarily through
+bounded agent work: one profile, source unit, rule family, diagnostic, test ID,
+or evidence-backed work item at a time. Agents do not repair generated output
+by hand. They propose or change rules, profiles, overlays, dispositions, and
+tests; the engine regenerates artifacts and records the resulting evidence.
+
+Every conversion-relevant decision uses this system: source-unit disposition,
+profile selection, rule precedence, runtime adapter, diagnostic classification,
+test/oracle verdict, and agent authority. A decision records its scope,
+rationale, actor, evidence/test IDs, resolved profile and rule digests,
+validation state, and supersession lineage. Conversation itself is not
+conversion evidence, but a decision that changes behavior, certification, or
+agent authority must be recorded.
+
+### Immutable rules and historical conversions
+
+A rule revision is never edited or deleted in place. Replacing it creates a new
+immutable revision with an explicit supersession link; the earlier revision is
+retired from future profile resolution but remains available for every prior
+conversion, test, and diagnostic that used it. Storage retention is deliberate:
+content digests and deduplicated artifacts may reduce duplication, but do not
+erase history.
+
+Profiles resolve an ordered, digest-pinned rule set. Customer or corpus policy
+(for example Renode, Linux, or a comment-emission convention) is a versioned
+overlay with declared precedence, not an untracked edit to stock language
+rules. This makes a local override reviewable and prevents it from silently
+changing unrelated conversions.
+
+When a rule, overlay, profile, or toolchain changes, historical artifacts stay
+reproducible under their original digest but can become
+`stale_for_current_profile`. Sourcebridge must identify the affected scope and
+require regeneration plus the declared full validation tier before calling the
+new profile current. A focused test helps diagnose a change; it does not
+recertify an affected corpus by itself.
+
+### Efficient, constrained agent operations
+
+Agent-facing tooling must expose stable structured APIs and compact CLI output
+for one work item, test, diagnostic, run, profile diff, rule impact, or
+staleness query. This reduces token/context cost and makes interrupted work
+resumable. When an agent finds a missing capability or expensive workflow, it
+must report a bounded improvement proposal to the operator, including the
+expected context/token reduction; it must not silently broaden scope or begin
+authoring output outside the evidence/rule workflow. See the permanent
+[agent-native operations tracker](https://github.com/awtoau/sourcebridge/issues/31)
+and [immutable rule-history tracker](https://github.com/awtoau/sourcebridge/issues/32).
+
 ## Validation is two-sided
 
 The pipeline checks the source before conversion and the target after emission.
