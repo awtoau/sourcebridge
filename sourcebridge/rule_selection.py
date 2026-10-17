@@ -126,7 +126,7 @@ def _completion(database: Path, profile_id: str | None) -> dict[str, Any]:
     )
 
 
-def _basics(pack_manifest: Path) -> dict[str, Any]:
+def _basics(database: Path, pack_manifest: Path) -> dict[str, Any]:
     try:
         manifest = json.loads(pack_manifest.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
@@ -142,9 +142,23 @@ def _basics(pack_manifest: Path) -> dict[str, Any]:
     entries = payload.get("entries") if isinstance(payload, dict) else payload
     if not isinstance(entries, list) or not entries:
         raise RuleSelectionError(f"{curriculum_path}: curriculum entries must be non-empty")
-    entry = entries[0]
-    if not isinstance(entry, dict):
-        raise RuleSelectionError(f"{curriculum_path}: curriculum entry must be an object")
+    with read_transaction(database) as connection:
+        connection.row_factory = sqlite3.Row
+        entry = next(
+            (
+                item for item in entries
+                if isinstance(item, dict)
+                and not _has_latest_passed_engine_test(
+                    connection, item.get("test_references", [])
+                )
+            ),
+            None,
+        )
+    if entry is None:
+        return _candidate(
+            "basics", evidence=[], tests=[], scope={},
+            reason="Every ordered curriculum entry has a latest passed engine test.",
+        )
     return _candidate(
         "basics", candidate=entry.get("id"), evidence=entry.get("evidence_references", []),
         tests=entry.get("test_references", []),
@@ -152,6 +166,32 @@ def _basics(pack_manifest: Path) -> dict[str, Any]:
         reason="Selected the first ordered entry from the version-controlled pack curriculum.",
         curriculum_entry=entry,
     )
+
+
+def _has_latest_passed_engine_test(
+    connection: sqlite3.Connection, references: Any
+) -> bool:
+    """Return true only when every referenced engine test most recently passed."""
+    if not isinstance(references, list) or not references:
+        return False
+    for reference in references:
+        try:
+            test_id = int(reference)
+        except (TypeError, ValueError):
+            return False
+        row = connection.execute(
+            """
+            SELECT status
+            FROM sourcebridge_engine_test_run
+            WHERE test_id = ?
+            ORDER BY completed_at DESC, id DESC
+            LIMIT 1
+            """,
+            (test_id,),
+        ).fetchone()
+        if row is None or row["status"] != "passed":
+            return False
+    return True
 
 
 def select_next_rule(
@@ -170,4 +210,4 @@ def select_next_rule(
         return _completion(database, profile_id)
     if pack_manifest is None:
         raise RuleSelectionError("basics requires --pack-manifest")
-    return _basics(pack_manifest)
+    return _basics(database, pack_manifest)

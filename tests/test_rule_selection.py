@@ -67,16 +67,38 @@ class RuleSelectionTests(unittest.TestCase):
     def test_basics_reads_first_ordered_curriculum_entry(self) -> None:
         curriculum = self.root / "curriculum.json"
         curriculum.write_text(json.dumps({"entries": [
-            {"id": "basic-1", "evidence_references": ["doc-1"],
-             "test_references": ["test-1"], "expected_profile_scope": {"source": "demo"}}
+            {"id": "437", "evidence_references": ["doc-437"],
+             "test_references": [437], "expected_profile_scope": {"source": "demo"}},
+            {"id": "438", "evidence_references": ["doc-438"],
+             "test_references": [438], "expected_profile_scope": {"source": "demo"}},
         ]}))
         manifest = self.root / "pack.json"
         manifest.write_text(json.dumps(
             {"entrypoints": {"rule_curriculum": "curriculum.json"}}
         ))
+        self.connection.executescript(
+            """
+            INSERT INTO sourcebridge_engine_test
+              (id, pack_id, adapter, name, fixture_path, fixture_digest,
+               expected_json, adapter_config_json, created_at)
+            VALUES
+              (437, 'demo', 'adapter', '437', '437.fixture', 'digest', '{}', '{}', 'now'),
+              (438, 'demo', 'adapter', '438', '438.fixture', 'digest', '{}', '{}', 'now');
+            """
+        )
+        self.connection.commit()
         result = select_next_rule(self.database, "basics", pack_manifest=manifest)
-        self.assertEqual(result["candidate"], "basic-1")
-        self.assertEqual(result["test_references"], ["test-1"])
+        self.assertEqual(result["candidate"], "437")
+        self.connection.execute(
+            """
+            INSERT INTO sourcebridge_engine_test_run
+              (id, test_id, status, command_json, result_json, started_at, completed_at)
+            VALUES ('run-437', 437, 'passed', '{}', '{}', '2026-01-01', '2026-01-01')
+            """
+        )
+        self.connection.commit()
+        result = select_next_rule(self.database, "basics", pack_manifest=manifest)
+        self.assertEqual(result["candidate"], "438")
 
     def test_cli_emits_one_json_candidate(self) -> None:
         import contextlib
