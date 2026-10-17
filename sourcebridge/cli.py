@@ -71,6 +71,7 @@ from sourcebridge.validation import (
     list_validation_cases,
     run_validation,
 )
+from sourcebridge.rule_selection import RuleSelectionError, select_next_rule
 
 
 def _proposal_parser() -> argparse.ArgumentParser:
@@ -903,10 +904,31 @@ def _legacy_command(arguments: list[str]) -> int:
     return manifest_cli.main()
 
 
+def _select_next_rule(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge select-next-rule")
+    parser.add_argument("strategy", choices=("blocker/coverage", "completion", "basics"))
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--profile-id")
+    parser.add_argument("--pack-manifest", type=Path)
+    args = parser.parse_args(arguments)
+    try:
+        result = select_next_rule(
+            args.database, args.strategy, profile_id=args.profile_id,
+            pack_manifest=args.pack_manifest,
+        )
+    except (RuleSelectionError, OSError, sqlite3.Error) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, sort_keys=True))
+    return 0
+
+
 def main() -> int:
     arguments = sys.argv[1:]
     if arguments and arguments[0] == "propose-rule":
         return _propose_rule(arguments[1:])
+    if arguments and arguments[0] == "select-next-rule":
+        return _select_next_rule(arguments[1:])
     if arguments and arguments[0] in {"propose-batch", "propose-rules", "proposal-worker"}:
         return _propose_batch(arguments[1:])
     if arguments and arguments[0] == "model-digest":
