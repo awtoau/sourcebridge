@@ -168,6 +168,26 @@ WORKER_POLICIES: tuple[WorkerPolicy, ...] = (
         **_SINGLE_OWNER,
     ),
     _serial(
+        "sourcebridge launch",
+        "sourcebridge launch --database DATABASE RUN_ID",
+        **_SINGLE_OWNER,
+    ),
+    _serial(
+        "sourcebridge status",
+        "sourcebridge status --database DATABASE RUN_ID",
+        **_NO_PARALLEL_STAGE,
+    ),
+    _serial(
+        "sourcebridge activity",
+        "sourcebridge activity --database DATABASE [--run RUN_ID]",
+        **_NO_PARALLEL_STAGE,
+    ),
+    _serial(
+        "sourcebridge stop",
+        "sourcebridge stop --database DATABASE RUN_ID",
+        **_SINGLE_OWNER,
+    ),
+    _serial(
         "sourcebridge recover-run",
         "sourcebridge recover-run --database DATABASE RUN_ID",
         **_SINGLE_OWNER,

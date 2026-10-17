@@ -43,7 +43,7 @@ introduced.
 | --- | --- | --- |
 | `no-parallel-stage` | `sourcebridge report-diagnostics`, `report-packs`, `report-toolchains`, `evaluate-proposal`, `init-db`, `import-json`, all `sourcebridge profile` commands, and `sourcebridge test register/import/import-pack/list` | The current engine stage is serial and has no independently schedulable work items. |
 | `single-model-request` | `sourcebridge propose-rule`, `sourcebridge model-digest` | Each operation makes one local model request or inspects one model identity. |
-| `single-owner-execution` | `sourcebridge run-approved`, `recover-run`, `test run`, `dev test`, and `sourcebridge-workbench` | The current execution contract has one owner for a run or one external action. |
+| `single-owner-execution` | `sourcebridge run-approved`, `launch`, `stop`, `recover-run`, `test run`, `dev test`, and `sourcebridge-workbench` | The current execution contract has one owner for a run or one external action. |
 | `legacy-manifest-validation` | `python3 cli/sourcebridge.py validate-pack`, `validate-profile`, and `resolve-profile` | These legacy commands validate small manifests and do not own a conversion stage. |
 | `single-process-validation` | `python3 tools/validate_delphi_scalar_rust.py` | The fixture validator is dependency-ordered and produces one generated artifact and one target execution. |
 

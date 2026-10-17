@@ -251,6 +251,28 @@ See [the worker-default policy](docs/worker-defaults.md) for the deterministic
 one-worker/default contract and the evidence required before introducing
 parallelism to an exception.
 
+## Approved run control
+
+The prototype operational control layer acts only on an existing queued
+execution run and its persisted command contract. It does not accept an
+arbitrary command or provide a scheduler:
+
+```sh
+sourcebridge launch --database evidence/sourcebridge.db RUN_ID
+sourcebridge status --database evidence/sourcebridge.db RUN_ID
+sourcebridge activity --database evidence/sourcebridge.db --run RUN_ID
+sourcebridge stop --database evidence/sourcebridge.db RUN_ID \
+  --reason "operator requested stop"
+```
+
+`status` exposes the selected corpus variant and observed worker-slot/source
+unit boundaries. `activity` reads durable events and can be called again after
+disconnecting; use `--since` with the last event timestamp for a compact
+reconnect. A controlled stop moves a live run through `stopping`, signals the
+approved process group, and finalizes it as `cancelled` without downgrading
+workers that already reached a terminal state. This is CLI/API plumbing only;
+the GUI remains a separate planned surface.
+
 ## Cross-pack committed-evidence reports
 
 `report-packs` reads committed JSON evidence only below the supplied pack roots.
