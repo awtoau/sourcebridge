@@ -88,7 +88,7 @@ class EngineTestTests(unittest.TestCase):
                     "AND name = 'sourcebridge_engine_test'"
                 ).fetchone()
 
-        self.assertEqual(version, "9")
+        self.assertEqual(version, "10")
         self.assertIsNotNone(test_table)
 
     def test_initialize_v6_worker_migration_includes_prompt_digest(self) -> None:

@@ -471,6 +471,7 @@ CREATE TABLE sourcebridge_project_profile_revision (
     base_profile_id TEXT NOT NULL REFERENCES sourcebridge_profile(id),
     base_profile_digest TEXT NOT NULL,
     required_validation_tier TEXT NOT NULL,
+    toolchain_digest TEXT,
     workspace_name TEXT,
     supersedes_profile_revision_id TEXT
         REFERENCES sourcebridge_project_profile_revision(id),
@@ -575,6 +576,50 @@ CREATE TABLE sourcebridge_rule_runtime_run (
 CREATE INDEX sourcebridge_rule_runtime_run_profile_idx
     ON sourcebridge_rule_runtime_run (profile_revision_id, completed_at, id);
 
+-- Conversion, runtime, and validation records retain the exact resolved
+-- profile/rule/toolchain identity that produced them.  Staleness is derived
+-- by comparing these immutable links with a selected current profile; no
+-- historical row is rewritten.
+CREATE TABLE sourcebridge_conversion_provenance (
+    id TEXT PRIMARY KEY,
+    execution_run_id TEXT REFERENCES sourcebridge_execution_run(id),
+    runtime_run_id TEXT REFERENCES sourcebridge_rule_runtime_run(id),
+    generated_artifact_id TEXT REFERENCES sourcebridge_generated_artifact(id),
+    validation_result_id TEXT REFERENCES sourcebridge_validation_result(id),
+    profile_revision_id TEXT NOT NULL
+        REFERENCES sourcebridge_project_profile_revision(id),
+    resolved_profile_digest TEXT NOT NULL,
+    rule_digest TEXT NOT NULL,
+    toolchain_digest TEXT NOT NULL,
+    validation_tier TEXT,
+    recorded_at TEXT NOT NULL,
+    CHECK (
+        (execution_run_id IS NOT NULL)
+        + (runtime_run_id IS NOT NULL)
+        + (generated_artifact_id IS NOT NULL)
+        + (validation_result_id IS NOT NULL) = 1
+    )
+);
+
+CREATE UNIQUE INDEX sourcebridge_conversion_provenance_execution_idx
+    ON sourcebridge_conversion_provenance (execution_run_id)
+    WHERE execution_run_id IS NOT NULL;
+
+CREATE UNIQUE INDEX sourcebridge_conversion_provenance_runtime_idx
+    ON sourcebridge_conversion_provenance (runtime_run_id)
+    WHERE runtime_run_id IS NOT NULL;
+
+CREATE UNIQUE INDEX sourcebridge_conversion_provenance_artifact_idx
+    ON sourcebridge_conversion_provenance (generated_artifact_id)
+    WHERE generated_artifact_id IS NOT NULL;
+
+CREATE UNIQUE INDEX sourcebridge_conversion_provenance_validation_idx
+    ON sourcebridge_conversion_provenance (validation_result_id)
+    WHERE validation_result_id IS NOT NULL;
+
+CREATE INDEX sourcebridge_conversion_provenance_profile_idx
+    ON sourcebridge_conversion_provenance (profile_revision_id, recorded_at, id);
+
 CREATE TRIGGER sourcebridge_rule_runtime_run_provenance_immutable_update
 BEFORE UPDATE ON sourcebridge_rule_runtime_run
 WHEN NEW.profile_revision_id != OLD.profile_revision_id
@@ -596,6 +641,18 @@ CREATE TRIGGER sourcebridge_rule_runtime_run_immutable_delete
 BEFORE DELETE ON sourcebridge_rule_runtime_run
 BEGIN
     SELECT RAISE(ABORT, 'sourcebridge_rule_runtime_run is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_conversion_provenance_immutable_update
+BEFORE UPDATE ON sourcebridge_conversion_provenance
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_conversion_provenance is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_conversion_provenance_immutable_delete
+BEFORE DELETE ON sourcebridge_conversion_provenance
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_conversion_provenance is append-only');
 END;
 
 -- A worker session is a durable contract for one serial, local-only batch.

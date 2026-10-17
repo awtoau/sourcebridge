@@ -161,6 +161,13 @@ require regeneration plus the declared full validation tier before calling the
 new profile current. A focused test helps diagnose a change; it does not
 recertify an affected corpus by itself.
 
+The compact `sourcebridge report-staleness` report compares immutable
+conversion/runtime/validation provenance links with a selected current profile.
+It reports the resolved profile, rule, and declared toolchain digests, each
+linked result's current/stale status, and the full validation tier required
+before certification. It derives this view without rewriting historical
+evidence; see [`docs/staleness.md`](docs/staleness.md).
+
 ### Efficient, constrained agent operations
 
 Agent-facing tooling must expose stable structured APIs and compact CLI output

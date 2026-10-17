@@ -83,6 +83,7 @@ class RuleRuntimeTests(unittest.TestCase):
                 profile_name="csharp-to-rust",
                 base_profile_id=base_profile_id,
                 required_validation_tier="fixture",
+                toolchain_digest="fixture-toolchain-v1",
                 rationale="Select project logging behavior only for this project.",
                 created_by="fixture",
                 rule_overrides=[
@@ -143,6 +144,15 @@ class RuleRuntimeTests(unittest.TestCase):
                     """,
                     (result["run_id"],),
                 ).fetchone()
+                runtime_provenance = connection.execute(
+                    """
+                    SELECT profile_revision_id, resolved_profile_digest,
+                           rule_digest, toolchain_digest
+                    FROM sourcebridge_conversion_provenance
+                    WHERE runtime_run_id = ?
+                    """,
+                    (result["run_id"],),
+                ).fetchone()
                 with self.assertRaisesRegex(
                     sqlite3.DatabaseError, "provenance is append-only"
                 ):
@@ -167,6 +177,10 @@ class RuleRuntimeTests(unittest.TestCase):
         self.assertEqual(runtime_run[4], result["provenance"]["rule_digest"])
         self.assertEqual(runtime_run[5], result["provenance"]["implementation_digest"])
         self.assertEqual(runtime_run[6], result["provenance"]["settings_digest"])
+        self.assertEqual(runtime_provenance[0], profile["profile_revision_id"])
+        self.assertEqual(runtime_provenance[1], profile["resolved_digest"])
+        self.assertEqual(runtime_provenance[2], result["provenance"]["rule_digest"])
+        self.assertEqual(runtime_provenance[3], "fixture-toolchain-v1")
         self.assertNotEqual(generic["rule_revision_id"], project["rule_revision_id"])
 
     def test_adapter_rejects_configuration_outside_its_declared_schema(self) -> None:
