@@ -15,7 +15,7 @@ from sourcebridge.database import (
 )
 
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 8
 _ROOT = Path(__file__).parents[1]
 _SCHEMA = _ROOT / "core" / "schema" / "evidence.sql"
 
@@ -75,6 +75,134 @@ def _run_atomic_migration(
         WHERE key = 'schema_version';
         """,
     )
+
+
+def _create_worker_audit_objects(connection: sqlite3.Connection) -> None:
+    """Create proposal-worker audit objects without leaving the writer transaction."""
+
+    for statement in (
+        """
+        CREATE TABLE IF NOT EXISTS sourcebridge_proposal_worker_session (
+            id TEXT PRIMARY KEY,
+            batch_id TEXT NOT NULL,
+            endpoint TEXT NOT NULL,
+            model_name TEXT NOT NULL,
+            model_digest TEXT NOT NULL,
+            generation_options_json TEXT NOT NULL,
+            prompt_template_version TEXT NOT NULL,
+            prompt_template_digest TEXT NOT NULL,
+            active_rule_digest TEXT NOT NULL,
+            status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed')),
+            summary_json TEXT NOT NULL,
+            started_at TEXT NOT NULL,
+            completed_at TEXT
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS sourcebridge_proposal_worker_request (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL
+                REFERENCES sourcebridge_proposal_worker_session(id),
+            request_index INTEGER NOT NULL CHECK (request_index >= 0),
+            evidence_sha256 TEXT NOT NULL,
+            payload_sha256 TEXT NOT NULL,
+            status TEXT NOT NULL CHECK (status IN ('staged', 'rejected', 'failed')),
+            elapsed_ms REAL NOT NULL CHECK (elapsed_ms >= 0),
+            load_duration_ms REAL NOT NULL CHECK (load_duration_ms >= 0),
+            generation_ms REAL NOT NULL CHECK (generation_ms >= 0),
+            generated_tokens INTEGER,
+            rejection_reasons_json TEXT NOT NULL,
+            proposal_json TEXT NOT NULL,
+            raw_response_json TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """,
+        """
+        CREATE INDEX IF NOT EXISTS sourcebridge_proposal_worker_request_session_idx
+            ON sourcebridge_proposal_worker_request (session_id, request_index)
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS sourcebridge_proposal_worker_session_event (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL
+                REFERENCES sourcebridge_proposal_worker_session(id),
+            sequence INTEGER NOT NULL CHECK (sequence > 0),
+            status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed')),
+            summary_json TEXT NOT NULL,
+            occurred_at TEXT NOT NULL,
+            UNIQUE (session_id, sequence)
+        )
+        """,
+        """
+        CREATE INDEX IF NOT EXISTS sourcebridge_proposal_worker_session_event_idx
+            ON sourcebridge_proposal_worker_session_event (session_id, sequence)
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_proposal_worker_session_immutable_update
+        BEFORE UPDATE ON sourcebridge_proposal_worker_session
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_proposal_worker_session_immutable_delete
+        BEFORE DELETE ON sourcebridge_proposal_worker_session
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_proposal_worker_request_immutable_update
+        BEFORE UPDATE ON sourcebridge_proposal_worker_request
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_request is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_proposal_worker_request_immutable_delete
+        BEFORE DELETE ON sourcebridge_proposal_worker_request
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_request is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_proposal_worker_session_event_immutable_update
+        BEFORE UPDATE ON sourcebridge_proposal_worker_session_event
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session_event is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_proposal_worker_session_event_immutable_delete
+        BEFORE DELETE ON sourcebridge_proposal_worker_session_event
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session_event is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_model_authored_rule_requires_human_review
+        BEFORE INSERT ON sourcebridge_rule_revision
+        WHEN NEW.model_name IS NOT NULL
+         AND (
+            NEW.model_digest IS NULL
+            OR NEW.proposal_id IS NULL
+            OR NEW.human_reviewed_by IS NULL
+            OR NEW.human_reviewed_at IS NULL
+            OR NOT EXISTS (
+                SELECT 1
+                FROM sourcebridge_rule_proposal AS proposal
+                WHERE proposal.id = NEW.proposal_id
+                  AND proposal.model_name = NEW.model_name
+                  AND proposal.model_digest = NEW.model_digest
+            )
+         )
+        BEGIN
+            SELECT RAISE(ABORT,
+                'model-authored rule requires persisted matching proposal and human review');
+        END
+        """,
+    ):
+        connection.execute(statement)
 
 
 def initialize(database: Path) -> None:
@@ -409,8 +537,171 @@ def initialize(database: Path) -> None:
                         "ALTER TABLE sourcebridge_project_profile_rule_override "
                         "ADD COLUMN resolution_json TEXT NOT NULL DEFAULT '{}';"
                     )
-                _run_atomic_migration(connection, ddl, str(SCHEMA_VERSION))
-                version = str(SCHEMA_VERSION)
+                _run_atomic_migration(connection, ddl, "6")
+                version = "6"
+            if version == "6":
+                columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(sourcebridge_rule_revision)"
+                    )
+                }
+                for column, definition in (
+                    ("proposal_id", "TEXT"),
+                    ("model_name", "TEXT"),
+                    ("model_digest", "TEXT"),
+                    ("human_reviewed_by", "TEXT"),
+                    ("human_reviewed_at", "TEXT"),
+                ):
+                    if column not in columns:
+                        connection.execute(
+                            f"ALTER TABLE sourcebridge_rule_revision ADD COLUMN {column} {definition}"
+                        )
+                worker_session_exists = connection.execute(
+                    """
+                    SELECT 1
+                    FROM sqlite_master
+                    WHERE type = 'table' AND name = 'sourcebridge_proposal_worker_session'
+                    """
+                ).fetchone()
+                if worker_session_exists is not None:
+                    worker_columns = {
+                        row[1]
+                        for row in connection.execute(
+                            "PRAGMA table_info(sourcebridge_proposal_worker_session)"
+                        )
+                    }
+                    if "prompt_template_digest" not in worker_columns:
+                        connection.execute(
+                            """
+                            ALTER TABLE sourcebridge_proposal_worker_session
+                            ADD COLUMN prompt_template_digest TEXT NOT NULL DEFAULT 'unknown'
+                            """
+                        )
+                connection.execute(
+                    "DROP TRIGGER IF EXISTS "
+                    "sourcebridge_model_authored_rule_requires_human_review"
+                )
+                _create_worker_audit_objects(connection)
+                _run_atomic_migration(connection, "", "7")
+                version = "7"
+            if version == "7":
+                connection.execute(
+                    "DROP TRIGGER IF EXISTS "
+                    "sourcebridge_model_authored_rule_requires_human_review"
+                )
+                worker_session_exists = connection.execute(
+                    """
+                    SELECT 1
+                    FROM sqlite_master
+                    WHERE type = 'table' AND name = 'sourcebridge_proposal_worker_session'
+                    """
+                ).fetchone()
+                if worker_session_exists is None:
+                    connection.execute(
+                        """
+                        CREATE TABLE sourcebridge_proposal_worker_session (
+                            id TEXT PRIMARY KEY,
+                            batch_id TEXT NOT NULL,
+                            endpoint TEXT NOT NULL,
+                            model_name TEXT NOT NULL,
+                            model_digest TEXT NOT NULL,
+                            generation_options_json TEXT NOT NULL,
+                            prompt_template_version TEXT NOT NULL,
+                            prompt_template_digest TEXT NOT NULL,
+                            active_rule_digest TEXT NOT NULL,
+                            status TEXT NOT NULL
+                                CHECK (status IN ('running', 'completed', 'failed')),
+                            summary_json TEXT NOT NULL,
+                            started_at TEXT NOT NULL,
+                            completed_at TEXT
+                        )
+                        """
+                    )
+                session_columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(sourcebridge_proposal_worker_session)"
+                    )
+                }
+                if "prompt_template_digest" not in session_columns:
+                    connection.execute(
+                        """
+                        ALTER TABLE sourcebridge_proposal_worker_session
+                        ADD COLUMN prompt_template_digest TEXT NOT NULL DEFAULT 'unknown'
+                        """
+                    )
+
+                request_table = connection.execute(
+                    """
+                    SELECT sql
+                    FROM sqlite_master
+                    WHERE type = 'table' AND name = 'sourcebridge_proposal_worker_request'
+                    """
+                ).fetchone()
+                request_sql = request_table[0] if request_table is not None else ""
+                if request_table is None or "'failed'" not in request_sql or (
+                    "UNIQUE (session_id, request_index)" in request_sql
+                ):
+                    connection.execute(
+                        "DROP TRIGGER IF EXISTS "
+                        "sourcebridge_proposal_worker_request_immutable_update"
+                    )
+                    connection.execute(
+                        "DROP TRIGGER IF EXISTS "
+                        "sourcebridge_proposal_worker_request_immutable_delete"
+                    )
+                    if request_table is not None:
+                        connection.execute(
+                            "ALTER TABLE sourcebridge_proposal_worker_request "
+                            "RENAME TO sourcebridge_proposal_worker_request_legacy"
+                        )
+                    connection.execute(
+                        """
+                        CREATE TABLE sourcebridge_proposal_worker_request (
+                            id TEXT PRIMARY KEY,
+                            session_id TEXT NOT NULL
+                                REFERENCES sourcebridge_proposal_worker_session(id),
+                            request_index INTEGER NOT NULL CHECK (request_index >= 0),
+                            evidence_sha256 TEXT NOT NULL,
+                            payload_sha256 TEXT NOT NULL,
+                            status TEXT NOT NULL CHECK (
+                                status IN ('staged', 'rejected', 'failed')
+                            ),
+                            elapsed_ms REAL NOT NULL CHECK (elapsed_ms >= 0),
+                            load_duration_ms REAL NOT NULL CHECK (load_duration_ms >= 0),
+                            generation_ms REAL NOT NULL CHECK (generation_ms >= 0),
+                            generated_tokens INTEGER,
+                            rejection_reasons_json TEXT NOT NULL,
+                            proposal_json TEXT NOT NULL,
+                            raw_response_json TEXT NOT NULL,
+                            created_at TEXT NOT NULL
+                        )
+                        """
+                    )
+                    if request_table is not None:
+                        connection.execute(
+                            """
+                            INSERT INTO sourcebridge_proposal_worker_request
+                                (id, session_id, request_index, evidence_sha256,
+                                 payload_sha256, status, elapsed_ms, load_duration_ms,
+                                 generation_ms, generated_tokens,
+                                 rejection_reasons_json, proposal_json,
+                                 raw_response_json, created_at)
+                            SELECT id, session_id, request_index, evidence_sha256,
+                                   payload_sha256, status, elapsed_ms, load_duration_ms,
+                                   generation_ms, generated_tokens,
+                                   rejection_reasons_json, proposal_json,
+                                   raw_response_json, created_at
+                            FROM sourcebridge_proposal_worker_request_legacy
+                            """
+                        )
+                        connection.execute(
+                            "DROP TABLE sourcebridge_proposal_worker_request_legacy"
+                        )
+                _create_worker_audit_objects(connection)
+                _run_atomic_migration(connection, "", "8")
+                version = "8"
             if version != str(SCHEMA_VERSION):
                 raise EvidencePipelineError(
                     f"{database}: unsupported schema version `{version}`"

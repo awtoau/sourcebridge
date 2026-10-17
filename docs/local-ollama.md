@@ -54,6 +54,48 @@ neither larger models nor deeper reasoning reliably preserved all free-form
 test fields. That result reinforces deterministic field validation rather than
 model-size escalation.
 
+## Reusable worker and evidence gates
+
+`propose-batch` creates a durable worker session contract containing the
+loopback endpoint, approved model digest, fixed generation options,
+prompt-template version and digest, active-rule digest, batch ID, and session
+ID. The
+worker resolves the model once, keeps it loaded with Ollama's `keep_alive`
+setting, and sends related evidence packages one at a time. It does not make
+an inference during construction or model-digest lookup; each request is an
+explicit batch item.
+
+Each request retains its raw response and records request elapsed time,
+Ollama model-load duration, prompt-evaluation duration, generation duration,
+and token counts when Ollama supplies them. The first request's load duration
+is reported separately as session warm-up; it is not mixed into the
+per-request generation measurement. When `--database` is supplied, the
+session and request audit rows are also stored in the SQLite evidence
+database.
+
+The prompt is a ground-or-abstain contract. Missing source facts or observed
+results require empty positive patterns and empty suggested tests. For
+grounded evidence, Sourcebridge checks the proposal against the evidence
+envelope before staging it:
+
+- source language and every stated variant/compiler field must be present and
+  equal;
+- positive snippets must be literal observed source operations;
+- source fixture path, symbol, observed input, expected result, and variant
+  are resolved from the evidence, not accepted as model-authored executable
+  fields;
+- candidate target backends and evidence references must be present in the
+  envelope; and
+- a mismatch is rejected and the raw response is written below
+  `evidence/proposals/rejected/`.
+
+The resulting staged JSON may contain a deterministic test projection, but it
+continues to claim only `unvalidated-llm-proposal`. No command in this
+workflow writes a rule revision, generated output, or promoted profile. A
+later, human-triggered rule registration must provide proposal provenance and
+human review; the evidence database trigger rejects model-authored rule rows
+without that review.
+
 ## Prompt optimization is part of conversion
 
 Prompt templates are versioned conversion inputs, not operator preferences.

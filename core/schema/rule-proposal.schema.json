@@ -89,12 +89,41 @@
           },
           "expected_result": {
             "type": "string"
+          },
+          "source_path": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "observed_input": {},
+          "variant": {
+            "type": "object"
           }
         },
         "additionalProperties": false
       }
     },
     "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "candidate_template": {
+      "type": "object",
+      "required": ["target_backend", "template"],
+      "properties": {
+        "target_backend": {
+          "type": "string"
+        },
+        "template": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence_references": {
       "type": "array",
       "items": {
         "type": "string"

@@ -367,7 +367,7 @@ class ConversionProfileTests(unittest.TestCase):
                     """
                 ).fetchone()
 
-        self.assertEqual(version, "6")
+        self.assertEqual(version, "7")
         self.assertIsNotNone(profile_table)
         self.assertIsNotNone(immutability_trigger)
 
@@ -409,5 +409,36 @@ class ConversionProfileTests(unittest.TestCase):
                     )
                 }
 
-        self.assertEqual(version, "6")
+        self.assertEqual(version, "7")
         self.assertIn("resolution_json", columns)
+
+    def test_model_authored_rule_requires_human_review_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            database = Path(temporary) / "evidence.db"
+            with self.assertRaisesRegex(ConversionProfileError, "human review"):
+                register_rule_revision(
+                    database,
+                    rule_key="arithmetic",
+                    source_frontend_pack_id="sourcebridge-delphi",
+                    definition={"operation": "addition"},
+                    rationale="Model candidate.",
+                    created_by="ollama",
+                    model_name="qwen2.5-coder:14b",
+                    model_digest="sha256:model",
+                    proposal_id="proposal-1",
+                )
+            accepted = register_rule_revision(
+                database,
+                rule_key="arithmetic",
+                source_frontend_pack_id="sourcebridge-delphi",
+                definition={"operation": "addition"},
+                rationale="Human reviewed model candidate.",
+                created_by="dan",
+                model_name="qwen2.5-coder:14b",
+                model_digest="sha256:model",
+                proposal_id="proposal-1",
+                human_reviewed_by="dan",
+                human_reviewed_at="2026-10-17T00:00:00+00:00",
+            )
+        self.assertEqual(accepted["model_name"], "qwen2.5-coder:14b")
+        self.assertEqual(accepted["proposal_id"], "proposal-1")

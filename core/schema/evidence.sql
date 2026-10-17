@@ -322,6 +322,11 @@ CREATE TABLE sourcebridge_rule_revision (
     supersedes_revision_id TEXT REFERENCES sourcebridge_rule_revision(id),
     rationale TEXT NOT NULL,
     created_by TEXT NOT NULL,
+    proposal_id TEXT,
+    model_name TEXT,
+    model_digest TEXT,
+    human_reviewed_by TEXT,
+    human_reviewed_at TEXT,
     created_at TEXT NOT NULL,
     UNIQUE (family_id, revision),
     UNIQUE (family_id, content_digest)
@@ -431,6 +436,45 @@ CREATE TABLE sourcebridge_project_profile_certification (
 CREATE INDEX sourcebridge_project_profile_certification_profile_idx
     ON sourcebridge_project_profile_certification (profile_revision_id, created_at);
 
+-- A worker session is a durable contract for one serial, local-only batch.
+-- Requests retain raw model output and deterministic acceptance/rejection data.
+CREATE TABLE sourcebridge_proposal_worker_session (
+    id TEXT PRIMARY KEY,
+    batch_id TEXT NOT NULL,
+    endpoint TEXT NOT NULL,
+    model_name TEXT NOT NULL,
+    model_digest TEXT NOT NULL,
+    generation_options_json TEXT NOT NULL,
+    prompt_template_version TEXT NOT NULL,
+    prompt_template_digest TEXT NOT NULL,
+    active_rule_digest TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed')),
+    summary_json TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    completed_at TEXT
+);
+
+CREATE TABLE sourcebridge_proposal_worker_request (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL REFERENCES sourcebridge_proposal_worker_session(id),
+    request_index INTEGER NOT NULL CHECK (request_index >= 0),
+    evidence_sha256 TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('staged', 'rejected')),
+    elapsed_ms REAL NOT NULL CHECK (elapsed_ms >= 0),
+    load_duration_ms REAL NOT NULL CHECK (load_duration_ms >= 0),
+    generation_ms REAL NOT NULL CHECK (generation_ms >= 0),
+    generated_tokens INTEGER,
+    rejection_reasons_json TEXT NOT NULL,
+    proposal_json TEXT NOT NULL,
+    raw_response_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (session_id, request_index)
+);
+
+CREATE INDEX sourcebridge_proposal_worker_request_session_idx
+    ON sourcebridge_proposal_worker_request (session_id, request_index);
+
 CREATE TRIGGER sourcebridge_rule_family_immutable_update
 BEFORE UPDATE ON sourcebridge_rule_family
 BEGIN
@@ -441,6 +485,19 @@ CREATE TRIGGER sourcebridge_rule_family_immutable_delete
 BEFORE DELETE ON sourcebridge_rule_family
 BEGIN
     SELECT RAISE(ABORT, 'sourcebridge_rule_family is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_model_authored_rule_requires_human_review
+BEFORE INSERT ON sourcebridge_rule_revision
+WHEN NEW.model_name IS NOT NULL
+ AND (
+    NEW.model_digest IS NULL
+    OR NEW.proposal_id IS NULL
+    OR NEW.human_reviewed_by IS NULL
+    OR NEW.human_reviewed_at IS NULL
+ )
+BEGIN
+    SELECT RAISE(ABORT, 'model-authored rule requires human review');
 END;
 
 CREATE TRIGGER sourcebridge_rule_revision_immutable_update

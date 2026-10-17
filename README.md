@@ -203,6 +203,22 @@ JSON evidence to 256 KiB, uses fixed generation options, schema-checks the
 response, and writes the result only under `evidence/proposals/`. A staged
 result is always labelled `unvalidated-llm-proposal`.
 
+For related evidence tasks, keep one pinned worker session alive and process
+the packages serially:
+
+```text
+sourcebridge propose-batch evidence/cluster-a.json evidence/cluster-b.json \
+  --model-digest sha256:<value printed by model-digest> \
+  --active-rule-digest <resolved-rule-digest> \
+  --database evidence/sourcebridge.db
+```
+
+The batch report separates the first-request model load/warm-up measurement
+from each request's elapsed and generation time. A weak or mismatched package
+is retained below `evidence/proposals/rejected/`; rejected output never becomes
+a rule. A successful package is only an evidence-gated,
+`unvalidated-llm-proposal`, not a validated rule or generated artifact.
+
 See [the local Ollama operating guide](docs/local-ollama.md) for the selected
 baseline, fixed safety/evidence constraints, and the hardware/workload settings
 users may measure and optimize without weakening proposal validation.
