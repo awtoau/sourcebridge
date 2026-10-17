@@ -26,8 +26,10 @@ from sourcebridge.reporting import (
     EvidenceReportError,
     changes_since,
     current_work_queue,
+    diagnostic_drilldown,
     diagnostic_groups,
     diagnostic_occurrences,
+    record_diagnostic_review,
     report_packs,
     staleness_report,
     work_item_evidence,
@@ -170,6 +172,69 @@ def _report_diagnostics(arguments: list[str]) -> int:
         print(error, file=sys.stderr)
         return 1
     print(json.dumps(report, indent=2, sort_keys=True))
+    return 0
+
+
+def _report_diagnostic(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-diagnostic")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("signature")
+    args = parser.parse_args(arguments)
+    try:
+        report = diagnostic_drilldown(args.database, args.signature)
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+def _review_diagnostic(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge review-diagnostic")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("occurrence_id")
+    parser.add_argument(
+        "--disposition",
+        choices=(
+            "unreviewed",
+            "accepted_source_behavior",
+            "known_converter_gap",
+            "known_target_constraint",
+            "false_grouping",
+            "needs_investigation",
+            "resolved",
+        ),
+        required=True,
+    )
+    parser.add_argument("--rationale", required=True)
+    parser.add_argument("--reviewed-by", required=True)
+    parser.add_argument("--work-item", "--work-item-id", dest="work_item_id")
+    parser.add_argument("--create-work-item", action="store_true")
+    parser.add_argument("--run", dest="run_id")
+    parser.add_argument("--category", default="diagnostic")
+    parser.add_argument("--summary")
+    parser.add_argument("--issue-url")
+    parser.add_argument("--recorded-at")
+    args = parser.parse_args(arguments)
+    try:
+        result = record_diagnostic_review(
+            args.database,
+            args.occurrence_id,
+            disposition=args.disposition,
+            rationale=args.rationale,
+            reviewed_by=args.reviewed_by,
+            work_item_id=args.work_item_id,
+            create_work_item=args.create_work_item,
+            run_id=args.run_id,
+            category=args.category,
+            summary=args.summary,
+            issue_url=args.issue_url,
+            recorded_at=args.recorded_at,
+        )
+    except (ValueError, OSError, sqlite3.Error) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     return 0
 
 
@@ -777,6 +842,10 @@ def main() -> int:
         return _worker_audit(arguments[1:])
     if arguments and arguments[0] == "report-diagnostics":
         return _report_diagnostics(arguments[1:])
+    if arguments and arguments[0] in {"report-diagnostic", "diagnostic-report"}:
+        return _report_diagnostic(arguments[1:])
+    if arguments and arguments[0] in {"review-diagnostic", "diagnostic-review"}:
+        return _review_diagnostic(arguments[1:])
     if arguments and arguments[0] == "report-packs":
         return _report_packs(arguments[1:])
     if arguments and arguments[0] in {"report-toolchains", "toolchain-report"}:

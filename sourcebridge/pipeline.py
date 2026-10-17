@@ -205,6 +205,32 @@ def _create_worker_audit_objects(connection: sqlite3.Connection) -> None:
         connection.execute(statement)
 
 
+def _create_diagnostic_review_objects(connection: sqlite3.Connection) -> None:
+    """Install append-only review indexes and guards for legacy databases."""
+
+    for statement in (
+        """
+        CREATE INDEX IF NOT EXISTS sourcebridge_diagnostic_review_occurrence_idx
+            ON sourcebridge_diagnostic_review (diagnostic_occurrence_id, created_at, id)
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_diagnostic_review_immutable_update
+        BEFORE UPDATE ON sourcebridge_diagnostic_review
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_diagnostic_review is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_diagnostic_review_immutable_delete
+        BEFORE DELETE ON sourcebridge_diagnostic_review
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_diagnostic_review is append-only');
+        END
+        """,
+    ):
+        connection.execute(statement)
+
+
 def _create_rule_runtime_objects(connection: sqlite3.Connection) -> None:
     """Install additive rule-runtime objects for existing evidence databases."""
 
@@ -1081,6 +1107,7 @@ def initialize(database: Path) -> None:
                 """
                 _run_atomic_migration(connection, ddl, "10")
                 version = "10"
+            _create_diagnostic_review_objects(connection)
             _create_rule_runtime_objects(connection)
             _create_validation_objects(connection)
             if version != str(SCHEMA_VERSION):

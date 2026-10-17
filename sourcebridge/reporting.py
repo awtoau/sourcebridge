@@ -42,47 +42,435 @@ def diagnostic_groups(database: Path) -> list[dict[str, Any]]:
     return _rows(database, query)
 
 
-def diagnostic_occurrences(database: Path, signature: str) -> list[dict[str, Any]]:
-    query = """
-        SELECT
-            diagnostic.id,
-            diagnostic.phase,
-            diagnostic.tool_identity,
-            diagnostic.diagnostic_code,
-            diagnostic.severity,
-            diagnostic.failure_signature,
-            diagnostic.message,
-            diagnostic.details_json,
-            diagnostic.recorded_at,
-            source.logical_name,
-            source.source_path,
-            source.source_span,
-            source_fragment.logical_path AS source_fragment_path,
-            source_fragment.start_line AS source_start_line,
-            source_fragment.end_line AS source_end_line,
-            source_fragment.content AS source_excerpt,
-            artifact.artifact_path,
-            generated_fragment.start_line AS generated_start_line,
-            generated_fragment.end_line AS generated_end_line,
-            generated_fragment.content AS generated_excerpt,
-            validation.side AS validation_side,
-            validation.validator,
-            validation.evidence_path,
-            validation.evidence_digest
-        FROM sourcebridge_diagnostic_occurrence AS diagnostic
-        JOIN sourcebridge_source_unit AS source ON source.id = diagnostic.source_unit_id
-        JOIN sourcebridge_validation_result AS validation
-            ON validation.id = diagnostic.validation_result_id
-        LEFT JOIN sourcebridge_evidence_fragment AS source_fragment
-            ON source_fragment.id = diagnostic.source_fragment_id
-        LEFT JOIN sourcebridge_generated_artifact AS artifact
-            ON artifact.id = diagnostic.generated_artifact_id
-        LEFT JOIN sourcebridge_evidence_fragment AS generated_fragment
-            ON generated_fragment.id = diagnostic.generated_fragment_id
-        WHERE diagnostic.failure_signature = :signature
-        ORDER BY source.source_path, source.source_span, diagnostic.id
+_DIAGNOSTIC_OCCURRENCE_QUERY = """
+    SELECT
+        diagnostic.id,
+        diagnostic.phase,
+        diagnostic.tool_identity,
+        diagnostic.diagnostic_code,
+        diagnostic.severity,
+        diagnostic.failure_signature,
+        diagnostic.message,
+        diagnostic.details_json,
+        diagnostic.recorded_at,
+        source.id AS source_unit_id,
+        source.logical_name,
+        source.source_path,
+        source.source_span,
+        source.source_digest,
+        source.kind AS source_kind,
+        corpus.revision AS corpus_revision,
+        variant.id AS variant_id,
+        variant.frontend_pack_id AS variant_frontend_pack_id,
+        variant.compiler_identity,
+        variant.target_abi,
+        variant.pointer_width,
+        variant.byte_order,
+        variant.configuration_digest AS variant_configuration_digest,
+        variant.generated_input_digest,
+        decision.id AS decision_id,
+        profile.id AS profile_id,
+        profile.profile_name,
+        profile.source_frontend_pack_id,
+        profile.target_backend_pack_id,
+        profile.rule_layers_digest,
+        profile.runtime_adapters_digest,
+        profile.options_digest,
+        source_fragment.id AS source_fragment_id,
+        source_fragment.logical_path AS source_fragment_path,
+        source_fragment.start_line AS source_start_line,
+        source_fragment.start_column AS source_start_column,
+        source_fragment.end_line AS source_end_line,
+        source_fragment.end_column AS source_end_column,
+        source_fragment.content AS source_excerpt,
+        source_fragment.content_digest AS source_excerpt_digest,
+        artifact.id AS generated_artifact_id,
+        artifact.artifact_path,
+        artifact.artifact_digest,
+        artifact.generator_digest,
+        generated_fragment.id AS generated_fragment_id,
+        generated_fragment.logical_path AS generated_fragment_path,
+        generated_fragment.start_line AS generated_start_line,
+        generated_fragment.start_column AS generated_start_column,
+        generated_fragment.end_line AS generated_end_line,
+        generated_fragment.end_column AS generated_end_column,
+        generated_fragment.content AS generated_excerpt,
+        generated_fragment.content_digest AS generated_excerpt_digest,
+        validation.id AS validation_result_id,
+        validation.side AS validation_side,
+        validation.validator,
+        validation.status AS validation_status,
+        validation.evidence_path,
+        validation.evidence_digest,
+        validation.details_json AS validation_details_json,
+        validation.recorded_at AS validation_recorded_at,
+        (
+            SELECT provenance.run_id
+            FROM sourcebridge_work_item_evidence AS link
+            JOIN sourcebridge_execution_run_provenance AS provenance
+              ON provenance.run_id = link.execution_run_id
+            WHERE link.diagnostic_occurrence_id = diagnostic.id
+            ORDER BY link.recorded_at DESC, link.id DESC
+            LIMIT 1
+        ) AS provenance_run_id,
+        (
+            SELECT provenance.source_revision
+            FROM sourcebridge_work_item_evidence AS link
+            JOIN sourcebridge_execution_run_provenance AS provenance
+              ON provenance.run_id = link.execution_run_id
+            WHERE link.diagnostic_occurrence_id = diagnostic.id
+            ORDER BY link.recorded_at DESC, link.id DESC
+            LIMIT 1
+        ) AS provenance_source_revision,
+        (
+            SELECT provenance.variant_digest
+            FROM sourcebridge_work_item_evidence AS link
+            JOIN sourcebridge_execution_run_provenance AS provenance
+              ON provenance.run_id = link.execution_run_id
+            WHERE link.diagnostic_occurrence_id = diagnostic.id
+            ORDER BY link.recorded_at DESC, link.id DESC
+            LIMIT 1
+        ) AS provenance_variant_digest,
+        (
+            SELECT provenance.profile_digest
+            FROM sourcebridge_work_item_evidence AS link
+            JOIN sourcebridge_execution_run_provenance AS provenance
+              ON provenance.run_id = link.execution_run_id
+            WHERE link.diagnostic_occurrence_id = diagnostic.id
+            ORDER BY link.recorded_at DESC, link.id DESC
+            LIMIT 1
+        ) AS provenance_profile_digest,
+        (
+            SELECT provenance.rule_digest
+            FROM sourcebridge_work_item_evidence AS link
+            JOIN sourcebridge_execution_run_provenance AS provenance
+              ON provenance.run_id = link.execution_run_id
+            WHERE link.diagnostic_occurrence_id = diagnostic.id
+            ORDER BY link.recorded_at DESC, link.id DESC
+            LIMIT 1
+        ) AS provenance_rule_digest,
+        (
+            SELECT provenance.artifact_digest
+            FROM sourcebridge_work_item_evidence AS link
+            JOIN sourcebridge_execution_run_provenance AS provenance
+              ON provenance.run_id = link.execution_run_id
+            WHERE link.diagnostic_occurrence_id = diagnostic.id
+            ORDER BY link.recorded_at DESC, link.id DESC
+            LIMIT 1
+        ) AS provenance_artifact_digest,
+        (
+            SELECT provenance.evidence_digest
+            FROM sourcebridge_work_item_evidence AS link
+            JOIN sourcebridge_execution_run_provenance AS provenance
+              ON provenance.run_id = link.execution_run_id
+            WHERE link.diagnostic_occurrence_id = diagnostic.id
+            ORDER BY link.recorded_at DESC, link.id DESC
+            LIMIT 1
+        ) AS provenance_evidence_digest
+    FROM sourcebridge_diagnostic_occurrence AS diagnostic
+    JOIN sourcebridge_source_unit AS source ON source.id = diagnostic.source_unit_id
+    JOIN sourcebridge_validation_result AS validation
+        ON validation.id = diagnostic.validation_result_id
+    JOIN sourcebridge_component_decision AS decision
+        ON decision.id = validation.decision_id
+    JOIN sourcebridge_profile AS profile
+        ON profile.id = decision.profile_id
+    JOIN sourcebridge_variant AS variant
+        ON variant.id = source.variant_id
+    JOIN sourcebridge_corpus AS corpus
+        ON corpus.id = variant.corpus_id
+    LEFT JOIN sourcebridge_evidence_fragment AS source_fragment
+        ON source_fragment.id = diagnostic.source_fragment_id
+    LEFT JOIN sourcebridge_generated_artifact AS artifact
+        ON artifact.id = diagnostic.generated_artifact_id
+    LEFT JOIN sourcebridge_evidence_fragment AS generated_fragment
+        ON generated_fragment.id = diagnostic.generated_fragment_id
+    WHERE diagnostic.failure_signature = :signature
+    ORDER BY source.source_path, source.source_span, diagnostic.id
+    """
+
+
+def _json_value(value: str) -> object:
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return value
+
+
+def _diagnostic_reviews(
+    connection: sqlite3.Connection,
+    occurrence_id: str,
+) -> list[dict[str, Any]]:
+    rows = connection.execute(
         """
-    return _rows(database, query, {"signature": signature})
+        SELECT id, disposition, rationale, reviewed_by, created_at
+        FROM sourcebridge_diagnostic_review
+        WHERE diagnostic_occurrence_id = ?
+        ORDER BY created_at, id
+        """,
+        (occurrence_id,),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def _diagnostic_occurrence_report(
+    connection: sqlite3.Connection,
+    row: sqlite3.Row,
+) -> dict[str, Any]:
+    reviews = _diagnostic_reviews(connection, str(row["id"]))
+    source_revision = row["provenance_source_revision"] or row["corpus_revision"]
+    variant_digest = (
+        row["provenance_variant_digest"] or row["variant_configuration_digest"]
+    )
+    report: dict[str, Any] = {
+        # These flat fields preserve the original compact report contract.
+        "id": row["id"],
+        "phase": row["phase"],
+        "tool_identity": row["tool_identity"],
+        "diagnostic_code": row["diagnostic_code"],
+        "severity": row["severity"],
+        "failure_signature": row["failure_signature"],
+        "message": row["message"],
+        "details_json": row["details_json"],
+        "details": _json_value(row["details_json"]),
+        "recorded_at": row["recorded_at"],
+        "logical_name": row["logical_name"],
+        "source_path": row["source_path"],
+        "source_span": row["source_span"],
+        "source_fragment_path": row["source_fragment_path"],
+        "source_start_line": row["source_start_line"],
+        "source_end_line": row["source_end_line"],
+        "source_excerpt": row["source_excerpt"],
+        "artifact_path": row["artifact_path"],
+        "generated_start_line": row["generated_start_line"],
+        "generated_end_line": row["generated_end_line"],
+        "generated_excerpt": row["generated_excerpt"],
+        "validation_side": row["validation_side"],
+        "validator": row["validator"],
+        "evidence_path": row["evidence_path"],
+        "evidence_digest": row["evidence_digest"],
+        "source_revision": source_revision,
+        "variant_digest": variant_digest,
+        "profile_digest": row["provenance_profile_digest"],
+        "generator_digest": row["generator_digest"],
+        "raw_validation_evidence": {
+            "path": row["evidence_path"],
+            "digest": row["evidence_digest"],
+            "details_json": row["validation_details_json"],
+        },
+        # Nested fields make the drill-down self-describing without requiring
+        # another query for provenance or the exact reviewed excerpts.
+        "source": {
+            "unit_id": row["source_unit_id"],
+            "logical_name": row["logical_name"],
+            "path": row["source_path"],
+            "span": row["source_span"],
+            "digest": row["source_digest"],
+            "kind": row["source_kind"],
+            "excerpt": (
+                {
+                    "id": row["source_fragment_id"],
+                    "path": row["source_fragment_path"],
+                    "start_line": row["source_start_line"],
+                    "start_column": row["source_start_column"],
+                    "end_line": row["source_end_line"],
+                    "end_column": row["source_end_column"],
+                    "content": row["source_excerpt"],
+                    "content_digest": row["source_excerpt_digest"],
+                }
+                if row["source_fragment_id"] is not None
+                else None
+            ),
+        },
+        "generated": (
+            {
+                "artifact": {
+                    "id": row["generated_artifact_id"],
+                    "path": row["artifact_path"],
+                    "artifact_digest": row["artifact_digest"],
+                    "generator_digest": row["generator_digest"],
+                },
+                "excerpt": (
+                    {
+                        "id": row["generated_fragment_id"],
+                        "path": row["generated_fragment_path"],
+                        "start_line": row["generated_start_line"],
+                        "start_column": row["generated_start_column"],
+                        "end_line": row["generated_end_line"],
+                        "end_column": row["generated_end_column"],
+                        "content": row["generated_excerpt"],
+                        "content_digest": row["generated_excerpt_digest"],
+                    }
+                    if row["generated_fragment_id"] is not None
+                    else None
+                ),
+            }
+            if row["generated_artifact_id"] is not None
+            else None
+        ),
+        "validation": {
+            "id": row["validation_result_id"],
+            "side": row["validation_side"],
+            "validator": row["validator"],
+            "status": row["validation_status"],
+            "evidence_path": row["evidence_path"],
+            "evidence_digest": row["evidence_digest"],
+            "details_json": row["validation_details_json"],
+            "details": _json_value(row["validation_details_json"]),
+            "recorded_at": row["validation_recorded_at"],
+        },
+        "provenance": {
+            "source_revision": source_revision,
+            "variant": {
+                "id": row["variant_id"],
+                "frontend_pack_id": row["variant_frontend_pack_id"],
+                "compiler_identity": row["compiler_identity"],
+                "target_abi": row["target_abi"],
+                "pointer_width": row["pointer_width"],
+                "byte_order": row["byte_order"],
+                "configuration_digest": row["variant_configuration_digest"],
+                "generated_input_digest": row["generated_input_digest"],
+                "variant_digest": variant_digest,
+            },
+            "profile": {
+                "id": row["profile_id"],
+                "name": row["profile_name"],
+                "source_frontend_pack_id": row["source_frontend_pack_id"],
+                "target_backend_pack_id": row["target_backend_pack_id"],
+                "rule_layers_digest": row["rule_layers_digest"],
+                "runtime_adapters_digest": row["runtime_adapters_digest"],
+                "options_digest": row["options_digest"],
+                "profile_digest": row["provenance_profile_digest"],
+            },
+            "generator_digest": row["generator_digest"],
+            "run": (
+                {
+                    "id": row["provenance_run_id"],
+                    "source_revision": row["provenance_source_revision"],
+                    "variant_digest": row["provenance_variant_digest"],
+                    "profile_digest": row["provenance_profile_digest"],
+                    "rule_digest": row["provenance_rule_digest"],
+                    "artifact_digest": row["provenance_artifact_digest"],
+                    "evidence_digest": row["provenance_evidence_digest"],
+                }
+                if row["provenance_run_id"] is not None
+                else None
+            ),
+        },
+        "reviews": reviews,
+        "review_status": reviews[-1]["disposition"] if reviews else "unreviewed",
+    }
+    return report
+
+
+def _diagnostic_rows(
+    connection: sqlite3.Connection,
+    signature: str,
+) -> list[dict[str, Any]]:
+    connection.row_factory = sqlite3.Row
+    rows = connection.execute(
+        _DIAGNOSTIC_OCCURRENCE_QUERY,
+        {"signature": signature},
+    ).fetchall()
+    return [_diagnostic_occurrence_report(connection, row) for row in rows]
+
+
+def diagnostic_occurrences(database: Path, signature: str) -> list[dict[str, Any]]:
+    signature = signature.strip() if isinstance(signature, str) else ""
+    if not signature:
+        raise EvidenceReportError("failure signature must be a non-empty string")
+    try:
+        with read_transaction(database) as connection:
+            return _diagnostic_rows(connection, signature)
+    except EvidenceReportError:
+        raise
+    except (FileNotFoundError, OSError, sqlite3.Error) as error:
+        raise EvidenceReportError(
+            f"{database}: cannot read diagnostic occurrences: {error}"
+        ) from error
+
+
+def diagnostic_drilldown(database: Path, signature: str) -> dict[str, Any]:
+    """Return one compact aggregate-to-occurrence diagnostic report.
+
+    Unknown signatures are a valid empty result.  This keeps report consumers
+    able to probe a queue without turning an absent failure into a transport
+    error.
+    """
+
+    signature = signature.strip() if isinstance(signature, str) else ""
+    if not signature:
+        raise EvidenceReportError("failure signature must be a non-empty string")
+    try:
+        with read_transaction(database) as connection:
+            connection.row_factory = sqlite3.Row
+            groups = connection.execute(
+                """
+                SELECT failure_signature, phase, severity, COUNT(*) AS occurrence_count,
+                       MIN(recorded_at) AS first_recorded_at,
+                       MAX(recorded_at) AS last_recorded_at
+                FROM sourcebridge_diagnostic_occurrence
+                WHERE failure_signature = ?
+                GROUP BY failure_signature, phase, severity
+                ORDER BY phase, severity
+                """,
+                (signature,),
+            ).fetchall()
+            occurrences = _diagnostic_rows(connection, signature)
+            summary = {
+                "failure_signature": signature,
+                "occurrence_count": len(occurrences),
+                "phases": sorted({str(row["phase"]) for row in groups}),
+                "severities": sorted({str(row["severity"]) for row in groups}),
+                "first_recorded_at": min(
+                    (row["first_recorded_at"] for row in groups), default=None
+                ),
+                "last_recorded_at": max(
+                    (row["last_recorded_at"] for row in groups), default=None
+                ),
+                "groups": [dict(row) for row in groups],
+            }
+            return {
+                "schema_version": 1,
+                "report": "diagnostic-drilldown",
+                "failure_signature": signature,
+                "summary": summary,
+                "occurrences": occurrences,
+            }
+    except EvidenceReportError:
+        raise
+    except (FileNotFoundError, OSError, sqlite3.Error) as error:
+        raise EvidenceReportError(
+            f"{database}: cannot read diagnostic drill-down: {error}"
+        ) from error
+
+
+def diagnostic_review_history(
+    database: Path,
+    occurrence_id: str,
+) -> list[dict[str, Any]]:
+    """Return append-only review classifications for one occurrence."""
+
+    occurrence_id = occurrence_id.strip() if isinstance(occurrence_id, str) else ""
+    if not occurrence_id:
+        raise EvidenceReportError("diagnostic occurrence ID must be a non-empty string")
+    try:
+        with read_transaction(database) as connection:
+            connection.row_factory = sqlite3.Row
+            if connection.execute(
+                "SELECT 1 FROM sourcebridge_diagnostic_occurrence WHERE id = ?",
+                (occurrence_id,),
+            ).fetchone() is None:
+                raise EvidenceReportError(
+                    f"diagnostic occurrence `{occurrence_id}` does not exist"
+                )
+            return _diagnostic_reviews(connection, occurrence_id)
+    except EvidenceReportError:
+        raise
+    except (FileNotFoundError, OSError, sqlite3.Error) as error:
+        raise EvidenceReportError(
+            f"{database}: cannot read diagnostic review history: {error}"
+        ) from error
 
 
 def execution_activity(database: Path) -> list[dict[str, Any]]:
@@ -241,6 +629,14 @@ def link_work_item_evidence(*args: Any, **kwargs: Any) -> dict[str, Any]:
     """Append a run-scoped immutable work-item evidence link."""
 
     from sourcebridge.agent_queue import link_work_item_evidence as _record
+
+    return _record(*args, **kwargs)
+
+
+def record_diagnostic_review(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Append a diagnostic classification and optionally queue its evidence."""
+
+    from sourcebridge.agent_queue import record_diagnostic_review as _record
 
     return _record(*args, **kwargs)
 
