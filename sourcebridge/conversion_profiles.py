@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from datetime import UTC, datetime
 import hashlib
 import json
 from pathlib import Path
 import sqlite3
-from typing import Any, Mapping, Sequence
+from typing import Any, Iterator, Mapping, Sequence
 
+from sourcebridge.database import read_transaction, write_transaction
 from sourcebridge.pipeline import initialize
 
 
@@ -54,12 +56,13 @@ def _optional_text(value: object, field: str) -> str | None:
     return _text(value, field)
 
 
-def _connection(database: Path) -> sqlite3.Connection:
+@contextmanager
+def _connection(database: Path, *, write: bool = True) -> Iterator[sqlite3.Connection]:
     initialize(database)
-    connection = sqlite3.connect(database)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA foreign_keys = ON")
-    return connection
+    transaction = write_transaction if write else read_transaction
+    with transaction(database) as connection:
+        connection.row_factory = sqlite3.Row
+        yield connection
 
 
 def _latest_state(
@@ -911,7 +914,7 @@ def promote_project_profile(
 def resolve_project_profile(database: Path, profile_revision_id: str) -> dict[str, object]:
     """Return the exact base profile, project overlays, and digest for a revision."""
 
-    with _connection(database) as connection:
+    with _connection(database, write=False) as connection:
         profile = connection.execute(
             """
             SELECT id, project_id, profile_name, revision, base_profile_id,
@@ -1028,7 +1031,7 @@ def list_project_profile_revisions(
         project_id = _text(project_id, "project_id")
     if state is not None and state not in _PROFILE_STATES:
         raise ConversionProfileError(f"unsupported profile state `{state}`")
-    with _connection(database) as connection:
+    with _connection(database, write=False) as connection:
         query = """
             SELECT profile.id, profile.project_id, profile.profile_name, profile.revision,
                    profile.resolved_digest, profile.required_validation_tier, state.state

@@ -8,7 +8,14 @@ import json
 from pathlib import Path
 import sqlite3
 import subprocess
+import time
 from typing import Any, Iterable
+
+from sourcebridge.database import (
+    BUSY_RETRY_ATTEMPTS,
+    BUSY_RETRY_BACKOFF_SECONDS,
+    write_transaction,
+)
 
 
 SCHEMA_VERSION = 6
@@ -34,11 +41,35 @@ def _id(prefix: str, value: str) -> str:
     return f"{prefix}-{_digest(value)[:24]}"
 
 
+def _executescript_in_writer(connection: sqlite3.Connection, script: str) -> None:
+    """Keep schema scripts inside the same serialized writer lease.
+
+    ``sqlite3.Connection.executescript`` commits an existing transaction before
+    running its input.  Re-enter the immediate transaction around the script
+    and leave one open for the caller's following metadata updates.
+    """
+
+    connection.executescript(f"BEGIN IMMEDIATE;\n{script}\nCOMMIT;")
+    for attempt in range(BUSY_RETRY_ATTEMPTS + 1):
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            return
+        except sqlite3.OperationalError as error:
+            if "locked" not in str(error).lower() and "busy" not in str(error).lower():
+                raise
+            if attempt >= BUSY_RETRY_ATTEMPTS:
+                raise sqlite3.OperationalError(
+                    "SQLite writer remained busy during schema migration; "
+                    "wait for the active writer to finish and retry"
+                ) from error
+            time.sleep(BUSY_RETRY_BACKOFF_SECONDS * (2**attempt))
+
+
 def initialize(database: Path) -> None:
     database.parent.mkdir(parents=True, exist_ok=True)
     try:
         schema = _SCHEMA.read_text(encoding="utf-8")
-        with sqlite3.connect(database) as connection:
+        with write_transaction(database, enable_wal=True) as connection:
             connection.execute("PRAGMA foreign_keys = ON")
             metadata_exists = connection.execute(
                 """
@@ -48,7 +79,7 @@ def initialize(database: Path) -> None:
                 """
             ).fetchone()
             if metadata_exists is None:
-                connection.executescript(schema)
+                _executescript_in_writer(connection, schema)
             existing = connection.execute(
                 "SELECT value FROM sourcebridge_schema_metadata WHERE key = 'schema_version'"
             ).fetchone()
@@ -70,7 +101,8 @@ def initialize(database: Path) -> None:
                 )
                 version = "2"
             if version == "2":
-                connection.executescript(
+                _executescript_in_writer(
+                    connection,
                     """
                     CREATE TABLE sourcebridge_engine_test (
                         id INTEGER PRIMARY KEY,
@@ -104,7 +136,8 @@ def initialize(database: Path) -> None:
                 )
                 version = "3"
             if version == "3":
-                connection.executescript(
+                _executescript_in_writer(
+                    connection,
                     """
                     ALTER TABLE sourcebridge_engine_test
                         ADD COLUMN catalogue_path TEXT;
@@ -119,7 +152,8 @@ def initialize(database: Path) -> None:
                 )
                 version = "4"
             if version == "4":
-                connection.executescript(
+                _executescript_in_writer(
+                    connection,
                     """
                     CREATE TABLE IF NOT EXISTS sourcebridge_rule_family (
                         id TEXT PRIMARY KEY,
@@ -374,7 +408,7 @@ def import_json(
     initialize(database)
     repository = repository or _repository_name(root)
     imported = projected = skipped = 0
-    with sqlite3.connect(database) as connection:
+    with write_transaction(database) as connection:
         connection.execute("PRAGMA foreign_keys = ON")
         for path in _json_files(root, tracked_only=tracked_only):
             payload = path.read_bytes()

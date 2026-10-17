@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sqlite3
 import sys
 
 from cli import sourcebridge as manifest_cli
@@ -25,7 +26,7 @@ from sourcebridge.reporting import (
     diagnostic_occurrences,
     report_packs,
 )
-from sourcebridge.execution import run_approved
+from sourcebridge.execution import recover_interrupted, run_approved
 from sourcebridge.conversion_profiles import (
     ConversionProfileError,
     create_project_profile_revision,
@@ -122,9 +123,27 @@ def _run_approved(arguments: list[str]) -> int:
     args = parser.parse_args(arguments)
     try:
         return run_approved(args.database, args.run_id)
-    except (ValueError, OSError) as error:
+    except (ValueError, OSError, sqlite3.Error) as error:
         print(error, file=sys.stderr)
         return 1
+
+
+def _recover_run(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge recover-run")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("run_id")
+    parser.add_argument(
+        "--reason",
+        default="Recovered after an interrupted run.",
+    )
+    args = parser.parse_args(arguments)
+    try:
+        result = recover_interrupted(args.database, args.run_id, reason=args.reason)
+    except (ValueError, OSError, sqlite3.Error) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
 
 
 def _evaluate_proposal(arguments: list[str]) -> int:
@@ -224,7 +243,7 @@ def _test(arguments: list[str]) -> int:
             result = run(args.database, args.test_id)
             print(json.dumps(result, indent=2, sort_keys=True))
             return 0 if result["status"] == "passed" else 1
-    except EngineTestError as error:
+    except (EngineTestError, EvidencePipelineError, sqlite3.Error) as error:
         print(error, file=sys.stderr)
         return 1
     return 0
@@ -354,7 +373,13 @@ def _profile(arguments: list[str]) -> int:
                 project_id=args.project,
                 state=args.state,
             )
-    except (ConversionProfileError, EvidencePipelineError, OSError, json.JSONDecodeError) as error:
+    except (
+        ConversionProfileError,
+        EvidencePipelineError,
+        OSError,
+        sqlite3.Error,
+        json.JSONDecodeError,
+    ) as error:
         print(error, file=sys.stderr)
         return 1
     print(json.dumps(result, indent=2, sort_keys=True))
@@ -391,7 +416,7 @@ def _dev(arguments: list[str]) -> int:
                 f"{args.pack_manifest}: declares `{imported['pack_id']}`, not `{args.pack_id}`"
             )
         result = run(args.database, args.test_id)
-    except EngineTestError as error:
+    except (EngineTestError, EvidencePipelineError, sqlite3.Error) as error:
         print(error, file=sys.stderr)
         return 1
     print(json.dumps({"catalogue": imported, "result": result}, indent=2, sort_keys=True))
@@ -415,6 +440,8 @@ def main() -> int:
         return _report_packs(arguments[1:])
     if arguments and arguments[0] == "run-approved":
         return _run_approved(arguments[1:])
+    if arguments and arguments[0] == "recover-run":
+        return _recover_run(arguments[1:])
     if arguments and arguments[0] == "evaluate-proposal":
         return _evaluate_proposal(arguments[1:])
     if arguments and arguments[0] == "init-db":
