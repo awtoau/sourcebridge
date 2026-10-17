@@ -130,6 +130,82 @@ CREATE TABLE sourcebridge_validation_result (
     recorded_at TEXT NOT NULL
 );
 
+-- One adapter invocation is the immutable two-sided validation boundary.  The
+-- side rows below remain compatible with the original validation-result
+-- contract while this row keeps the exact decision/profile identity and raw
+-- adapter response together.
+CREATE TABLE sourcebridge_validation_case (
+    id TEXT PRIMARY KEY,
+    decision_id TEXT NOT NULL REFERENCES sourcebridge_component_decision(id),
+    profile_revision_id TEXT NOT NULL
+        REFERENCES sourcebridge_project_profile_revision(id),
+    validator TEXT NOT NULL,
+    validator_digest TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('passed', 'failed', 'blocked')),
+    source_classification TEXT NOT NULL CHECK (
+        source_classification IN (
+            'clean',
+            'defect',
+            'undefined-or-config-dependent',
+            'unsupported'
+        )
+    ),
+    request_json TEXT NOT NULL,
+    raw_response TEXT NOT NULL,
+    raw_response_digest TEXT NOT NULL,
+    command_json TEXT NOT NULL,
+    requested_by TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    completed_at TEXT NOT NULL
+);
+
+-- Raw side evidence is append-only and intentionally not normalized into
+-- compiler-specific diagnostics.  Packs retain their own evidence shape.
+CREATE TABLE sourcebridge_validation_evidence (
+    id TEXT PRIMARY KEY,
+    validation_case_id TEXT NOT NULL
+        REFERENCES sourcebridge_validation_case(id),
+    validation_result_id TEXT NOT NULL
+        REFERENCES sourcebridge_validation_result(id),
+    side TEXT NOT NULL CHECK (side IN ('source', 'target', 'oracle')),
+    evidence_path TEXT NOT NULL,
+    evidence_digest TEXT NOT NULL,
+    raw_evidence TEXT NOT NULL,
+    details_json TEXT NOT NULL,
+    recorded_at TEXT NOT NULL,
+    UNIQUE (validation_case_id, side)
+);
+
+CREATE INDEX sourcebridge_validation_case_decision_idx
+    ON sourcebridge_validation_case (decision_id, completed_at, id);
+
+CREATE INDEX sourcebridge_validation_evidence_result_idx
+    ON sourcebridge_validation_evidence (validation_result_id);
+
+CREATE TRIGGER sourcebridge_validation_case_immutable_update
+BEFORE UPDATE ON sourcebridge_validation_case
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_validation_case is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_validation_case_immutable_delete
+BEFORE DELETE ON sourcebridge_validation_case
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_validation_case is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_validation_evidence_immutable_update
+BEFORE UPDATE ON sourcebridge_validation_evidence
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_validation_evidence is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_validation_evidence_immutable_delete
+BEFORE DELETE ON sourcebridge_validation_evidence
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_validation_evidence is append-only');
+END;
+
 -- A report groups these rows by a stable failure signature. The occurrences,
 -- not a stored counter, remain the source of truth for drill-down review.
 CREATE TABLE sourcebridge_diagnostic_occurrence (
