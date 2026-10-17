@@ -436,6 +436,9 @@ CREATE TABLE sourcebridge_rule_revision (
     model_digest TEXT,
     human_reviewed_by TEXT,
     human_reviewed_at TEXT,
+    implementation_pack_id TEXT,
+    implementation_path TEXT,
+    implementation_digest TEXT,
     created_at TEXT NOT NULL,
     UNIQUE (family_id, revision),
     UNIQUE (family_id, content_digest)
@@ -544,6 +547,56 @@ CREATE TABLE sourcebridge_project_profile_certification (
 
 CREATE INDEX sourcebridge_project_profile_certification_profile_idx
     ON sourcebridge_project_profile_certification (profile_revision_id, created_at);
+
+-- A pack adapter run is the executable counterpart of a resolved project
+-- profile. The request and digests are retained with the run so an adapter
+-- result cannot be mistaken for output from a different profile or source.
+CREATE TABLE sourcebridge_rule_runtime_run (
+    id TEXT PRIMARY KEY,
+    profile_revision_id TEXT NOT NULL
+        REFERENCES sourcebridge_project_profile_revision(id),
+    status TEXT NOT NULL CHECK (
+        status IN ('running', 'passed', 'failed', 'blocked', 'rejected')
+    ),
+    adapter_id TEXT NOT NULL,
+    adapter_digest TEXT NOT NULL,
+    resolved_profile_digest TEXT NOT NULL,
+    rule_digest TEXT NOT NULL,
+    implementation_digest TEXT NOT NULL,
+    settings_digest TEXT NOT NULL,
+    request_json TEXT NOT NULL,
+    result_json TEXT NOT NULL,
+    command_json TEXT NOT NULL,
+    requested_by TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    completed_at TEXT
+);
+
+CREATE INDEX sourcebridge_rule_runtime_run_profile_idx
+    ON sourcebridge_rule_runtime_run (profile_revision_id, completed_at, id);
+
+CREATE TRIGGER sourcebridge_rule_runtime_run_provenance_immutable_update
+BEFORE UPDATE ON sourcebridge_rule_runtime_run
+WHEN NEW.profile_revision_id != OLD.profile_revision_id
+  OR NEW.adapter_id != OLD.adapter_id
+  OR NEW.adapter_digest != OLD.adapter_digest
+  OR NEW.resolved_profile_digest != OLD.resolved_profile_digest
+  OR NEW.rule_digest != OLD.rule_digest
+  OR NEW.implementation_digest != OLD.implementation_digest
+  OR NEW.settings_digest != OLD.settings_digest
+  OR NEW.request_json != OLD.request_json
+  OR NEW.command_json != OLD.command_json
+  OR NEW.requested_by != OLD.requested_by
+  OR NEW.started_at != OLD.started_at
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_rule_runtime_run provenance is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_rule_runtime_run_immutable_delete
+BEFORE DELETE ON sourcebridge_rule_runtime_run
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_rule_runtime_run is append-only');
+END;
 
 -- A worker session is a durable contract for one serial, local-only batch.
 -- Requests retain raw model output and deterministic acceptance/rejection data.

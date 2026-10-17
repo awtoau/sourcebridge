@@ -59,9 +59,95 @@
     "entrypoints": {
       "type": "object",
       "additionalProperties": {
-        "type": "string"
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "$ref": "#/$defs/ruleRuntimeEntrypoint"
+          }
+        ]
       }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "ruleRuntimeEntrypoint": {
+      "type": "object",
+      "required": [
+        "id",
+        "command",
+        "source",
+        "supported_directives",
+        "supported_settings",
+        "configuration_schema"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "source": {
+          "type": "string"
+        },
+        "supported_directives": {
+          "type": "array",
+          "items": {
+            "enum": ["enable", "disable", "replace", "configure"]
+          },
+          "uniqueItems": true
+        },
+        "supported_settings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "configuration_schema": {
+          "type": "object",
+          "required": [
+            "schema_version",
+            "type",
+            "properties",
+            "required",
+            "additionalProperties"
+          ],
+          "properties": {
+            "schema_version": {
+              "const": 1
+            },
+            "type": {
+              "const": "object"
+            },
+            "properties": {
+              "type": "object"
+            },
+            "required": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
 }
