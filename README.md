@@ -63,8 +63,7 @@ The initial public packs are now available:
   extracts the Stage-1 Delphi scalar fixture and validates it with Free Pascal
   3.2.3 on x86_64 Linux in Delphi mode.
 - [`awtoau/sourcebridge-rust`](https://github.com/awtoau/sourcebridge-rust)
-  emits and compiles Rust for the corresponding verified non-overflow scalar
-  addition facts.
+  emits and compiles Rust for the corresponding verified scalar addition facts.
 
 This is deliberately a narrow end-to-end proof, not a claim that general
 Delphi-to-Rust conversion or overflow behavior is validated.
@@ -76,6 +75,56 @@ python3 tools/validate_delphi_scalar_rust.py \
   --delphi-pack ../sourcebridge-delphi \
   --rust-pack ../sourcebridge-rust
 ```
+
+### Arithmetic policy is visible and overridable
+
+The same source `+` expression can mean different things in a real
+application. Sourcebridge does not silently treat all arithmetic as either
+legacy-compatible wrapping or modern safe arithmetic. A profile selects and
+records the policy for each applicable rule family.
+
+For the bounded FPC scalar fixture, measured source behavior is modular
+32-bit addition. A compatibility profile may therefore emit:
+
+```rust
+pub fn add_signed(left: i32, right: i32) -> i32 {
+    left.wrapping_add(right)
+}
+```
+
+That preserves the measured source result at the tested overflow boundary, but
+it is not necessarily a suitable business-domain policy. A project may instead
+choose an explicit risk-accepting modernization override:
+
+```text
+arithmetic_policy: plain-rust-add
+```
+
+```rust
+pub fn add_signed(left: i32, right: i32) -> i32 {
+    left + right
+}
+```
+
+This intentionally does **not** guarantee overflow equivalence: Rust `+`
+depends on the selected overflow-check build settings. The generated artifact
+and its conversion report must record that risk, the affected source span, and
+the selected profile digest. Other explicit policies can emit `checked_add`
+with an error or source-mapped panic, `saturating_add`, or a domain numeric
+type.
+
+Rules can use source facts to flag arithmetic for review. For example, a
+declared Delphi `Currency` value, a money/domain type selected by a project,
+or a database decimal field is a strong candidate for a decimal/domain-number
+rule; it should not inherit an integer wrapping rule. A bounded counter,
+bitmask, checksum, or protocol field may instead be a candidate for
+compatibility wrapping or an explicitly sized integer.
+
+Candidate detection is not intent inference. Variable names such as `total` or
+`counter` alone never change generated semantics. Until a type, source
+contract, project policy, or validated rule supports a choice, Sourcebridge
+reports `modernization-risk: arithmetic-intent-unresolved` and blocks
+automatic semantic rewriting.
 
 ## The C# to Rust naming exception
 
