@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass
 import hashlib
 import json
 from pathlib import Path
+import sqlite3
 import time
 from typing import Any, Iterable, Mapping
 from urllib.parse import urlparse
@@ -1061,15 +1062,13 @@ def _audit_worker_session(
     if database is None:
         return
     from datetime import UTC, datetime
-    import sqlite3
-
+    from sourcebridge.database import write_transaction
     from sourcebridge.pipeline import EvidencePipelineError, initialize
 
     try:
         initialize(database)
         now = datetime.now(UTC).isoformat()
-        with sqlite3.connect(database) as connection:
-            connection.execute("PRAGMA foreign_keys = ON")
+        with write_transaction(database) as connection:
             if status == "running":
                 connection.execute(
                     """
@@ -1130,12 +1129,12 @@ def _audit_worker_session(
 def _assert_session_available(database: Path | None, session_id: str) -> None:
     if database is None:
         return
+    from sourcebridge.database import read_transaction
     from sourcebridge.pipeline import EvidencePipelineError, initialize
-    import sqlite3
 
     try:
         initialize(database)
-        with sqlite3.connect(database) as connection:
+        with read_transaction(database) as connection:
             row = connection.execute(
                 "SELECT 1 FROM sourcebridge_proposal_worker_session WHERE id = ?",
                 (session_id,),
@@ -1156,8 +1155,8 @@ def _audit_worker_request(
     if database is None:
         return
     from datetime import UTC, datetime
-    import sqlite3
 
+    from sourcebridge.database import write_transaction
     from sourcebridge.pipeline import EvidencePipelineError, initialize
 
     timing = record.get("timing", {})
@@ -1170,8 +1169,7 @@ def _audit_worker_request(
         raise ProposalWorkerError("proposal worker request is missing immutable request identity")
     try:
         initialize(database)
-        with sqlite3.connect(database) as connection:
-            connection.execute("PRAGMA foreign_keys = ON")
+        with write_transaction(database) as connection:
             connection.execute(
                 """
                 INSERT INTO sourcebridge_proposal_worker_request
