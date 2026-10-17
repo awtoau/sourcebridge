@@ -24,9 +24,12 @@ from sourcebridge.proposals import (
 )
 from sourcebridge.reporting import (
     EvidenceReportError,
+    changes_since,
+    current_work_queue,
     diagnostic_groups,
     diagnostic_occurrences,
     report_packs,
+    work_item_evidence,
 )
 from sourcebridge.toolchains import ToolchainReportError, report_toolchains
 from sourcebridge.execution import recover_interrupted, run_approved
@@ -171,6 +174,62 @@ def _report_toolchains(arguments: list[str]) -> int:
         print(error, file=sys.stderr)
         return 1
     print(json.dumps(report, indent=2, sort_keys=True))
+    return 0
+
+
+def _report_work_queue(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-work-queue")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--run", dest="run_id")
+    args = parser.parse_args(arguments)
+    try:
+        report = current_work_queue(args.database, run_id=args.run_id)
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+def _report_work_item(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-work-item")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--run", dest="run_id")
+    parser.add_argument("work_item_id")
+    args = parser.parse_args(arguments)
+    try:
+        report = work_item_evidence(
+            args.database,
+            args.work_item_id,
+            run_id=args.run_id,
+        )
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+def _report_changes(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-changes")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--since", dest="prior_run_id")
+    parser.add_argument("--run", dest="run_id")
+    parser.add_argument("prior_run", nargs="?")
+    args = parser.parse_args(arguments)
+    prior_run_id = args.prior_run_id or args.prior_run
+    if not prior_run_id:
+        parser.error("a prior run is required (use --since RUN_ID)")
+    try:
+        report = changes_since(
+            args.database,
+            prior_run_id,
+            run_id=args.run_id,
+        )
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, sort_keys=True, separators=(",", ":")))
     return 0
 
 
@@ -500,6 +559,12 @@ def main() -> int:
         return _report_packs(arguments[1:])
     if arguments and arguments[0] in {"report-toolchains", "toolchain-report"}:
         return _report_toolchains(arguments[1:])
+    if arguments and arguments[0] == "report-work-queue":
+        return _report_work_queue(arguments[1:])
+    if arguments and arguments[0] == "report-work-item":
+        return _report_work_item(arguments[1:])
+    if arguments and arguments[0] == "report-changes":
+        return _report_changes(arguments[1:])
     if arguments and arguments[0] == "run-approved":
         return _run_approved(arguments[1:])
     if arguments and arguments[0] == "recover-run":

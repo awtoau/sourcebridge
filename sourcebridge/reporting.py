@@ -161,6 +161,67 @@ def execution_activity(database: Path) -> list[dict[str, Any]]:
     return [dict(zip(row.keys(), row)) for row in rows]
 
 
+def current_work_queue(
+    database: Path,
+    *,
+    run_id: str | None = None,
+) -> dict[str, Any]:
+    """Return the compact current blocking queue for an agent."""
+
+    from sourcebridge.agent_queue import current_work_queue as _current_work_queue
+
+    return _current_work_queue(database, run_id=run_id)
+
+
+def work_item_evidence(
+    database: Path,
+    work_item_id: str,
+    *,
+    run_id: str | None = None,
+) -> dict[str, Any]:
+    """Return immutable provenance and evidence for one stable work item."""
+
+    from sourcebridge.agent_queue import work_item_evidence as _work_item_evidence
+
+    return _work_item_evidence(database, work_item_id, run_id=run_id)
+
+
+def changes_since(
+    database: Path,
+    prior_run_id: str,
+    *,
+    run_id: str | None = None,
+) -> dict[str, Any]:
+    """Return work-item and run-identity changes since a prior run."""
+
+    from sourcebridge.agent_queue import changes_since as _changes_since
+
+    return _changes_since(database, prior_run_id, run_id=run_id)
+
+
+def record_run_provenance(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Append immutable run provenance through the agent queue API."""
+
+    from sourcebridge.agent_queue import record_run_provenance as _record
+
+    return _record(*args, **kwargs)
+
+
+def record_work_item_state(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Append immutable work-item ownership/status through the queue API."""
+
+    from sourcebridge.agent_queue import record_work_item_state as _record
+
+    return _record(*args, **kwargs)
+
+
+def link_work_item_evidence(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Append a run-scoped immutable work-item evidence link."""
+
+    from sourcebridge.agent_queue import link_work_item_evidence as _record
+
+    return _record(*args, **kwargs)
+
 PACK_REPORT_SCHEMA_VERSION = 1
 _PACK_REPORT_SECTIONS = (
     "source_validation",

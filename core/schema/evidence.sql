@@ -195,6 +195,25 @@ CREATE TABLE sourcebridge_execution_run (
     created_at TEXT NOT NULL
 );
 
+-- A run is reportable only when this immutable identity and validation
+-- snapshot has been recorded.  Keeping it separate from the operational run
+-- row lets the scheduler update lifecycle state without rewriting historical
+-- provenance.
+CREATE TABLE sourcebridge_execution_run_provenance (
+    run_id TEXT PRIMARY KEY REFERENCES sourcebridge_execution_run(id),
+    source_revision TEXT,
+    input_digest TEXT NOT NULL,
+    variant_digest TEXT NOT NULL,
+    profile_digest TEXT NOT NULL,
+    rule_digest TEXT NOT NULL,
+    validation_state TEXT NOT NULL CHECK (
+        validation_state IN ('complete', 'incomplete', 'stale')
+    ),
+    artifact_digest TEXT NOT NULL,
+    evidence_digest TEXT NOT NULL,
+    recorded_at TEXT NOT NULL
+);
+
 CREATE TABLE sourcebridge_execution_worker (
     id TEXT PRIMARY KEY,
     run_id TEXT NOT NULL REFERENCES sourcebridge_execution_run(id),
@@ -234,6 +253,96 @@ CREATE TABLE sourcebridge_work_item (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+
+-- Work-item lifecycle is append-only.  The row in sourcebridge_work_item is
+-- the stable identity and summary; the latest state below is the claimable
+-- status and ownership boundary used by agents.
+CREATE TABLE sourcebridge_work_item_state (
+    id TEXT PRIMARY KEY,
+    work_item_id TEXT NOT NULL REFERENCES sourcebridge_work_item(id),
+    sequence INTEGER NOT NULL CHECK (sequence > 0),
+    status TEXT NOT NULL CHECK (
+        status IN ('open', 'claimed', 'in_progress', 'blocked', 'resolved', 'closed', 'stale')
+    ),
+    owner TEXT,
+    ownership_scope TEXT NOT NULL CHECK (length(trim(ownership_scope)) > 0),
+    disposition TEXT NOT NULL CHECK (length(trim(disposition)) > 0),
+    rationale TEXT NOT NULL,
+    recorded_at TEXT NOT NULL,
+    UNIQUE (work_item_id, sequence)
+);
+
+CREATE INDEX sourcebridge_work_item_state_latest_idx
+    ON sourcebridge_work_item_state (work_item_id, sequence DESC);
+
+-- A link is immutable and names the run that produced the evidence.  This is
+-- what prevents a current report from accidentally presenting an old
+-- diagnostic as the result of a newer run.
+CREATE TABLE sourcebridge_work_item_evidence (
+    id TEXT PRIMARY KEY,
+    work_item_id TEXT NOT NULL REFERENCES sourcebridge_work_item(id),
+    execution_run_id TEXT NOT NULL REFERENCES sourcebridge_execution_run(id),
+    diagnostic_occurrence_id TEXT REFERENCES sourcebridge_diagnostic_occurrence(id),
+    validation_result_id TEXT REFERENCES sourcebridge_validation_result(id),
+    generated_artifact_id TEXT REFERENCES sourcebridge_generated_artifact(id),
+    evidence_fragment_id TEXT REFERENCES sourcebridge_evidence_fragment(id),
+    relation TEXT NOT NULL CHECK (length(trim(relation)) > 0),
+    recorded_at TEXT NOT NULL,
+    CHECK (
+        diagnostic_occurrence_id IS NOT NULL
+        OR validation_result_id IS NOT NULL
+        OR generated_artifact_id IS NOT NULL
+        OR evidence_fragment_id IS NOT NULL
+    ),
+    UNIQUE (
+        work_item_id,
+        execution_run_id,
+        diagnostic_occurrence_id,
+        validation_result_id,
+        generated_artifact_id,
+        evidence_fragment_id,
+        relation
+    )
+);
+
+CREATE INDEX sourcebridge_work_item_evidence_run_idx
+    ON sourcebridge_work_item_evidence (execution_run_id, work_item_id);
+
+CREATE TRIGGER sourcebridge_execution_run_provenance_immutable_update
+BEFORE UPDATE ON sourcebridge_execution_run_provenance
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_execution_run_provenance is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_execution_run_provenance_immutable_delete
+BEFORE DELETE ON sourcebridge_execution_run_provenance
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_execution_run_provenance is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_work_item_state_immutable_update
+BEFORE UPDATE ON sourcebridge_work_item_state
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_work_item_state is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_work_item_state_immutable_delete
+BEFORE DELETE ON sourcebridge_work_item_state
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_work_item_state is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_work_item_evidence_immutable_update
+BEFORE UPDATE ON sourcebridge_work_item_evidence
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_work_item_evidence is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_work_item_evidence_immutable_delete
+BEFORE DELETE ON sourcebridge_work_item_evidence
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_work_item_evidence is append-only');
+END;
 
 -- Schema adapters record their version before importing operational evidence.
 CREATE TABLE sourcebridge_schema_metadata (
