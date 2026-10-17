@@ -131,9 +131,9 @@ def _basics(pack_manifest: Path) -> dict[str, Any]:
         manifest = json.loads(pack_manifest.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         raise RuleSelectionError(f"{pack_manifest}: cannot read pack manifest") from error
-    entrypoint = manifest.get("entrypoints", {}).get("curriculum")
+    entrypoint = manifest.get("entrypoints", {}).get("rule_curriculum")
     if not isinstance(entrypoint, str) or not entrypoint:
-        raise RuleSelectionError(f"{pack_manifest}: missing entrypoints.curriculum")
+        raise RuleSelectionError(f"{pack_manifest}: missing entrypoints.rule_curriculum")
     curriculum_path = (pack_manifest.parent / entrypoint).resolve()
     try:
         payload = json.loads(curriculum_path.read_text(encoding="utf-8"))

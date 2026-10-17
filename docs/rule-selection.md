@@ -14,7 +14,7 @@ sourcebridge select-next-rule basics --database evidence/sourcebridge.db \
 `blocker/coverage` ranks unresolved queue items by distinct impacted source
 units. `completion` chooses the first source unit with the smallest explicit
 gap: disposition, then current validation. `basics` reads the first ordered
-entry from the pack's `entrypoints.curriculum` JSON file. Each result includes
+entry from the pack's `entrypoints.rule_curriculum` JSON file. Each result includes
 the strategy, candidate, evidence and test references, expected profile scope,
 and reason.
 

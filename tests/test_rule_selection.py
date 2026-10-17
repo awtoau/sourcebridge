@@ -71,7 +71,9 @@ class RuleSelectionTests(unittest.TestCase):
              "test_references": ["test-1"], "expected_profile_scope": {"source": "demo"}}
         ]}))
         manifest = self.root / "pack.json"
-        manifest.write_text(json.dumps({"entrypoints": {"curriculum": "curriculum.json"}}))
+        manifest.write_text(json.dumps(
+            {"entrypoints": {"rule_curriculum": "curriculum.json"}}
+        ))
         result = select_next_rule(self.database, "basics", pack_manifest=manifest)
         self.assertEqual(result["candidate"], "basic-1")
         self.assertEqual(result["test_references"], ["test-1"])
