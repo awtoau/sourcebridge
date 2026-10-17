@@ -250,6 +250,25 @@ actually attempted:
 `skipped` are first-class results, not omissions. Compilation proves
 well-formed target syntax; it never by itself proves behavioral equivalence.
 
+The core recorder persists the emitted artifact digest and body, each
+source/target/boundary/oracle validation result, and explicit generated-code
+gaps. Query its deterministic current database view with:
+
+```text
+sourcebridge report-conversion-census --database evidence/sourcebridge.db
+```
+
+Current pack status is intentionally narrow and truthful:
+
+- the Delphi/FPC path has measured scalar arithmetic and Boolean-branch
+  extraction/emission scopes; its source-only candidate discovery is not a
+  conversion result;
+- the preserved C# Renode pipeline runs against its pinned corpus and records
+  its structured result, but the latest compiler census is 677 of 687 clean
+  modules with 14 errors across 10 modules; and
+- neither status is a claim of general Delphi-to-Rust conversion or complete
+  C# Renode equivalence.
+
 ## Agent-native, versioned conversion engine
 
 Sourcebridge is an interactive conversion engine operated primarily through
