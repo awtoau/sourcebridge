@@ -72,6 +72,11 @@ is reported separately as session warm-up; it is not mixed into the
 per-request generation measurement. When `--database` is supplied, the
 session and request audit rows are also stored in the SQLite evidence
 database.
+The session contract is immutable: `running`, `completed`, and `failed`
+transitions are append-only session events. A session ID cannot be reused for
+a different batch, and each request has an immutable request ID. Staged and
+rejected files include that request ID before the payload digest, so repeated
+identical evidence packages retain distinct raw responses.
 
 The prompt is a ground-or-abstain contract. Missing source facts or observed
 results require empty positive patterns and empty suggested tests. For

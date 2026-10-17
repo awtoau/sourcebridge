@@ -322,7 +322,7 @@ CREATE TABLE sourcebridge_rule_revision (
     supersedes_revision_id TEXT REFERENCES sourcebridge_rule_revision(id),
     rationale TEXT NOT NULL,
     created_by TEXT NOT NULL,
-    proposal_id TEXT,
+    proposal_id TEXT REFERENCES sourcebridge_rule_proposal(id),
     model_name TEXT,
     model_digest TEXT,
     human_reviewed_by TEXT,
@@ -460,7 +460,7 @@ CREATE TABLE sourcebridge_proposal_worker_request (
     request_index INTEGER NOT NULL CHECK (request_index >= 0),
     evidence_sha256 TEXT NOT NULL,
     payload_sha256 TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('staged', 'rejected')),
+    status TEXT NOT NULL CHECK (status IN ('staged', 'rejected', 'failed')),
     elapsed_ms REAL NOT NULL CHECK (elapsed_ms >= 0),
     load_duration_ms REAL NOT NULL CHECK (load_duration_ms >= 0),
     generation_ms REAL NOT NULL CHECK (generation_ms >= 0),
@@ -468,12 +468,60 @@ CREATE TABLE sourcebridge_proposal_worker_request (
     rejection_reasons_json TEXT NOT NULL,
     proposal_json TEXT NOT NULL,
     raw_response_json TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    UNIQUE (session_id, request_index)
+    created_at TEXT NOT NULL
 );
 
 CREATE INDEX sourcebridge_proposal_worker_request_session_idx
     ON sourcebridge_proposal_worker_request (session_id, request_index);
+
+CREATE TABLE sourcebridge_proposal_worker_session_event (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL REFERENCES sourcebridge_proposal_worker_session(id),
+    sequence INTEGER NOT NULL CHECK (sequence > 0),
+    status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed')),
+    summary_json TEXT NOT NULL,
+    occurred_at TEXT NOT NULL,
+    UNIQUE (session_id, sequence)
+);
+
+CREATE INDEX sourcebridge_proposal_worker_session_event_idx
+    ON sourcebridge_proposal_worker_session_event (session_id, sequence);
+
+CREATE TRIGGER sourcebridge_proposal_worker_session_immutable_update
+BEFORE UPDATE ON sourcebridge_proposal_worker_session
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_proposal_worker_session_immutable_delete
+BEFORE DELETE ON sourcebridge_proposal_worker_session
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_proposal_worker_request_immutable_update
+BEFORE UPDATE ON sourcebridge_proposal_worker_request
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_request is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_proposal_worker_request_immutable_delete
+BEFORE DELETE ON sourcebridge_proposal_worker_request
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_request is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_proposal_worker_session_event_immutable_update
+BEFORE UPDATE ON sourcebridge_proposal_worker_session_event
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session_event is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_proposal_worker_session_event_immutable_delete
+BEFORE DELETE ON sourcebridge_proposal_worker_session_event
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session_event is append-only');
+END;
 
 CREATE TRIGGER sourcebridge_rule_family_immutable_update
 BEFORE UPDATE ON sourcebridge_rule_family
@@ -495,9 +543,16 @@ WHEN NEW.model_name IS NOT NULL
     OR NEW.proposal_id IS NULL
     OR NEW.human_reviewed_by IS NULL
     OR NEW.human_reviewed_at IS NULL
+    OR NOT EXISTS (
+        SELECT 1
+        FROM sourcebridge_rule_proposal AS proposal
+        WHERE proposal.id = NEW.proposal_id
+          AND proposal.model_name = NEW.model_name
+          AND proposal.model_digest = NEW.model_digest
+    )
  )
 BEGIN
-    SELECT RAISE(ABORT, 'model-authored rule requires human review');
+    SELECT RAISE(ABORT, 'model-authored rule requires persisted matching proposal and human review');
 END;
 
 CREATE TRIGGER sourcebridge_rule_revision_immutable_update

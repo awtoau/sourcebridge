@@ -91,6 +91,10 @@ class ProposalEvidenceError(ValueError):
         self.record = record
 
 
+class ProposalWorkerError(ValueError):
+    """A controlled operational failure from the durable proposal worker."""
+
+
 class ProposalValidationError(ValueError):
     """A model response that must be retained for prompt/schema review."""
 
@@ -215,7 +219,11 @@ def _proposal_schema() -> dict[str, Any]:
                 "items": {
                     "type": "object",
                     "required": ["snippet", "why_it_matches"],
-                    "properties": {"snippet": {"type": "string"}, "why_it_matches": {"type": "string"}},
+                    "properties": {
+                        "snippet": {"type": "string"},
+                        "symbol": {"type": "string"},
+                        "why_it_matches": {"type": "string"},
+                    },
                     "additionalProperties": False,
                 },
             },
@@ -343,7 +351,14 @@ def validate_proposal(proposal: Any) -> dict[str, Any]:
 
 def _validate_pattern_list(items: list[Any], field: str, reason: str) -> None:
     for item in items:
-        if not isinstance(item, dict) or set(item) != {"snippet", reason}:
+        allowed = {"snippet", reason}
+        if field == "positive_patterns":
+            allowed.add("symbol")
+        if (
+            not isinstance(item, dict)
+            or not {"snippet", reason}.issubset(item)
+            or set(item) - allowed
+        ):
             raise ValueError(f"proposal {field} entries must contain snippet and {reason}")
         if not all(isinstance(value, str) for value in item.values()):
             raise ValueError(f"proposal {field} values must be strings")
@@ -391,16 +406,9 @@ def _stage_response(
     *,
     session: ProposalWorkerSession | None = None,
     prompt_template_version: str = PROMPT_TEMPLATE_VERSION,
+    request_id: str | None = None,
 ) -> dict[str, Any]:
-    message = response.get("message")
-    if not isinstance(message, dict) or not isinstance(message.get("content"), str):
-        raise ValueError("Ollama chat response does not contain message content")
-    parse_error = "Ollama proposal is not a JSON object"
-    try:
-        proposal = json.loads(message["content"])
-    except json.JSONDecodeError as error:
-        proposal = None
-        parse_error = f"Ollama proposal is not valid JSON: {error}"
+    proposal: Any = None
     payload_hash = hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
@@ -421,6 +429,20 @@ def _stage_response(
     }
     if session is not None:
         record["worker_session"] = session.as_dict()
+    if request_id is not None:
+        record["request_id"] = request_id
+    message = response.get("message")
+    if not isinstance(message, dict) or not isinstance(message.get("content"), str):
+        raise ProposalValidationError(
+            "Ollama chat response does not contain message content", record
+        )
+    parse_error = "Ollama proposal is not a JSON object"
+    try:
+        proposal = json.loads(message["content"])
+    except json.JSONDecodeError as error:
+        proposal = None
+        parse_error = f"Ollama proposal is not valid JSON: {error}"
+    record["proposal"] = proposal
     if proposal is None:
         raise ProposalValidationError(parse_error, record)
     try:
@@ -439,7 +461,13 @@ def stage_proposal(
 ) -> dict[str, Any]:
     payload = _proposal_payload(model, evidence)
     response = _request_json(f"{endpoint}/api/chat", payload)
-    record = _stage_response(response, payload, model, evidence)
+    record = _stage_response(
+        response,
+        payload,
+        model,
+        evidence,
+        request_id=f"request-{uuid.uuid4().hex}",
+    )
     if enforce_evidence:
         reasons, gate = evidence_gate(record["proposal"], evidence)
         record["evidence_gate"] = gate
@@ -461,7 +489,9 @@ def write_staged_proposal(output_directory: Path, staged: dict[str, Any]) -> Pat
     if root.name != "proposals" or root.parent.name != "evidence":
         raise ValueError("proposal output directory must be `evidence/proposals`")
     root.mkdir(parents=True, exist_ok=True)
-    path = root / f"{staged['payload_sha256']}.json"
+    request_id = staged.get("request_id")
+    prefix = f"{request_id}-" if isinstance(request_id, str) and request_id else ""
+    path = root / f"{prefix}{staged['payload_sha256']}.json"
     path.write_text(json.dumps(staged, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
 
@@ -471,7 +501,9 @@ def write_rejected_proposal(output_directory: Path, rejected: dict[str, Any]) ->
     if root.parent.name != "proposals" or root.parent.parent.name != "evidence":
         raise ValueError("proposal output directory must be `evidence/proposals`")
     root.mkdir(parents=True, exist_ok=True)
-    path = root / f"{rejected['payload_sha256']}.json"
+    request_id = rejected.get("request_id")
+    prefix = f"{request_id}-" if isinstance(request_id, str) and request_id else ""
+    path = root / f"{prefix}{rejected['payload_sha256']}.json"
     path.write_text(json.dumps(rejected, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
 
@@ -633,20 +665,40 @@ def evidence_gate(
             "evidence_references": _canonical_evidence_references(evidence),
         }
 
+    example = examples[0]
+    matched_function: Mapping[str, Any] | None = None
+    source_facts = evidence.get("source_facts")
+    functions = source_facts.get("functions", []) if isinstance(source_facts, Mapping) else []
+    if isinstance(functions, list):
+        for function in functions:
+            if isinstance(function, Mapping) and function.get("name") == example["symbol"]:
+                matched_function = function
+                break
+
     if not positive:
         reasons.append("grounded evidence needs a positive pattern")
     else:
-        operations = {
-            function.get("operation")
-            for function in evidence.get("source_facts", {}).get("functions", [])
-            if isinstance(function, Mapping) and isinstance(function.get("operation"), str)
-        }
+        observed_operation = (
+            matched_function.get("operation")
+            if matched_function is not None
+            else None
+        )
+        if not isinstance(observed_operation, str):
+            reasons.append("behavioral example has no associated source operation")
         for item in positive:
-            if not isinstance(item, Mapping) or item.get("snippet") not in operations:
-                reasons.append("positive pattern does not cite an observed source operation")
+            if (
+                not isinstance(item, Mapping)
+                or item.get("snippet") != observed_operation
+                or (
+                    "symbol" in item
+                    and item.get("symbol") != example["symbol"]
+                )
+            ):
+                reasons.append(
+                    "positive pattern does not cite the behavioral example's source operation"
+                )
                 break
 
-    example = examples[0]
     deterministic_test = dict(example)
     if not tests:
         reasons.append("grounded evidence needs a suggested test")
@@ -710,6 +762,9 @@ def _normalize_worker_proposal(
 ) -> dict[str, Any]:
     normalized = json.loads(json.dumps(proposal))
     if deterministic_test is not None:
+        for pattern in normalized.get("positive_patterns", []):
+            if isinstance(pattern, dict):
+                pattern["symbol"] = deterministic_test["symbol"]
         normalized["suggested_tests"] = [
             {
                 "source_input": deterministic_test["source_path"],
@@ -764,6 +819,7 @@ class ProposalWorker:
         self._session: ProposalWorkerSession | None = None
         self._request_count = 0
         self._session_warmup_ms = 0.0
+        self._batch_finalized = False
 
     @property
     def session(self) -> ProposalWorkerSession | None:
@@ -772,6 +828,7 @@ class ProposalWorker:
     def start(self) -> ProposalWorkerSession:
         if self._session is not None:
             return self._session
+        _assert_session_available(self.database, self.session_id)
         if isinstance(self._model, ModelIdentity):
             validate_model_name(self._model.name)
             if self._expected_digest and self._model.digest != self._expected_digest:
@@ -806,6 +863,7 @@ class ProposalWorker:
             and evidence_rule_digest != session.active_rule_digest
         ):
             raise ValueError("evidence active rule digest differs from worker session")
+        request_id = f"request-{uuid.uuid4().hex}"
         payload = _proposal_payload(
             session.model,
             evidence,
@@ -836,6 +894,7 @@ class ProposalWorker:
                 evidence,
                 session=session,
                 prompt_template_version=session.prompt_template_version,
+                request_id=request_id,
             )
         except ProposalValidationError as error:
             error.record["timing"] = timing
@@ -869,6 +928,10 @@ class ProposalWorker:
         *,
         output_directory: Path | None = None,
     ) -> dict[str, Any]:
+        if self._batch_finalized:
+            raise ProposalWorkerError(
+                f"proposal worker session ID `{self.session_id}` has already been finalized"
+            )
         packages = list(evidence_packages)
         if len(packages) > MAX_BATCH_SIZE:
             raise ValueError(f"proposal batches may contain at most {MAX_BATCH_SIZE} evidence packages")
@@ -876,70 +939,113 @@ class ProposalWorker:
         started = time.perf_counter()
         results: list[dict[str, Any]] = []
         accepted = rejected = 0
-        for index, evidence in enumerate(packages):
-            try:
-                record = self.propose(evidence, request_index=index)
-                path = (
-                    write_staged_proposal(output_directory, record)
-                    if output_directory is not None
-                    else None
-                )
-                accepted += 1
-                results.append(
-                    {
-                        "request_index": index,
-                        "status": "staged",
-                        "payload_sha256": record["payload_sha256"],
-                        "timing": record["timing"],
-                        "path": path.as_posix() if path is not None else None,
-                        "record": record,
-                    }
-                )
-                _audit_worker_request(self.database, session, record, "staged", ())
-            except (ProposalValidationError, ProposalEvidenceError) as error:
-                record = error.record
-                record["status"] = "rejected-llm-proposal"
-                record.setdefault("rejection_reasons", [str(error)])
-                path = (
-                    write_rejected_proposal(output_directory, record)
-                    if output_directory is not None
-                    else None
-                )
-                rejected += 1
-                reasons = record.get("rejection_reasons", [str(error)])
-                results.append(
-                    {
-                        "request_index": index,
-                        "status": "rejected",
-                        "payload_sha256": record["payload_sha256"],
-                        "timing": record.get("timing"),
-                        "reasons": reasons,
-                        "path": path.as_posix() if path is not None else None,
-                        "record": record,
-                    }
-                )
-                _audit_worker_request(self.database, session, record, "rejected", reasons)
-        report = {
-            "status": "completed",
-            "session": session.as_dict(),
-            "requests": results,
-            "summary": {
+        current_record: dict[str, Any] | None = None
+        try:
+            for index, evidence in enumerate(packages):
+                try:
+                    record = self.propose(evidence, request_index=index)
+                    current_record = record
+                    path = (
+                        write_staged_proposal(output_directory, record)
+                        if output_directory is not None
+                        else None
+                    )
+                    accepted += 1
+                    results.append(
+                        {
+                            "request_index": index,
+                            "status": "staged",
+                            "payload_sha256": record["payload_sha256"],
+                            "timing": record["timing"],
+                            "path": path.as_posix() if path is not None else None,
+                            "record": record,
+                        }
+                    )
+                    _audit_worker_request(self.database, session, record, "staged", ())
+                    current_record = None
+                except (ProposalValidationError, ProposalEvidenceError) as error:
+                    current_record = error.record
+                    record = error.record
+                    record["status"] = "rejected-llm-proposal"
+                    record.setdefault("rejection_reasons", [str(error)])
+                    path = (
+                        write_rejected_proposal(output_directory, record)
+                        if output_directory is not None
+                        else None
+                    )
+                    rejected += 1
+                    reasons = record.get("rejection_reasons", [str(error)])
+                    results.append(
+                        {
+                            "request_index": index,
+                            "status": "rejected",
+                            "payload_sha256": record["payload_sha256"],
+                            "timing": record.get("timing"),
+                            "reasons": reasons,
+                            "path": path.as_posix() if path is not None else None,
+                            "record": record,
+                        }
+                    )
+                    _audit_worker_request(self.database, session, record, "rejected", reasons)
+                    current_record = None
+            report = {
+                "status": "completed",
+                "session": session.as_dict(),
+                "requests": results,
+                "summary": {
+                    "requested": len(packages),
+                    "accepted": accepted,
+                    "rejected": rejected,
+                    "session_warmup_ms": self._session_warmup_ms,
+                    "batch_elapsed_ms": round((time.perf_counter() - started) * 1000, 3),
+                    "request_count": self._request_count,
+                },
+            }
+            _audit_worker_session(
+                self.database,
+                session,
+                status="completed",
+                completed=True,
+                summary=report["summary"],
+            )
+            self._batch_finalized = True
+            return report
+        except Exception as error:
+            self._batch_finalized = True
+            if current_record is not None:
+                try:
+                    _audit_worker_request(
+                        self.database,
+                        session,
+                        current_record,
+                        "failed",
+                        [str(error)],
+                    )
+                except Exception:
+                    pass
+            failure_summary = {
                 "requested": len(packages),
                 "accepted": accepted,
                 "rejected": rejected,
-                "session_warmup_ms": self._session_warmup_ms,
-                "batch_elapsed_ms": round((time.perf_counter() - started) * 1000, 3),
                 "request_count": self._request_count,
-            },
-        }
-        _audit_worker_session(
-            self.database,
-            session,
-            status="completed",
-            completed=True,
-            summary=report["summary"],
-        )
-        return report
+                "error": str(error),
+            }
+            try:
+                _audit_worker_session(
+                    self.database,
+                    session,
+                    status="failed",
+                    completed=True,
+                    summary=failure_summary,
+                )
+            except Exception as finalize_error:
+                raise ProposalWorkerError(
+                    f"proposal worker failed: {error}; unable to finalize session: "
+                    f"{finalize_error}"
+                ) from error
+            if isinstance(error, ProposalWorkerError):
+                raise
+            raise ProposalWorkerError(f"proposal worker failed: {error}") from error
 
     process_batch = run_batch
 
@@ -957,40 +1063,87 @@ def _audit_worker_session(
     from datetime import UTC, datetime
     import sqlite3
 
-    from sourcebridge.pipeline import initialize
+    from sourcebridge.pipeline import EvidencePipelineError, initialize
 
-    initialize(database)
-    now = datetime.now(UTC).isoformat()
-    with sqlite3.connect(database) as connection:
-        connection.execute(
-            """
-            INSERT INTO sourcebridge_proposal_worker_session
-                (id, batch_id, endpoint, model_name, model_digest,
-                 generation_options_json, prompt_template_version,
-                 prompt_template_digest, active_rule_digest, status,
-                 summary_json, started_at, completed_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET
-                status = excluded.status,
-                summary_json = excluded.summary_json,
-                completed_at = excluded.completed_at
-            """,
-            (
-                session.session_id,
-                session.batch_id,
-                session.endpoint,
-                session.model.name,
-                session.model.digest,
-                json.dumps(session.generation_options, sort_keys=True),
-                session.prompt_template_version,
-                session.prompt_template_digest,
-                session.active_rule_digest,
-                status,
-                json.dumps(summary or {}, sort_keys=True),
-                now,
-                now if completed else None,
-            ),
-        )
+    try:
+        initialize(database)
+        now = datetime.now(UTC).isoformat()
+        with sqlite3.connect(database) as connection:
+            connection.execute("PRAGMA foreign_keys = ON")
+            if status == "running":
+                connection.execute(
+                    """
+                    INSERT INTO sourcebridge_proposal_worker_session
+                        (id, batch_id, endpoint, model_name, model_digest,
+                         generation_options_json, prompt_template_version,
+                         prompt_template_digest, active_rule_digest, status,
+                         summary_json, started_at, completed_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, NULL)
+                    """,
+                    (
+                        session.session_id,
+                        session.batch_id,
+                        session.endpoint,
+                        session.model.name,
+                        session.model.digest,
+                        json.dumps(session.generation_options, sort_keys=True),
+                        session.prompt_template_version,
+                        session.prompt_template_digest,
+                        session.active_rule_digest,
+                        json.dumps(summary or {}, sort_keys=True),
+                        now,
+                    ),
+                )
+            sequence = connection.execute(
+                """
+                SELECT COALESCE(MAX(sequence), 0) + 1
+                FROM sourcebridge_proposal_worker_session_event
+                WHERE session_id = ?
+                """,
+                (session.session_id,),
+            ).fetchone()[0]
+            connection.execute(
+                """
+                INSERT INTO sourcebridge_proposal_worker_session_event
+                    (id, session_id, sequence, status, summary_json, occurred_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    f"event-{uuid.uuid4().hex}",
+                    session.session_id,
+                    sequence,
+                    status,
+                    json.dumps(summary or {}, sort_keys=True),
+                    now,
+                ),
+            )
+    except sqlite3.IntegrityError as error:
+        if status == "running":
+            raise ProposalWorkerError(
+                f"proposal worker session ID `{session.session_id}` already exists"
+            ) from error
+        raise ProposalWorkerError(f"cannot append proposal worker session event: {error}") from error
+    except (OSError, sqlite3.Error, EvidencePipelineError, ValueError) as error:
+        raise ProposalWorkerError(f"cannot audit proposal worker session: {error}") from error
+
+
+def _assert_session_available(database: Path | None, session_id: str) -> None:
+    if database is None:
+        return
+    from sourcebridge.pipeline import EvidencePipelineError, initialize
+    import sqlite3
+
+    try:
+        initialize(database)
+        with sqlite3.connect(database) as connection:
+            row = connection.execute(
+                "SELECT 1 FROM sourcebridge_proposal_worker_session WHERE id = ?",
+                (session_id,),
+            ).fetchone()
+    except (OSError, sqlite3.Error, EvidencePipelineError, ValueError) as error:
+        raise ProposalWorkerError(f"cannot inspect proposal worker session: {error}") from error
+    if row is not None:
+        raise ProposalWorkerError(f"proposal worker session ID `{session_id}` already exists")
 
 
 def _audit_worker_request(
@@ -1005,36 +1158,47 @@ def _audit_worker_request(
     from datetime import UTC, datetime
     import sqlite3
 
-    from sourcebridge.pipeline import initialize
+    from sourcebridge.pipeline import EvidencePipelineError, initialize
 
-    initialize(database)
     timing = record.get("timing", {})
     if not isinstance(timing, Mapping):
         timing = {}
-    with sqlite3.connect(database) as connection:
-        connection.execute(
-            """
-            INSERT OR REPLACE INTO sourcebridge_proposal_worker_request
-                (id, session_id, request_index, evidence_sha256, payload_sha256,
-                 status, elapsed_ms, load_duration_ms, generation_ms,
-                 generated_tokens, rejection_reasons_json, proposal_json,
-                 raw_response_json, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                f"{session.session_id}:{timing.get('request_index', 0)}",
-                session.session_id,
-                timing.get("request_index", 0),
-                record.get("evidence_sha256", ""),
-                record["payload_sha256"],
-                status,
-                timing.get("request_elapsed_ms", 0),
-                timing.get("load_duration_ms", 0),
-                timing.get("generation_ms", 0),
-                timing.get("generated_tokens"),
-                json.dumps(list(reasons), sort_keys=True),
-                json.dumps(record.get("proposal"), sort_keys=True),
-                json.dumps(record.get("raw_response"), sort_keys=True),
-                datetime.now(UTC).isoformat(),
-            ),
-        )
+    if status not in {"staged", "rejected", "failed"}:
+        raise ProposalWorkerError(f"unsupported proposal worker request status `{status}`")
+    request_id = record.get("request_id")
+    if not isinstance(request_id, str) or not request_id:
+        raise ProposalWorkerError("proposal worker request is missing immutable request identity")
+    try:
+        initialize(database)
+        with sqlite3.connect(database) as connection:
+            connection.execute("PRAGMA foreign_keys = ON")
+            connection.execute(
+                """
+                INSERT INTO sourcebridge_proposal_worker_request
+                    (id, session_id, request_index, evidence_sha256, payload_sha256,
+                     status, elapsed_ms, load_duration_ms, generation_ms,
+                     generated_tokens, rejection_reasons_json, proposal_json,
+                     raw_response_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    request_id,
+                    session.session_id,
+                    timing.get("request_index", 0),
+                    record.get("evidence_sha256", ""),
+                    record["payload_sha256"],
+                    status,
+                    timing.get("request_elapsed_ms", 0),
+                    timing.get("load_duration_ms", 0),
+                    timing.get("generation_ms", 0),
+                    timing.get("generated_tokens"),
+                    json.dumps(list(reasons), sort_keys=True),
+                    json.dumps(record.get("proposal"), sort_keys=True),
+                    json.dumps(record.get("raw_response"), sort_keys=True),
+                    datetime.now(UTC).isoformat(),
+                ),
+            )
+    except sqlite3.IntegrityError as error:
+        raise ProposalWorkerError(f"cannot append proposal worker request: {error}") from error
+    except (OSError, sqlite3.Error, EvidencePipelineError, ValueError) as error:
+        raise ProposalWorkerError(f"cannot audit proposal worker request: {error}") from error

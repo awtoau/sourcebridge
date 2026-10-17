@@ -10,6 +10,7 @@ from sourcebridge.proposals import (
     MAX_BATCH_SIZE,
     ProposalEvidenceError,
     ProposalWorker,
+    ProposalWorkerError,
     ProposalWorkerSession,
     evidence_gate,
 )
@@ -18,6 +19,7 @@ __all__ = [
     "MAX_BATCH_SIZE",
     "ProposalEvidenceError",
     "ProposalWorker",
+    "ProposalWorkerError",
     "ProposalWorkerSession",
     "evidence_gate",
 ]

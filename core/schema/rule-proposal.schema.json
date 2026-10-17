@@ -55,6 +55,9 @@
           "snippet": {
             "type": "string"
           },
+          "symbol": {
+            "type": "string"
+          },
           "why_it_matches": {
             "type": "string"
           }

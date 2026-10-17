@@ -185,6 +185,26 @@ def register_rule_revision(
     content_digest = _digest(definition_json)
 
     with _connection(database) as connection:
+        if model_name is not None:
+            proposal = connection.execute(
+                """
+                SELECT model_name, model_digest
+                FROM sourcebridge_rule_proposal
+                WHERE id = ?
+                """,
+                (proposal_id,),
+            ).fetchone()
+            if proposal is None:
+                raise ConversionProfileError(
+                    f"{proposal_id}: persisted sourcebridge rule proposal does not exist"
+                )
+            if (
+                proposal["model_name"] != model_name
+                or proposal["model_digest"] != model_digest
+            ):
+                raise ConversionProfileError(
+                    "model-authored rule provenance does not match the persisted proposal"
+                )
         family = connection.execute(
             """
             SELECT id

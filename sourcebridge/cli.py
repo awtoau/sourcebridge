@@ -69,10 +69,14 @@ def _propose_rule(arguments: list[str]) -> int:
         )
         path = write_staged_proposal(args.output_dir, staged)
     except (ProposalValidationError, ProposalEvidenceError) as error:
-        path = write_rejected_proposal(args.output_dir, error.record)
+        try:
+            path = write_rejected_proposal(args.output_dir, error.record)
+        except OSError as write_error:
+            print(write_error, file=sys.stderr)
+            return 1
         print(f"{error}; raw response staged at {path}", file=sys.stderr)
         return 1
-    except ValueError as error:
+    except (OSError, ValueError) as error:
         print(error, file=sys.stderr)
         return 1
     print(path)
@@ -105,7 +109,7 @@ def _propose_batch(arguments: list[str]) -> int:
             [read_evidence(path) for path in args.evidence],
             output_directory=args.output_dir,
         )
-    except ValueError as error:
+    except (OSError, ValueError) as error:
         print(error, file=sys.stderr)
         return 1
     print(json.dumps(report, indent=2, sort_keys=True))
