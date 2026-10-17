@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 import hashlib
 import json
 from pathlib import Path
@@ -473,38 +474,71 @@ def diagnostic_review_history(
         ) from error
 
 
-def execution_activity(database: Path) -> list[dict[str, Any]]:
-    query = """
-        WITH completed_runs AS (
+def execution_activity(
+    database: Path,
+    run_id: str | None = None,
+    *,
+    include_active: bool = False,
+    since: str | None = None,
+) -> list[dict[str, Any]]:
+    """Read durable run activity, including active runs when explicitly requested.
+
+    Historical reports remain terminal-only by default.  Operators can
+    reconnect to a live run by setting ``include_active`` and optionally
+    supplying the last observed event timestamp as ``since``.
+    """
+
+    visible_runs = (
+        "(status IN ('passed', 'failed', 'cancelled') AND completed_at IS NOT NULL)"
+        if not include_active
+        else (
+            "((status IN ('passed', 'failed', 'cancelled') AND completed_at IS NOT NULL) "
+            "OR status IN ('queued', 'running', 'stopping'))"
+        )
+    )
+    run_filter = " AND id = :run_id" if run_id is not None else ""
+    query = f"""
+        WITH visible_runs AS (
             SELECT *
             FROM sourcebridge_execution_run
-            WHERE status IN ('passed', 'failed', 'cancelled')
-              AND completed_at IS NOT NULL
+            WHERE {visible_runs}{run_filter}
         ),
         activity AS (
             SELECT run.id AS run_id, run.action, run.status AS run_status,
-                   run.requested_workers, worker.worker_slot, worker.status AS worker_status,
-                   worker.units_completed, source.source_path, event.occurred_at,
-                   event.kind AS event_kind, event.message, event.metrics_json
-            FROM completed_runs AS run
+                   run.variant_id, run.requested_workers,
+                   worker.worker_slot, worker.status AS worker_status,
+                   worker.source_unit_id, worker.current_work_item_id,
+                   worker.units_completed, source.logical_name, source.source_path,
+                   event.occurred_at, event.kind AS event_kind, event.message,
+                   event.metrics_json
+            FROM visible_runs AS run
             JOIN sourcebridge_execution_event AS event ON event.run_id = run.id
             LEFT JOIN sourcebridge_execution_worker AS worker ON worker.id = event.worker_id
             LEFT JOIN sourcebridge_source_unit AS source ON source.id = worker.source_unit_id
+            WHERE (:since IS NULL OR event.occurred_at > :since)
+              AND NOT (
+                  event.kind = 'started'
+                  AND event.message = 'approved command started'
+              )
 
             UNION ALL
 
             SELECT run.id AS run_id, run.action, run.status AS run_status,
-                   run.requested_workers, worker.worker_slot, worker.status AS worker_status,
-                   worker.units_completed, source.source_path, NULL AS occurred_at,
-                   NULL AS event_kind, NULL AS message, NULL AS metrics_json
-            FROM completed_runs AS run
+                   run.variant_id, run.requested_workers,
+                   worker.worker_slot, worker.status AS worker_status,
+                   worker.source_unit_id, worker.current_work_item_id,
+                   worker.units_completed, source.logical_name, source.source_path,
+                   NULL AS occurred_at, NULL AS event_kind, NULL AS message,
+                   NULL AS metrics_json
+            FROM visible_runs AS run
             JOIN sourcebridge_execution_worker AS worker ON worker.run_id = run.id
             LEFT JOIN sourcebridge_source_unit AS source ON source.id = worker.source_unit_id
-            WHERE NOT EXISTS (
-                SELECT 1
-                FROM sourcebridge_execution_event AS event
-                WHERE event.worker_id = worker.id
-            )
+            WHERE :since IS NULL
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM sourcebridge_execution_event AS event
+                  WHERE event.worker_id = worker.id
+              )
         )
         SELECT *
         FROM activity
@@ -513,24 +547,30 @@ def execution_activity(database: Path) -> list[dict[str, Any]]:
     try:
         with read_transaction(database) as connection:
             connection.row_factory = sqlite3.Row
-            ambiguous = connection.execute(
-                """
+            ambiguous_query = """
                 SELECT id, status, completed_at
                 FROM sourcebridge_execution_run
-                WHERE (status IN ('passed', 'failed', 'cancelled') AND completed_at IS NULL)
-                   OR (status IN ('queued', 'running', 'stopping') AND completed_at IS NOT NULL)
-                   OR (
-                        status IN ('passed', 'failed', 'cancelled')
-                        AND EXISTS (
-                            SELECT 1
-                            FROM sourcebridge_execution_worker AS worker
-                            WHERE worker.run_id = sourcebridge_execution_run.id
-                              AND worker.status IN ('idle', 'running')
-                        )
-                   )
-                ORDER BY id
-                LIMIT 1
-                """
+                WHERE (
+                    (status IN ('passed', 'failed', 'cancelled') AND completed_at IS NULL)
+                    OR (status IN ('queued', 'running', 'stopping') AND completed_at IS NOT NULL)
+                    OR (
+                         status IN ('passed', 'failed', 'cancelled')
+                         AND EXISTS (
+                             SELECT 1
+                             FROM sourcebridge_execution_worker AS worker
+                             WHERE worker.run_id = sourcebridge_execution_run.id
+                               AND worker.status IN ('idle', 'running')
+                         )
+                    )
+                )
+            """
+            ambiguous_parameters: dict[str, object] = {}
+            if run_id is not None:
+                ambiguous_query += " AND id = :run_id"
+                ambiguous_parameters["run_id"] = run_id
+            ambiguous_query += " ORDER BY id LIMIT 1"
+            ambiguous = connection.execute(
+                ambiguous_query, ambiguous_parameters
             ).fetchone()
             if ambiguous is not None:
                 raise EvidenceReportError(
@@ -539,7 +579,10 @@ def execution_activity(database: Path) -> list[dict[str, Any]]:
                     f"completed_at={ambiguous['completed_at']!r}); "
                     "recover interrupted work before reporting it"
                 )
-            rows = connection.execute(query).fetchall()
+            rows = connection.execute(
+                query,
+                {"run_id": run_id, "since": since},
+            ).fetchall()
     except EvidenceReportError:
         raise
     except FileNotFoundError as error:
@@ -547,6 +590,159 @@ def execution_activity(database: Path) -> list[dict[str, Any]]:
     except (OSError, sqlite3.Error) as error:
         raise EvidenceReportError(f"{database}: cannot read evidence database: {error}") from error
     return [dict(zip(row.keys(), row)) for row in rows]
+
+
+def _metrics(value: object) -> dict[str, Any]:
+    if not isinstance(value, str):
+        return {}
+    try:
+        decoded = json.loads(value)
+    except json.JSONDecodeError:
+        return {}
+    return decoded if isinstance(decoded, dict) else {}
+
+
+def execution_status(database: Path, run_id: str) -> dict[str, Any]:
+    """Return one reconnectable run snapshot and observed shard boundaries."""
+
+    try:
+        with read_transaction(database) as connection:
+            connection.row_factory = sqlite3.Row
+            run = connection.execute(
+                """
+                SELECT run.id, run.profile_id, run.variant_id, run.action,
+                       run.requested_workers, run.status, run.requested_by,
+                       run.started_at, run.completed_at, run.created_at,
+                       profile.profile_name,
+                       variant.corpus_id, variant.frontend_pack_id,
+                       variant.compiler_identity, variant.target_abi,
+                       variant.pointer_width, variant.byte_order,
+                       variant.configuration_digest, variant.generated_input_digest,
+                       corpus.source_name, corpus.revision, corpus.manifest_digest
+                FROM sourcebridge_execution_run AS run
+                LEFT JOIN sourcebridge_profile AS profile
+                  ON profile.id = run.profile_id
+                LEFT JOIN sourcebridge_variant AS variant
+                  ON variant.id = run.variant_id
+                LEFT JOIN sourcebridge_corpus AS corpus
+                  ON corpus.id = variant.corpus_id
+                WHERE run.id = ?
+                """,
+                (run_id,),
+            ).fetchone()
+            if run is None:
+                raise EvidenceReportError(f"execution run `{run_id}` does not exist")
+            workers = connection.execute(
+                """
+                SELECT worker.id, worker.worker_slot, worker.status,
+                       worker.source_unit_id, worker.current_work_item_id,
+                       worker.units_completed, worker.updated_at,
+                       source.logical_name, source.source_path
+                FROM sourcebridge_execution_worker AS worker
+                LEFT JOIN sourcebridge_source_unit AS source
+                  ON source.id = worker.source_unit_id
+                WHERE worker.run_id = ?
+                ORDER BY worker.worker_slot
+                """,
+                (run_id,),
+            ).fetchall()
+            events = connection.execute(
+                """
+                SELECT event.id, event.worker_id, event.occurred_at,
+                       event.kind, event.message, event.metrics_json,
+                       worker.worker_slot
+                FROM sourcebridge_execution_event AS event
+                LEFT JOIN sourcebridge_execution_worker AS worker
+                  ON worker.id = event.worker_id
+                WHERE event.run_id = ?
+                ORDER BY event.occurred_at DESC, event.id DESC
+                """,
+                (run_id,),
+            ).fetchall()
+    except EvidenceReportError:
+        raise
+    except FileNotFoundError as error:
+        raise EvidenceReportError(str(error)) from error
+    except (OSError, sqlite3.Error) as error:
+        raise EvidenceReportError(f"{database}: cannot read evidence database: {error}") from error
+
+    latest_by_worker: dict[str, dict[str, Any]] = {}
+    latest_run_event: dict[str, Any] | None = None
+    for event in events:
+        item = {
+            "id": event["id"],
+            "worker_id": event["worker_id"],
+            "worker_slot": event["worker_slot"],
+            "occurred_at": event["occurred_at"],
+            "kind": event["kind"],
+            "message": event["message"],
+            "metrics": _metrics(event["metrics_json"]),
+        }
+        if event["worker_id"] is None:
+            if latest_run_event is None:
+                latest_run_event = item
+        elif event["worker_id"] not in latest_by_worker:
+            latest_by_worker[event["worker_id"]] = item
+
+    shards: list[dict[str, Any]] = []
+    for worker in workers:
+        latest = latest_by_worker.get(worker["id"])
+        shard: dict[str, Any] = {
+            "worker_slot": worker["worker_slot"],
+            "status": worker["status"],
+            "source_unit_id": worker["source_unit_id"],
+            "current_work_item_id": worker["current_work_item_id"],
+            "source_path": worker["source_path"],
+            "units_completed": worker["units_completed"],
+            "updated_at": worker["updated_at"],
+        }
+        if worker["logical_name"] is not None:
+            shard["logical_name"] = worker["logical_name"]
+        if latest is not None:
+            shard["latest_event"] = latest
+        shards.append(shard)
+
+    status_counts = Counter(worker["status"] for worker in workers)
+    variant = {
+        "id": run["variant_id"],
+        "corpus_id": run["corpus_id"],
+        "source_name": run["source_name"],
+        "revision": run["revision"],
+        "manifest_digest": run["manifest_digest"],
+        "frontend_pack_id": run["frontend_pack_id"],
+        "compiler_identity": run["compiler_identity"],
+        "target_abi": run["target_abi"],
+        "pointer_width": run["pointer_width"],
+        "byte_order": run["byte_order"],
+        "configuration_digest": run["configuration_digest"],
+        "generated_input_digest": run["generated_input_digest"],
+    }
+    return {
+        "run_id": run["id"],
+        "profile_id": run["profile_id"],
+        "profile_name": run["profile_name"],
+        "action": run["action"],
+        "requested_workers": run["requested_workers"],
+        "status": run["status"],
+        "requested_by": run["requested_by"],
+        "started_at": run["started_at"],
+        "completed_at": run["completed_at"],
+        "created_at": run["created_at"],
+        "variant": variant,
+        "queue": {
+            "requested_workers": run["requested_workers"],
+            "observed_workers": len(workers),
+            "active_workers": status_counts.get("running", 0),
+            "completed_workers": status_counts.get("completed", 0),
+            "blocked_workers": status_counts.get("blocked", 0),
+            "stopped_workers": status_counts.get("stopped", 0),
+            "failed_workers": status_counts.get("failed", 0),
+            "units_completed": sum(worker["units_completed"] for worker in workers),
+            "worker_statuses": dict(sorted(status_counts.items())),
+        },
+        "shards": shards,
+        "latest_run_event": latest_run_event,
+    }
 
 
 def current_work_queue(

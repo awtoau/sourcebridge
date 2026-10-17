@@ -30,12 +30,19 @@ from sourcebridge.reporting import (
     diagnostic_groups,
     diagnostic_occurrences,
     record_diagnostic_review,
+    execution_activity,
+    execution_status,
     report_packs,
     staleness_report,
     work_item_evidence,
 )
 from sourcebridge.toolchains import ToolchainReportError, report_toolchains
-from sourcebridge.execution import recover_interrupted, run_approved
+from sourcebridge.execution import (
+    launch_approved,
+    recover_interrupted,
+    run_approved,
+    stop_run,
+)
 from sourcebridge.conversion_profiles import (
     ConversionProfileError,
     create_project_profile_revision,
@@ -445,6 +452,72 @@ def _run_approved(arguments: list[str]) -> int:
     except (ValueError, OSError, sqlite3.Error) as error:
         print(error, file=sys.stderr)
         return 1
+
+
+def _launch_run(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge launch")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("run_id")
+    args = parser.parse_args(arguments)
+    try:
+        result = launch_approved(args.database, args.run_id)
+    except (ValueError, OSError, sqlite3.Error) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def _run_status(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge status")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("run_id")
+    args = parser.parse_args(arguments)
+    try:
+        result = execution_status(args.database, args.run_id)
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def _run_activity(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge activity")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--run", dest="run_id")
+    parser.add_argument(
+        "--since",
+        help="Only return events after this persisted ISO-8601 timestamp.",
+    )
+    args = parser.parse_args(arguments)
+    try:
+        result = execution_activity(
+            args.database,
+            args.run_id,
+            include_active=True,
+            since=args.since,
+        )
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def _stop_run(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge stop")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("run_id")
+    parser.add_argument("--reason", default="Controlled stop requested.")
+    args = parser.parse_args(arguments)
+    try:
+        result = stop_run(args.database, args.run_id, reason=args.reason)
+    except (ValueError, OSError, sqlite3.Error) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
 
 
 def _recover_run(arguments: list[str]) -> int:
@@ -862,6 +935,14 @@ def main() -> int:
         return _disposition(arguments[1:])
     if arguments and arguments[0] in {"render-output", "output"}:
         return _render_output(arguments[1:])
+    if arguments and arguments[0] in {"launch", "launch-run"}:
+        return _launch_run(arguments[1:])
+    if arguments and arguments[0] in {"status", "run-status"}:
+        return _run_status(arguments[1:])
+    if arguments and arguments[0] in {"activity", "run-activity"}:
+        return _run_activity(arguments[1:])
+    if arguments and arguments[0] in {"stop", "stop-run"}:
+        return _stop_run(arguments[1:])
     if arguments and arguments[0] == "run-approved":
         return _run_approved(arguments[1:])
     if arguments and arguments[0] == "recover-run":

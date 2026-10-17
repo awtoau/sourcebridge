@@ -57,6 +57,8 @@ same policy:
 | `test register`, `test import`, and test result recording | serialized registry/result writes |
 | `profile register-rule`, state changes, certification, create, and promote | serialized append-only lifecycle writes |
 | `run-approved` event and final-status writes | one short transaction per event; only one process may claim a queued run |
+| `launch`, `status`, and `activity` | launch claims one queued run; status/activity use read-only snapshots |
+| `stop` | serialized transition to `stopping`/`cancelled`, stop event, and process-group signal |
 | `recover-run` | serialized cancellation and stop event |
 | `report-diagnostics`, profile resolve/list, and execution activity | read-only snapshot; never a writer |
 
@@ -68,9 +70,11 @@ database. Direct ad-hoc SQLite writes are outside the supported model.
 `read_transaction()` opens a read-only connection, sets `query_only=ON`, and
 starts one explicit deferred transaction. Every report query therefore sees a
 single committed SQLite snapshot and cannot accidentally create or mutate the
-database. Execution activity reports include only `passed`, `failed`, or
-`cancelled` runs with a non-null `completed_at`. Queued/running/stopping work
-is not presented as completed evidence. A terminal run without a completion
+database. Historical execution activity reports include only `passed`, `failed`,
+or `cancelled` runs with a non-null `completed_at`. The operational
+`sourcebridge activity` command explicitly opts into queued/running/stopping
+runs and reads the same durable events for reconnectability; it does not turn
+active work into completed evidence. A terminal run without a completion
 timestamp (or a non-terminal run with one) is rejected as an ambiguous state
 instead of being reported.
 
