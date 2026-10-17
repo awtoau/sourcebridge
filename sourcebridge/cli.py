@@ -205,22 +205,8 @@ def _test(arguments: list[str]) -> int:
         elif args.action == "import":
             print(json.dumps(import_catalogue(args.database, args.catalogue), indent=2, sort_keys=True))
         elif args.action == "import-pack":
-            manifest_cli.validate_pack(args.pack_manifest)
-            manifest = manifest_cli.read_json(args.pack_manifest)
-            entrypoints = manifest.get("entrypoints", {})
-            catalogue_text = entrypoints.get("engine_tests") if isinstance(entrypoints, dict) else None
-            if not isinstance(catalogue_text, str):
-                raise EngineTestError(
-                    f"{args.pack_manifest}: pack must declare an `engine_tests` entrypoint"
-                )
-            result = import_catalogue(
-                args.database, (args.pack_manifest.parent / catalogue_text).resolve()
-            )
-            if result["pack_id"] != manifest["id"]:
-                raise EngineTestError(
-                    f"{args.pack_manifest}: test catalogue pack ID does not match manifest"
-                )
-            print(json.dumps(result, indent=2, sort_keys=True))
+            print(json.dumps(_import_pack_catalogue(args.database, args.pack_manifest), indent=2,
+                             sort_keys=True))
         elif args.action == "list":
             print(json.dumps(list_tests(args.database, pack_id=args.pack), indent=2, sort_keys=True))
         else:
@@ -231,6 +217,43 @@ def _test(arguments: list[str]) -> int:
         print(error, file=sys.stderr)
         return 1
     return 0
+
+
+def _import_pack_catalogue(database: Path, pack_manifest: Path) -> dict[str, object]:
+    manifest_cli.validate_pack(pack_manifest)
+    manifest = manifest_cli.read_json(pack_manifest)
+    entrypoints = manifest.get("entrypoints", {})
+    catalogue_text = entrypoints.get("engine_tests") if isinstance(entrypoints, dict) else None
+    if not isinstance(catalogue_text, str):
+        raise EngineTestError(
+            f"{pack_manifest}: pack must declare an `engine_tests` entrypoint"
+        )
+    result = import_catalogue(database, (pack_manifest.parent / catalogue_text).resolve())
+    if result["pack_id"] != manifest["id"]:
+        raise EngineTestError(f"{pack_manifest}: test catalogue pack ID does not match manifest")
+    return result
+
+
+def _dev(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge dev")
+    parser.add_argument("pack_id")
+    parser.add_argument("action", choices=("test",))
+    parser.add_argument("test_id", type=int)
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--pack-manifest", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    try:
+        imported = _import_pack_catalogue(args.database, args.pack_manifest)
+        if imported["pack_id"] != args.pack_id:
+            raise EngineTestError(
+                f"{args.pack_manifest}: declares `{imported['pack_id']}`, not `{args.pack_id}`"
+            )
+        result = run(args.database, args.test_id)
+    except EngineTestError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps({"catalogue": imported, "result": result}, indent=2, sort_keys=True))
+    return 0 if result["status"] == "passed" else 1
 
 
 def _legacy_command(arguments: list[str]) -> int:
@@ -258,6 +281,8 @@ def main() -> int:
         return _import_json(arguments[1:])
     if arguments and arguments[0] == "test":
         return _test(arguments[1:])
+    if arguments and arguments[0] == "dev":
+        return _dev(arguments[1:])
     return _legacy_command(arguments)
 
 

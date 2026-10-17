@@ -271,6 +271,17 @@ configuration, and each test's numeric ID, name, and expected structured
 result. Import records the catalogue and fixture SHA-256 digests so its
 operational SQL rows can be rebuilt on another checkout.
 
+Run a case through its pack in one command:
+
+```text
+sourcebridge dev sourcebridge-csharp test 434 \
+  --database evidence/sourcebridge.db \
+  --pack-manifest ../sourcebridge-csharp/sourcebridge-csharp.pack.json
+```
+
+The `dev` command imports the declared catalogue before resolving and running
+the requested stable test ID.
+
 The command adapter does not invoke a shell. Pack adapters may wrap existing
 C#, C, Delphi, Python, or Rust compiler suites by supplying their executable
 argument vector. Add a dedicated adapter only when its reusable result
