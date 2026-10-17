@@ -64,8 +64,7 @@ The initial public packs are now available:
   extracts the Stage-1 Delphi scalar fixture and validates it with Free Pascal
   3.2.3 on x86_64 Linux in Delphi mode.
 - [`awtoau/sourcebridge-rust`](https://github.com/awtoau/sourcebridge-rust)
-  emits and compiles Rust for the corresponding verified non-overflow scalar
-  addition facts.
+  emits and compiles Rust for the corresponding verified scalar addition facts.
 
 This is deliberately a narrow end-to-end proof, not a claim that general
 Delphi-to-Rust conversion or overflow behavior is validated.
@@ -77,6 +76,56 @@ python3 tools/validate_delphi_scalar_rust.py \
   --delphi-pack ../sourcebridge-delphi \
   --rust-pack ../sourcebridge-rust
 ```
+
+### Arithmetic policy is visible and overridable
+
+The same source `+` expression can mean different things in a real
+application. Sourcebridge does not silently treat all arithmetic as either
+legacy-compatible wrapping or modern safe arithmetic. A profile selects and
+records the policy for each applicable rule family.
+
+For the bounded FPC scalar fixture, measured source behavior is modular
+32-bit addition. A compatibility profile may therefore emit:
+
+```rust
+pub fn add_signed(left: i32, right: i32) -> i32 {
+    left.wrapping_add(right)
+}
+```
+
+That preserves the measured source result at the tested overflow boundary, but
+it is not necessarily a suitable business-domain policy. A project may instead
+choose an explicit risk-accepting modernization override:
+
+```text
+arithmetic_policy: plain-rust-add
+```
+
+```rust
+pub fn add_signed(left: i32, right: i32) -> i32 {
+    left + right
+}
+```
+
+This intentionally does **not** guarantee overflow equivalence: Rust `+`
+depends on the selected overflow-check build settings. The generated artifact
+and its conversion report must record that risk, the affected source span, and
+the selected profile digest. Other explicit policies can emit `checked_add`
+with an error or source-mapped panic, `saturating_add`, or a domain numeric
+type.
+
+Rules can use source facts to flag arithmetic for review. For example, a
+declared Delphi `Currency` value, a money/domain type selected by a project,
+or a database decimal field is a strong candidate for a decimal/domain-number
+rule; it should not inherit an integer wrapping rule. A bounded counter,
+bitmask, checksum, or protocol field may instead be a candidate for
+compatibility wrapping or an explicitly sized integer.
+
+Candidate detection is not intent inference. Variable names such as `total` or
+`counter` alone never change generated semantics. Until a type, source
+contract, project policy, or validated rule supports a choice, Sourcebridge
+reports `modernization-risk: arithmetic-intent-unresolved` and blocks
+automatic semantic rewriting.
 
 ## C# to Rust pack
 
@@ -239,6 +288,19 @@ require regeneration plus the declared full validation tier before calling the
 new profile current. A focused test helps diagnose a change; it does not
 recertify an affected corpus by itself.
 
+The compact `sourcebridge report-staleness` report compares immutable
+conversion/runtime/validation provenance links with a selected current profile.
+It reports the resolved profile, rule, and declared toolchain digests, each
+linked result's current/stale status, and the full validation tier required
+before certification. It derives this view without rewriting historical
+evidence; see [`docs/staleness.md`](docs/staleness.md).
+
+Per-source-unit decisions can be queried from the same component-decision
+records.  The prototype also provides deterministic annotated-review and
+clean-release output helpers; clean output refuses unresolved boundaries and
+writes a `.provenance.json` sidecar.  See
+[`docs/dispositions-output.md`](docs/dispositions-output.md).
+
 ### Efficient, constrained agent operations
 
 Agent-facing tooling must expose stable structured APIs and compact CLI output
@@ -276,15 +338,69 @@ sourcebridge propose-rule evidence/unmatched-cluster.json \
   --model-digest sha256:<value printed by model-digest>
 ```
 
-It permits only the approved, locally installed `qwen2.5-coder:14b` model on a
+It permits only approved, locally installed models—defaulting to
+`qwen3-coder:30b` with `qwen2.5-coder:14b` as a lower-cost fallback—on a
 loopback Ollama endpoint, pins the response to its digest, limits the supplied
 JSON evidence to 256 KiB, uses fixed generation options, schema-checks the
 response, and writes the result only under `evidence/proposals/`. A staged
 result is always labelled `unvalidated-llm-proposal`.
 
+For related evidence tasks, keep one pinned worker session alive and process
+the packages serially:
+
+```text
+sourcebridge propose-batch evidence/cluster-a.json evidence/cluster-b.json \
+  --model-digest sha256:<value printed by model-digest> \
+  --active-rule-digest <resolved-rule-digest> \
+  --database evidence/sourcebridge.db
+```
+
+The batch report separates the first-request model load/warm-up measurement
+from each request's elapsed and generation time. A weak or mismatched package
+is retained below `evidence/proposals/rejected/`; rejected output never becomes
+a rule. A successful package is only an evidence-gated,
+`unvalidated-llm-proposal`, not a validated rule or generated artifact.
+
 See [the local Ollama operating guide](docs/local-ollama.md) for the selected
 baseline, fixed safety/evidence constraints, and the hardware/workload settings
 users may measure and optimize without weakening proposal validation.
+
+## Worker defaults and audit
+
+Supported parallel work defaults to 24 workers, with an explicit `--workers`
+override where the operation supports it. Run the canonical audit to see the
+complete command inventory, the effective default, and every named exception
+for an operation that is deliberately serial:
+
+```sh
+sourcebridge audit-workers
+```
+
+See [the worker-default policy](docs/worker-defaults.md) for the deterministic
+one-worker/default contract and the evidence required before introducing
+parallelism to an exception.
+
+## Approved run control
+
+The prototype operational control layer acts only on an existing queued
+execution run and its persisted command contract. It does not accept an
+arbitrary command or provide a scheduler:
+
+```sh
+sourcebridge launch --database evidence/sourcebridge.db RUN_ID
+sourcebridge status --database evidence/sourcebridge.db RUN_ID
+sourcebridge activity --database evidence/sourcebridge.db --run RUN_ID
+sourcebridge stop --database evidence/sourcebridge.db RUN_ID \
+  --reason "operator requested stop"
+```
+
+`status` exposes the selected corpus variant and observed worker-slot/source
+unit boundaries. `activity` reads durable events and can be called again after
+disconnecting; use `--since` with the last event timestamp for a compact
+reconnect. A controlled stop moves a live run through `stopping`, signals the
+approved process group, and finalizes it as `cancelled` without downgrading
+workers that already reached a terminal state. This is CLI/API plumbing only;
+the GUI remains a separate planned surface.
 
 ## Cross-pack committed-evidence reports
 
@@ -368,6 +484,23 @@ workbench consumes the same records for click-through review.
 
 See [PLAN.md](PLAN.md) for the staged implementation plan.
 
+## Agent diagnosis queue
+
+Agents can consume the current blocking queue, one item's immutable
+provenance, and changes since a prior run without reading raw logs:
+
+```text
+sourcebridge report-work-queue --database evidence/sourcebridge.db
+sourcebridge report-work-item --database evidence/sourcebridge.db WORK_ITEM_ID
+sourcebridge report-changes --database evidence/sourcebridge.db --since RUN_ID
+```
+
+Reports require a completed run with complete immutable provenance and
+run-scoped evidence links; stale or incomplete evidence fails clearly instead
+of being presented as current. See
+[docs/agent-queue.md](docs/agent-queue.md) for the compact JSON contract,
+ownership/status rules, and append-only history guarantees.
+
 ## SQL evidence pipeline
 
 Operational evidence is stored in SQLite using the portable contract in
@@ -378,6 +511,17 @@ SHA-256 provenance:
 ```text
 sourcebridge init-db --database evidence/sourcebridge.db
 sourcebridge import-json --database evidence/sourcebridge.db --root . --tracked-only
+```
+
+SQLite concurrency, transaction ownership, reader consistency, recovery, the
+repeatable contention benchmark, and objective PostgreSQL escalation criteria
+are documented in
+[`docs/evidence-database-concurrency.md`](docs/evidence-database-concurrency.md).
+An interrupted approved run can be made explicitly terminal with:
+
+```text
+sourcebridge recover-run --database evidence/sourcebridge.db RUN_ID \
+  --reason "worker was interrupted"
 ```
 
 ## Engine-test orchestration

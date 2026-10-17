@@ -5,11 +5,14 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sqlite3
 import sys
 
 from cli import sourcebridge as manifest_cli
 from sourcebridge.proposals import (
     DEFAULT_MODEL,
+    ProposalEvidenceError,
+    ProposalWorker,
     ProposalValidationError,
     installed_model,
     read_evidence,
@@ -21,11 +24,25 @@ from sourcebridge.proposals import (
 )
 from sourcebridge.reporting import (
     EvidenceReportError,
+    changes_since,
+    current_work_queue,
+    diagnostic_drilldown,
     diagnostic_groups,
     diagnostic_occurrences,
+    record_diagnostic_review,
+    execution_activity,
+    execution_status,
     report_packs,
+    staleness_report,
+    work_item_evidence,
 )
-from sourcebridge.execution import run_approved
+from sourcebridge.toolchains import ToolchainReportError, report_toolchains
+from sourcebridge.execution import (
+    launch_approved,
+    recover_interrupted,
+    run_approved,
+    stop_run,
+)
 from sourcebridge.conversion_profiles import (
     ConversionProfileError,
     create_project_profile_revision,
@@ -37,9 +54,24 @@ from sourcebridge.conversion_profiles import (
     set_project_profile_state,
     set_rule_revision_state,
 )
+from sourcebridge.dispositions import (
+    DispositionError,
+    write_conversion_output,
+    query_source_unit_dispositions,
+    record_source_unit_disposition,
+)
 from sourcebridge.engine_tests import EngineTestError, import_catalogue, list_tests, register, run
 from sourcebridge.proposal_evaluation import evaluate
 from sourcebridge.pipeline import EvidencePipelineError, import_json, initialize
+from sourcebridge.workers import audit_json
+from sourcebridge.rule_runtime import RuleRuntimeError, execute as execute_rule_runtime
+from sourcebridge.validation import (
+    ValidationError,
+    get_validation_case,
+    list_validation_cases,
+    run_validation,
+)
+from sourcebridge.rule_selection import RuleSelectionError, select_next_rule
 
 
 def _proposal_parser() -> argparse.ArgumentParser:
@@ -57,17 +89,59 @@ def _propose_rule(arguments: list[str]) -> int:
     try:
         endpoint = validate_local_endpoint(args.endpoint)
         model = resolve_model(endpoint, args.model, args.model_digest)
-        staged = stage_proposal(endpoint, model, read_evidence(args.evidence))
+        staged = stage_proposal(
+            endpoint,
+            model,
+            read_evidence(args.evidence),
+            enforce_evidence=True,
+        )
         path = write_staged_proposal(args.output_dir, staged)
-    except ProposalValidationError as error:
-        path = write_rejected_proposal(args.output_dir, error.record)
+    except (ProposalValidationError, ProposalEvidenceError) as error:
+        try:
+            path = write_rejected_proposal(args.output_dir, error.record)
+        except OSError as write_error:
+            print(write_error, file=sys.stderr)
+            return 1
         print(f"{error}; raw response staged at {path}", file=sys.stderr)
         return 1
-    except ValueError as error:
+    except (OSError, ValueError) as error:
         print(error, file=sys.stderr)
         return 1
     print(path)
     return 0
+
+
+def _propose_batch(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge propose-batch")
+    parser.add_argument("evidence", type=Path, nargs="+")
+    parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--model-digest", required=True)
+    parser.add_argument("--active-rule-digest", required=True)
+    parser.add_argument("--batch-id")
+    parser.add_argument("--session-id")
+    parser.add_argument("--endpoint", default="http://127.0.0.1:11434")
+    parser.add_argument("--output-dir", type=Path, default=Path("evidence/proposals"))
+    parser.add_argument("--database", type=Path)
+    args = parser.parse_args(arguments)
+    try:
+        worker = ProposalWorker(
+            args.endpoint,
+            args.model,
+            args.model_digest,
+            active_rule_digest=args.active_rule_digest,
+            batch_id=args.batch_id,
+            session_id=args.session_id,
+            database=args.database,
+        )
+        report = worker.run_batch(
+            [read_evidence(path) for path in args.evidence],
+            output_directory=args.output_dir,
+        )
+    except (OSError, ValueError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0 if report["summary"]["rejected"] == 0 else 1
 
 
 def _model_digest(arguments: list[str]) -> int:
@@ -81,6 +155,13 @@ def _model_digest(arguments: list[str]) -> int:
         print(error, file=sys.stderr)
         return 1
     print(model.digest)
+    return 0
+
+
+def _worker_audit(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge audit-workers")
+    parser.parse_args(arguments)
+    print(audit_json())
     return 0
 
 
@@ -102,6 +183,69 @@ def _report_diagnostics(arguments: list[str]) -> int:
     return 0
 
 
+def _report_diagnostic(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-diagnostic")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("signature")
+    args = parser.parse_args(arguments)
+    try:
+        report = diagnostic_drilldown(args.database, args.signature)
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+def _review_diagnostic(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge review-diagnostic")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("occurrence_id")
+    parser.add_argument(
+        "--disposition",
+        choices=(
+            "unreviewed",
+            "accepted_source_behavior",
+            "known_converter_gap",
+            "known_target_constraint",
+            "false_grouping",
+            "needs_investigation",
+            "resolved",
+        ),
+        required=True,
+    )
+    parser.add_argument("--rationale", required=True)
+    parser.add_argument("--reviewed-by", required=True)
+    parser.add_argument("--work-item", "--work-item-id", dest="work_item_id")
+    parser.add_argument("--create-work-item", action="store_true")
+    parser.add_argument("--run", dest="run_id")
+    parser.add_argument("--category", default="diagnostic")
+    parser.add_argument("--summary")
+    parser.add_argument("--issue-url")
+    parser.add_argument("--recorded-at")
+    args = parser.parse_args(arguments)
+    try:
+        result = record_diagnostic_review(
+            args.database,
+            args.occurrence_id,
+            disposition=args.disposition,
+            rationale=args.rationale,
+            reviewed_by=args.reviewed_by,
+            work_item_id=args.work_item_id,
+            create_work_item=args.create_work_item,
+            run_id=args.run_id,
+            category=args.category,
+            summary=args.summary,
+            issue_url=args.issue_url,
+            recorded_at=args.recorded_at,
+        )
+    except (ValueError, OSError, sqlite3.Error) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
 def _report_packs(arguments: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="sourcebridge report-packs")
     parser.add_argument("roots", metavar="ROOT", type=Path, nargs="+")
@@ -115,6 +259,190 @@ def _report_packs(arguments: list[str]) -> int:
     return 0
 
 
+def _report_toolchains(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-toolchains")
+    parser.add_argument("roots", metavar="ROOT", type=Path, nargs="+")
+    args = parser.parse_args(arguments)
+    try:
+        report = report_toolchains(args.roots)
+    except (ToolchainReportError, OSError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0
+
+
+def _report_work_queue(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-work-queue")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--run", dest="run_id")
+    args = parser.parse_args(arguments)
+    try:
+        report = current_work_queue(args.database, run_id=args.run_id)
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+def _report_work_item(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-work-item")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--run", dest="run_id")
+    parser.add_argument("work_item_id")
+    args = parser.parse_args(arguments)
+    try:
+        report = work_item_evidence(
+            args.database,
+            args.work_item_id,
+            run_id=args.run_id,
+        )
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+def _report_changes(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-changes")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--since", dest="prior_run_id")
+    parser.add_argument("--run", dest="run_id")
+    parser.add_argument("prior_run", nargs="?")
+    args = parser.parse_args(arguments)
+    prior_run_id = args.prior_run_id or args.prior_run
+    if not prior_run_id:
+        parser.error("a prior run is required (use --since RUN_ID)")
+    try:
+        report = changes_since(
+            args.database,
+            prior_run_id,
+            run_id=args.run_id,
+        )
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+def _report_staleness(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-staleness")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--profile", dest="profile_revision_id")
+    parser.add_argument("--project", dest="project_id")
+    parser.add_argument("--profile-name")
+    args = parser.parse_args(arguments)
+    try:
+        report = staleness_report(
+            args.database,
+            profile_revision_id=args.profile_revision_id,
+            project_id=args.project_id,
+            profile_name=args.profile_name,
+        )
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+def _disposition(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge disposition")
+    subparsers = parser.add_subparsers(dest="action", required=True)
+    record_parser = subparsers.add_parser("record")
+    record_parser.add_argument("--database", type=Path, required=True)
+    profile = record_parser.add_mutually_exclusive_group(required=True)
+    profile.add_argument("--profile")
+    profile.add_argument("--profile-revision")
+    record_parser.add_argument("--source-unit", required=True)
+    record_parser.add_argument(
+        "--disposition",
+        choices=(
+            "direct_translation",
+            "retain_runtime",
+            "runtime_replacement",
+            "native_reimplementation",
+            "external_dependency",
+            "stubbed_boundary",
+            "excluded",
+            "blocked",
+        ),
+        required=True,
+    )
+    record_parser.add_argument("--rationale", required=True)
+    record_parser.add_argument("--decided-by", required=True)
+    record_parser.add_argument("--target-backend")
+    record_parser.add_argument("--runtime-adapter")
+    record_parser.add_argument("--boundary-contract")
+    list_parser = subparsers.add_parser("list")
+    list_parser.add_argument("--database", type=Path, required=True)
+    list_profile = list_parser.add_mutually_exclusive_group(required=True)
+    list_profile.add_argument("--profile")
+    list_profile.add_argument("--profile-revision")
+    list_parser.add_argument("--source-unit")
+    args = parser.parse_args(arguments)
+    try:
+        if args.action == "record":
+            result = record_source_unit_disposition(
+                args.database,
+                profile_id=args.profile,
+                profile_revision_id=args.profile_revision,
+                source_unit_id=args.source_unit,
+                disposition=args.disposition,
+                rationale=args.rationale,
+                decided_by=args.decided_by,
+                target_backend_pack_id=args.target_backend,
+                runtime_adapter_id=args.runtime_adapter,
+                boundary_contract_id=args.boundary_contract,
+            )
+        else:
+            result = query_source_unit_dispositions(
+                args.database,
+                profile_id=args.profile,
+                profile_revision_id=args.profile_revision,
+                source_unit_id=args.source_unit,
+            )
+    except (DispositionError, OSError, sqlite3.Error) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def _render_output(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge render-output")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--profile-revision", required=True)
+    parser.add_argument(
+        "--mode", choices=("annotated-review", "clean-release"), required=True
+    )
+    parser.add_argument(
+        "--manifest",
+        type=Path,
+        required=True,
+        help="JSON array (or object with an artifacts array) of generated text records",
+    )
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    try:
+        manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+        result = write_conversion_output(
+            args.database,
+            profile_revision_id=args.profile_revision,
+            artifacts=manifest,
+            mode=args.mode,
+            output_path=args.output,
+        )
+    except (DispositionError, OSError, sqlite3.Error, json.JSONDecodeError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
 def _run_approved(arguments: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="sourcebridge run-approved")
     parser.add_argument("--database", type=Path, required=True)
@@ -122,9 +450,93 @@ def _run_approved(arguments: list[str]) -> int:
     args = parser.parse_args(arguments)
     try:
         return run_approved(args.database, args.run_id)
-    except (ValueError, OSError) as error:
+    except (ValueError, OSError, sqlite3.Error) as error:
         print(error, file=sys.stderr)
         return 1
+
+
+def _launch_run(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge launch")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("run_id")
+    args = parser.parse_args(arguments)
+    try:
+        result = launch_approved(args.database, args.run_id)
+    except (ValueError, OSError, sqlite3.Error) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def _run_status(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge status")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("run_id")
+    args = parser.parse_args(arguments)
+    try:
+        result = execution_status(args.database, args.run_id)
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def _run_activity(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge activity")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--run", dest="run_id")
+    parser.add_argument(
+        "--since",
+        help="Only return events after this persisted ISO-8601 timestamp.",
+    )
+    args = parser.parse_args(arguments)
+    try:
+        result = execution_activity(
+            args.database,
+            args.run_id,
+            include_active=True,
+            since=args.since,
+        )
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def _stop_run(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge stop")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("run_id")
+    parser.add_argument("--reason", default="Controlled stop requested.")
+    args = parser.parse_args(arguments)
+    try:
+        result = stop_run(args.database, args.run_id, reason=args.reason)
+    except (ValueError, OSError, sqlite3.Error) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def _recover_run(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge recover-run")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("run_id")
+    parser.add_argument(
+        "--reason",
+        default="Recovered after an interrupted run.",
+    )
+    args = parser.parse_args(arguments)
+    try:
+        result = recover_interrupted(args.database, args.run_id, reason=args.reason)
+    except (ValueError, OSError, sqlite3.Error) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
 
 
 def _evaluate_proposal(arguments: list[str]) -> int:
@@ -224,7 +636,7 @@ def _test(arguments: list[str]) -> int:
             result = run(args.database, args.test_id)
             print(json.dumps(result, indent=2, sort_keys=True))
             return 0 if result["status"] == "passed" else 1
-    except EngineTestError as error:
+    except (EngineTestError, EvidencePipelineError, sqlite3.Error) as error:
         print(error, file=sys.stderr)
         return 1
     return 0
@@ -310,6 +722,7 @@ def _profile(arguments: list[str]) -> int:
                 profile_name=manifest.get("profile_name"),
                 base_profile_id=manifest.get("base_profile_id"),
                 required_validation_tier=manifest.get("required_validation_tier"),
+                toolchain_digest=manifest.get("toolchain_digest"),
                 rationale=manifest.get("rationale"),
                 created_by=manifest.get("created_by"),
                 rule_overrides=manifest.get("rule_overrides", []),
@@ -354,7 +767,13 @@ def _profile(arguments: list[str]) -> int:
                 project_id=args.project,
                 state=args.state,
             )
-    except (ConversionProfileError, EvidencePipelineError, OSError, json.JSONDecodeError) as error:
+    except (
+        ConversionProfileError,
+        EvidencePipelineError,
+        OSError,
+        sqlite3.Error,
+        json.JSONDecodeError,
+    ) as error:
         print(error, file=sys.stderr)
         return 1
     print(json.dumps(result, indent=2, sort_keys=True))
@@ -391,11 +810,93 @@ def _dev(arguments: list[str]) -> int:
                 f"{args.pack_manifest}: declares `{imported['pack_id']}`, not `{args.pack_id}`"
             )
         result = run(args.database, args.test_id)
-    except EngineTestError as error:
+    except (EngineTestError, EvidencePipelineError, sqlite3.Error) as error:
         print(error, file=sys.stderr)
         return 1
     print(json.dumps({"catalogue": imported, "result": result}, indent=2, sort_keys=True))
     return 0 if result["status"] == "passed" else 1
+
+
+def _rule_runtime(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge rule-runtime")
+    subparsers = parser.add_subparsers(dest="action", required=True)
+    run_parser = subparsers.add_parser("run")
+    run_parser.add_argument("--database", type=Path, required=True)
+    run_parser.add_argument("--profile", dest="profile_revision_id", required=True)
+    run_parser.add_argument("--pack-manifest", type=Path, required=True)
+    run_parser.add_argument("--input-json", required=True)
+    run_parser.add_argument("--requested-by", default="sourcebridge")
+    run_parser.add_argument("--toolchain-digest")
+    args = parser.parse_args(arguments)
+    try:
+        input_payload = json.loads(args.input_json)
+        result = execute_rule_runtime(
+            args.database,
+            args.profile_revision_id,
+            args.pack_manifest,
+            input_payload=input_payload,
+            requested_by=args.requested_by,
+            toolchain_digest=args.toolchain_digest,
+        )
+    except (RuleRuntimeError, EvidencePipelineError, OSError, sqlite3.Error, json.JSONDecodeError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0 if result["status"] == "passed" else 1
+
+
+def _validation(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge validation")
+    subparsers = parser.add_subparsers(dest="action", required=True)
+    run_parser = subparsers.add_parser("run")
+    run_parser.add_argument("--database", type=Path, required=True)
+    run_parser.add_argument("--profile-revision", required=True)
+    run_parser.add_argument("--decision", required=True)
+    run_parser.add_argument("--pack-manifest", type=Path, required=True)
+    run_parser.add_argument("--input-json", required=True)
+    run_parser.add_argument("--requested-by", default="sourcebridge")
+    run_parser.add_argument("--toolchain-digest")
+    get_parser = subparsers.add_parser("get")
+    get_parser.add_argument("--database", type=Path, required=True)
+    get_parser.add_argument("case_id")
+    list_parser = subparsers.add_parser("list")
+    list_parser.add_argument("--database", type=Path, required=True)
+    list_parser.add_argument("--decision")
+    list_parser.add_argument("--profile-revision")
+    args = parser.parse_args(arguments)
+    try:
+        if args.action == "run":
+            input_payload = json.loads(args.input_json)
+            result = run_validation(
+                args.database,
+                profile_revision_id=args.profile_revision,
+                decision_id=args.decision,
+                pack_manifest=args.pack_manifest,
+                input_payload=input_payload,
+                requested_by=args.requested_by,
+                toolchain_digest=args.toolchain_digest,
+            )
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0 if result["status"] == "passed" else 1
+        if args.action == "get":
+            result = get_validation_case(args.database, args.case_id)
+        else:
+            result = list_validation_cases(
+                args.database,
+                decision_id=args.decision,
+                profile_revision_id=args.profile_revision,
+            )
+    except (
+        ValidationError,
+        EvidencePipelineError,
+        OSError,
+        sqlite3.Error,
+        json.JSONDecodeError,
+    ) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
 
 
 def _legacy_command(arguments: list[str]) -> int:
@@ -403,18 +904,71 @@ def _legacy_command(arguments: list[str]) -> int:
     return manifest_cli.main()
 
 
+def _select_next_rule(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge select-next-rule")
+    parser.add_argument("strategy", choices=("blocker/coverage", "completion", "basics"))
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--profile-id")
+    parser.add_argument("--pack-manifest", type=Path)
+    args = parser.parse_args(arguments)
+    try:
+        result = select_next_rule(
+            args.database, args.strategy, profile_id=args.profile_id,
+            pack_manifest=args.pack_manifest,
+        )
+    except (RuleSelectionError, OSError, sqlite3.Error) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, sort_keys=True))
+    return 0
+
+
 def main() -> int:
     arguments = sys.argv[1:]
     if arguments and arguments[0] == "propose-rule":
         return _propose_rule(arguments[1:])
+    if arguments and arguments[0] == "select-next-rule":
+        return _select_next_rule(arguments[1:])
+    if arguments and arguments[0] in {"propose-batch", "propose-rules", "proposal-worker"}:
+        return _propose_batch(arguments[1:])
     if arguments and arguments[0] == "model-digest":
         return _model_digest(arguments[1:])
+    if arguments and arguments[0] in {"audit-workers", "worker-audit"}:
+        return _worker_audit(arguments[1:])
     if arguments and arguments[0] == "report-diagnostics":
         return _report_diagnostics(arguments[1:])
+    if arguments and arguments[0] in {"report-diagnostic", "diagnostic-report"}:
+        return _report_diagnostic(arguments[1:])
+    if arguments and arguments[0] in {"review-diagnostic", "diagnostic-review"}:
+        return _review_diagnostic(arguments[1:])
     if arguments and arguments[0] == "report-packs":
         return _report_packs(arguments[1:])
+    if arguments and arguments[0] in {"report-toolchains", "toolchain-report"}:
+        return _report_toolchains(arguments[1:])
+    if arguments and arguments[0] == "report-work-queue":
+        return _report_work_queue(arguments[1:])
+    if arguments and arguments[0] == "report-work-item":
+        return _report_work_item(arguments[1:])
+    if arguments and arguments[0] == "report-changes":
+        return _report_changes(arguments[1:])
+    if arguments and arguments[0] == "report-staleness":
+        return _report_staleness(arguments[1:])
+    if arguments and arguments[0] in {"disposition", "dispositions"}:
+        return _disposition(arguments[1:])
+    if arguments and arguments[0] in {"render-output", "output"}:
+        return _render_output(arguments[1:])
+    if arguments and arguments[0] in {"launch", "launch-run"}:
+        return _launch_run(arguments[1:])
+    if arguments and arguments[0] in {"status", "run-status"}:
+        return _run_status(arguments[1:])
+    if arguments and arguments[0] in {"activity", "run-activity"}:
+        return _run_activity(arguments[1:])
+    if arguments and arguments[0] in {"stop", "stop-run"}:
+        return _stop_run(arguments[1:])
     if arguments and arguments[0] == "run-approved":
         return _run_approved(arguments[1:])
+    if arguments and arguments[0] == "recover-run":
+        return _recover_run(arguments[1:])
     if arguments and arguments[0] == "evaluate-proposal":
         return _evaluate_proposal(arguments[1:])
     if arguments and arguments[0] == "init-db":
@@ -427,6 +981,10 @@ def main() -> int:
         return _profile(arguments[1:])
     if arguments and arguments[0] == "dev":
         return _dev(arguments[1:])
+    if arguments and arguments[0] in {"rule-runtime", "run-rule-runtime"}:
+        return _rule_runtime(arguments[1:])
+    if arguments and arguments[0] in {"validation", "validate"}:
+        return _validation(arguments[1:])
     return _legacy_command(arguments)
 
 

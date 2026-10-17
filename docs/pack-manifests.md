@@ -123,6 +123,58 @@ sourcebridge profile set-rule-state \
   --rationale "Rule regression suite passed." --decided-by reviewer
 ```
 
+An executable rule revision also records a digest-pinned implementation source
+in its pack. The source is never copied into generated output:
+
+```json
+{
+  "implementation": {
+    "pack_id": "sourcebridge-csharp-renode",
+    "path": "rules/logging.py",
+    "digest": "SHA256"
+  }
+}
+```
+
+The pack declares the adapter contract that can consume that reference:
+
+```json
+{
+  "entrypoints": {
+    "rule_runtime": {
+      "id": "renode-rule-runtime-v1",
+      "command": ["python3", "adapter.py"],
+      "source": "adapter.py",
+      "supported_directives": ["replace", "configure"],
+      "supported_settings": ["runtime_adapter"],
+      "configuration_schema": {
+        "schema_version": 1,
+        "type": "object",
+        "properties": {"receiver": {"type": "string"}},
+        "required": ["receiver"],
+        "additionalProperties": false
+      }
+    }
+  }
+}
+```
+
+The runtime verifies the adapter source and selected rule implementation
+digests, rejects directives/settings/configuration outside that contract, and
+passes the complete resolved profile, rule overrides, settings, and input to
+the adapter over JSON stdin:
+
+```text
+sourcebridge rule-runtime run \
+  --database evidence/sourcebridge.db \
+  --profile project-profile-... \
+  --pack-manifest packs/sourcebridge-csharp-renode.pack.json \
+  --input-json '{"source":"Log(message)"}'
+```
+
+Each run stores the adapter identity/digest, implementation digest, resolved
+profile digest, rule digest, and settings digest in the evidence database.
+
 Create and inspect the project profile:
 
 ```text

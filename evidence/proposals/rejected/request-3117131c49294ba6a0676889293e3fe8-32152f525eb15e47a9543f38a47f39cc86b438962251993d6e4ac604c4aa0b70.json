@@ -1,0 +1,161 @@
+{
+  "evidence": {
+    "active_rule_digest": "none",
+    "cluster_id": "delphi-basics-integer-layout-439",
+    "engine_test": {
+      "extraction": {
+        "diagnostic": "missing unit declaration",
+        "status": "failed"
+      },
+      "id": 439,
+      "oracle": "skipped",
+      "source": "passed",
+      "target": "blocked"
+    },
+    "observed_behavior": {},
+    "source_facts": {
+      "constructs": [
+        "program",
+        "SizeOf(Integer)",
+        "SizeOf(Cardinal)",
+        "Integer cast",
+        "Cardinal cast"
+      ],
+      "source_path": "fixtures/scalar_layout.pas",
+      "source_sha256": "1eb0c0223706b10b8355a3b2f2b515d3ba2d33bb2d201927dd9193a3fccabb54"
+    },
+    "source_language": "delphi",
+    "target_context": {
+      "backend": "rust",
+      "status": "blocked"
+    },
+    "variant": {
+      "compiler": {
+        "family": "free-pascal",
+        "mode": "delphi",
+        "target_cpu": "x86_64",
+        "target_os": "linux",
+        "version": "3.2.3"
+      }
+    }
+  },
+  "evidence_gate": {
+    "deterministic_test": null,
+    "evidence_references": [
+      "source_language",
+      "variant",
+      "active_rule_digest",
+      "source_facts.source_path"
+    ],
+    "grounded": false
+  },
+  "evidence_sha256": "b2f07607be1f67850f748afb5c8b499947f058deb4b404c86f9e756090e16778",
+  "generation_options": {
+    "num_ctx": 8192,
+    "num_predict": 1024,
+    "seed": 42,
+    "temperature": 0
+  },
+  "model": {
+    "digest": "06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca",
+    "name": "qwen3-coder:30b"
+  },
+  "payload_sha256": "32152f525eb15e47a9543f38a47f39cc86b438962251993d6e4ac604c4aa0b70",
+  "prompt_template_digest": "18656b98767c0c7aa6f34d84fd5145ca9c3ff46f2f1c40422b7d99c54b604ad0",
+  "prompt_template_version": "local-rule-proposal-v1",
+  "proposal": {
+    "applicability": {
+      "rationale": "The rule candidate targets Delphi code using Free Pascal compiler in Delphi mode, specifically focusing on integer layout and casting behaviors. The evidence shows a failed extraction due to missing unit declaration, but the source facts confirm the presence of relevant constructs like SizeOf(Integer), SizeOf(Cardinal), Integer cast, and Cardinal cast, which are essential for validating the rule's applicability.",
+      "source_language": "delphi",
+      "variant_selector": {
+        "compiler": {
+          "family": "free-pascal",
+          "mode": "delphi",
+          "target_cpu": "x86_64",
+          "target_os": "linux",
+          "version": "3.2.3"
+        }
+      },
+      "version_selector": {
+        "constructs": [
+          "program",
+          "SizeOf(Integer)",
+          "SizeOf(Cardinal)",
+          "Integer cast",
+          "Cardinal cast"
+        ],
+        "source_path": "fixtures/scalar_layout.pas"
+      }
+    },
+    "description": "In Delphi mode with Free Pascal compiler, SizeOf(Integer) and SizeOf(Cardinal) must return consistent values across all target platforms to ensure predictable casting behavior.",
+    "family": "integer-layout",
+    "negative_patterns": [],
+    "open_questions": [
+      "What is the expected size of Integer and Cardinal in the target environment (x86_64 Linux)?"
+    ],
+    "positive_patterns": [
+      {
+        "snippet": "SizeOf(Integer) = SizeOf(Cardinal)",
+        "why_it_matches": "This pattern directly tests whether Integer and Cardinal have the same size, which is a core requirement for consistent casting behavior in Delphi mode."
+      }
+    ],
+    "rule_name": "delphi-integer-cardinal-size-consistency",
+    "status_claim": "unvalidated-llm-proposal",
+    "suggested_tests": [
+      {
+        "expected_result": "SizeOf(Integer) = SizeOf(Cardinal)",
+        "source_input": "fixtures/scalar_layout.pas"
+      }
+    ]
+  },
+  "raw_response": {
+    "created_at": "2026-10-17T03:12:23.820393283Z",
+    "done": true,
+    "done_reason": "stop",
+    "eval_count": 454,
+    "eval_duration": 8873587000,
+    "load_duration": 17403560033,
+    "message": {
+      "content": "{\n  \"applicability\": {\n    \"rationale\": \"The rule candidate targets Delphi code using Free Pascal compiler in Delphi mode, specifically focusing on integer layout and casting behaviors. The evidence shows a failed extraction due to missing unit declaration, but the source facts confirm the presence of relevant constructs like SizeOf(Integer), SizeOf(Cardinal), Integer cast, and Cardinal cast, which are essential for validating the rule's applicability.\",\n    \"source_language\": \"delphi\",\n    \"variant_selector\": {\n      \"compiler\": {\n        \"family\": \"free-pascal\",\n        \"mode\": \"delphi\",\n        \"target_cpu\": \"x86_64\",\n        \"target_os\": \"linux\",\n        \"version\": \"3.2.3\"\n      }\n    },\n    \"version_selector\": {\n      \"source_path\": \"fixtures/scalar_layout.pas\",\n      \"constructs\": [\n        \"program\",\n        \"SizeOf(Integer)\",\n        \"SizeOf(Cardinal)\",\n        \"Integer cast\",\n        \"Cardinal cast\"\n      ]\n    }\n  },\n  \"description\": \"In Delphi mode with Free Pascal compiler, SizeOf(Integer) and SizeOf(Cardinal) must return consistent values across all target platforms to ensure predictable casting behavior.\",\n  \"family\": \"integer-layout\",\n  \"negative_patterns\": [],\n  \"open_questions\": [\n    \"What is the expected size of Integer and Cardinal in the target environment (x86_64 Linux)?\"\n  ],\n  \"positive_patterns\": [\n    {\n      \"snippet\": \"SizeOf(Integer) = SizeOf(Cardinal)\",\n      \"why_it_matches\": \"This pattern directly tests whether Integer and Cardinal have the same size, which is a core requirement for consistent casting behavior in Delphi mode.\"\n    }\n  ],\n  \"rule_name\": \"delphi-integer-cardinal-size-consistency\",\n  \"status_claim\": \"unvalidated-llm-proposal\",\n  \"suggested_tests\": [\n    {\n      \"expected_result\": \"SizeOf(Integer) = SizeOf(Cardinal)\",\n      \"source_input\": \"fixtures/scalar_layout.pas\"\n    }\n  ]\n}",
+      "role": "assistant"
+    },
+    "model": "qwen3-coder:30b",
+    "prompt_eval_cached_count": 0,
+    "prompt_eval_count": 478,
+    "prompt_eval_duration": 1017199000,
+    "total_duration": 27298908136
+  },
+  "rejection_reasons": [
+    "weak evidence must abstain from positive patterns",
+    "weak evidence must abstain from executable tests"
+  ],
+  "request_id": "request-3117131c49294ba6a0676889293e3fe8",
+  "status": "rejected-llm-proposal",
+  "timing": {
+    "generated_tokens": 454,
+    "generation_ms": 8873.587,
+    "load_duration_ms": 17403.56,
+    "prompt_evaluation_ms": 1017.199,
+    "prompt_tokens": 478,
+    "request_elapsed_ms": 27300.49,
+    "request_index": 0
+  },
+  "worker_session": {
+    "active_rule_digest": "none",
+    "batch_id": "delphi-basics-integer-layout-439-v1",
+    "endpoint": "http://127.0.0.1:11434",
+    "generation_options": {
+      "num_ctx": 8192,
+      "num_predict": 1024,
+      "seed": 42,
+      "temperature": 0
+    },
+    "model": {
+      "digest": "06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca",
+      "name": "qwen3-coder:30b"
+    },
+    "prompt_template_digest": "18656b98767c0c7aa6f34d84fd5145ca9c3ff46f2f1c40422b7d99c54b604ad0",
+    "prompt_template_version": "local-rule-proposal-v1",
+    "session_id": "session-4feb21f5a59f4dceb697fa4d96ec9f7f"
+  }
+}

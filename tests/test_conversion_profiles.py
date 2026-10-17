@@ -367,7 +367,7 @@ class ConversionProfileTests(unittest.TestCase):
                     """
                 ).fetchone()
 
-        self.assertEqual(version, "6")
+        self.assertEqual(version, "10")
         self.assertIsNotNone(profile_table)
         self.assertIsNotNone(immutability_trigger)
 
@@ -409,5 +409,119 @@ class ConversionProfileTests(unittest.TestCase):
                     )
                 }
 
-        self.assertEqual(version, "6")
+        self.assertEqual(version, "10")
         self.assertIn("resolution_json", columns)
+
+    def test_model_authored_rule_requires_human_review_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            database = Path(temporary) / "evidence.db"
+            initialize(database)
+            with sqlite3.connect(database) as connection:
+                connection.execute(
+                    """
+                    INSERT INTO sourcebridge_imported_record
+                        (id, source_repository, source_path, source_sha256,
+                         kind, payload_json, imported_at)
+                    VALUES
+                        ('imported-proposal-1', 'tests', 'proposal-1.json',
+                         'sha256:proposal', 'rule_proposal', '{}', 'now')
+                    """
+                )
+                connection.execute(
+                    """
+                    INSERT INTO sourcebridge_rule_proposal
+                        (id, imported_record_id, status, model_name, model_digest,
+                         prompt_template_version, payload_sha256, proposal_json,
+                         raw_response_json, created_at)
+                    VALUES
+                        ('proposal-1', 'imported-proposal-1',
+                         'unvalidated-llm-proposal', 'qwen2.5-coder:14b',
+                         'sha256:model', 'prompt-v1', 'sha256:payload',
+                         '{}', '{}', 'now')
+                    """
+                )
+            with self.assertRaisesRegex(ConversionProfileError, "human review"):
+                register_rule_revision(
+                    database,
+                    rule_key="arithmetic",
+                    source_frontend_pack_id="sourcebridge-delphi",
+                    definition={"operation": "addition"},
+                    rationale="Model candidate.",
+                    created_by="ollama",
+                    model_name="qwen2.5-coder:14b",
+                    model_digest="sha256:model",
+                    proposal_id="proposal-1",
+                )
+            accepted = register_rule_revision(
+                database,
+                rule_key="arithmetic",
+                source_frontend_pack_id="sourcebridge-delphi",
+                definition={"operation": "addition"},
+                rationale="Human reviewed model candidate.",
+                created_by="dan",
+                model_name="qwen2.5-coder:14b",
+                model_digest="sha256:model",
+                proposal_id="proposal-1",
+                human_reviewed_by="dan",
+                human_reviewed_at="2026-10-17T00:00:00+00:00",
+            )
+        self.assertEqual(accepted["model_name"], "qwen2.5-coder:14b")
+        self.assertEqual(accepted["proposal_id"], "proposal-1")
+
+    def test_model_authored_rule_rejects_missing_or_mismatched_proposal(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            database = Path(temporary) / "evidence.db"
+            with self.assertRaisesRegex(ConversionProfileError, "persisted"):
+                register_rule_revision(
+                    database,
+                    rule_key="arithmetic",
+                    source_frontend_pack_id="sourcebridge-delphi",
+                    definition={"operation": "addition"},
+                    rationale="Model candidate.",
+                    created_by="ollama",
+                    model_name="qwen2.5-coder:14b",
+                    model_digest="sha256:model",
+                    proposal_id="missing",
+                    human_reviewed_by="dan",
+                    human_reviewed_at="2026-10-17T00:00:00+00:00",
+                )
+
+            initialize(database)
+            with sqlite3.connect(database) as connection:
+                connection.execute(
+                    """
+                    INSERT INTO sourcebridge_imported_record
+                        (id, source_repository, source_path, source_sha256,
+                         kind, payload_json, imported_at)
+                    VALUES
+                        ('imported-proposal-2', 'tests', 'proposal-2.json',
+                         'sha256:proposal-2', 'rule_proposal', '{}', 'now')
+                    """
+                )
+                connection.execute(
+                    """
+                    INSERT INTO sourcebridge_rule_proposal
+                        (id, imported_record_id, status, model_name, model_digest,
+                         prompt_template_version, payload_sha256, proposal_json,
+                         raw_response_json, created_at)
+                    VALUES
+                        ('proposal-2', 'imported-proposal-2',
+                         'unvalidated-llm-proposal', 'qwen2.5-coder:14b',
+                         'sha256:other', 'prompt-v1', 'sha256:payload-2',
+                         '{}', '{}', 'now')
+                    """
+                )
+            with self.assertRaisesRegex(ConversionProfileError, "does not match"):
+                register_rule_revision(
+                    database,
+                    rule_key="arithmetic",
+                    source_frontend_pack_id="sourcebridge-delphi",
+                    definition={"operation": "addition"},
+                    rationale="Model candidate.",
+                    created_by="ollama",
+                    model_name="qwen2.5-coder:14b",
+                    model_digest="sha256:model",
+                    proposal_id="proposal-2",
+                    human_reviewed_by="dan",
+                    human_reviewed_at="2026-10-17T00:00:00+00:00",
+                )

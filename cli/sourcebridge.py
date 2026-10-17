@@ -68,6 +68,99 @@ def validate_pack(path: Path) -> None:
         raise ValueError(f"{path}: a backend must not provide source languages")
     if data["kind"] == "corpus" and (sources or targets):
         raise ValueError(f"{path}: a corpus pack must not provide languages or targets")
+    entrypoints = data.get("entrypoints", {})
+    if not isinstance(entrypoints, dict):
+        raise ValueError(f"{path}: `entrypoints` must be an object")
+    rule_runtime = entrypoints.get("rule_runtime")
+    if rule_runtime is not None:
+        required = {
+            "id",
+            "command",
+            "source",
+            "supported_directives",
+            "supported_settings",
+            "configuration_schema",
+        }
+        if (
+            not isinstance(rule_runtime, dict)
+            or set(rule_runtime) - required - {"timeout_seconds"}
+            or required - set(rule_runtime)
+        ):
+            raise ValueError(
+                f"{path}: `rule_runtime` must declare its adapter contract fields"
+            )
+        validate_identifier(path, "entrypoints.rule_runtime.id", rule_runtime["id"])
+        if (
+            not isinstance(rule_runtime["command"], list)
+            or not rule_runtime["command"]
+            or not all(isinstance(value, str) and value for value in rule_runtime["command"])
+        ):
+            raise ValueError(f"{path}: `rule_runtime.command` must be a non-empty string list")
+        if not isinstance(rule_runtime["source"], str) or not rule_runtime["source"].strip():
+            raise ValueError(f"{path}: `rule_runtime.source` must be a non-empty string")
+        for field in ("supported_directives", "supported_settings"):
+            values = rule_runtime[field]
+            if (
+                not isinstance(values, list)
+                or not all(isinstance(value, str) and value.strip() for value in values)
+                or len(values) != len(set(values))
+            ):
+                raise ValueError(f"{path}: `rule_runtime.{field}` must be unique strings")
+        if not set(rule_runtime["supported_directives"]) <= {
+            "enable", "disable", "replace", "configure",
+        }:
+            raise ValueError(f"{path}: `rule_runtime` declares an unknown directive")
+        schema = rule_runtime["configuration_schema"]
+        schema_keys = {
+            "schema_version", "type", "properties", "required", "additionalProperties",
+        }
+        if (
+            not isinstance(schema, dict)
+            or set(schema) != schema_keys
+            or schema["schema_version"] != 1
+            or schema["type"] != "object"
+            or not isinstance(schema["properties"], dict)
+            or not isinstance(schema["required"], list)
+            or not isinstance(schema["additionalProperties"], bool)
+        ):
+            raise ValueError(f"{path}: invalid `rule_runtime.configuration_schema`")
+        if "timeout_seconds" in rule_runtime and (
+            not isinstance(rule_runtime["timeout_seconds"], int)
+            or isinstance(rule_runtime["timeout_seconds"], bool)
+            or rule_runtime["timeout_seconds"] <= 0
+        ):
+            raise ValueError(f"{path}: `rule_runtime.timeout_seconds` must be positive")
+    validation = entrypoints.get("validation")
+    if validation is not None:
+        required = {"id", "command", "source"}
+        if (
+            not isinstance(validation, dict)
+            or set(validation) - required - {"timeout_seconds"}
+            or required - set(validation)
+        ):
+            raise ValueError(
+                f"{path}: `validation` must declare id, command, source, "
+                "and optional timeout_seconds"
+            )
+        validate_identifier(path, "entrypoints.validation.id", validation["id"])
+        if (
+            not isinstance(validation["command"], list)
+            or not validation["command"]
+            or not all(
+                isinstance(value, str) and value for value in validation["command"]
+            )
+        ):
+            raise ValueError(
+                f"{path}: `validation.command` must be a non-empty string list"
+            )
+        if not isinstance(validation["source"], str) or not validation["source"].strip():
+            raise ValueError(f"{path}: `validation.source` must be a non-empty string")
+        if "timeout_seconds" in validation and (
+            not isinstance(validation["timeout_seconds"], int)
+            or isinstance(validation["timeout_seconds"], bool)
+            or validation["timeout_seconds"] <= 0
+        ):
+            raise ValueError(f"{path}: `validation.timeout_seconds` must be positive")
     if set(data) - allowed:
         raise ValueError(f"{path}: contains unsupported fields")
 

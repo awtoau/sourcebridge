@@ -5,9 +5,11 @@ automatic conversion approval.
 
 ## Allowed model
 
-The initial approved model is `qwen2.5-coder:14b`, selected because it fits a
-16 GiB local GPU with context headroom and demonstrated schema-conforming JSON
-under fixed options. The engine resolves the model tag to a local digest before
+The default approved model is `qwen3-coder:30b`. It is the current provisional
+default after a local-only Delphi inventory comparison using versioned prompts:
+under the curriculum-constrained prompt it stayed within the required feature
+vocabulary for all five fixtures. `qwen2.5-coder:14b` remains approved as a
+lower-cost fallback. The engine resolves the model tag to a local digest before
 each proposal and stores that digest with the result.
 
 Cloud-routed tags, including any `:cloud` suffix, are rejected. Source or
@@ -42,7 +44,7 @@ quality and retain provenance before changing the selected configuration.
 
 | Setting | Default or policy | Permitted optimization |
 |---|---|---|
-| Model | `qwen2.5-coder:14b` is the current approved baseline | Compare a candidate only with digest pinning, local-only transport, and the evaluation matrix below. |
+| Model | `qwen3-coder:30b` is the provisional default; `qwen2.5-coder:14b` is an approved lower-cost fallback | Compare a candidate only with digest pinning, local-only transport, and the evaluation matrix below. |
 | Worker lifetime | One loaded worker processes a related batch | Keep the process/model loaded when cold-start cost is unimportant. Record session load time separately from request time. |
 | Reasoning level | Use the model's practical, measured setting | Do not select a deeper setting merely because it is available. It must improve evidence fidelity or readiness acceptance. |
 | Context and output limits | 8,192 input tokens and 1,024 output tokens | Increase only for evidence packages that demonstrate truncation; preserve fixed limits for a measured comparison. |
@@ -53,6 +55,66 @@ The current local trial found that a grounding prompt improved abstention, but
 neither larger models nor deeper reasoning reliably preserved all free-form
 test fields. That result reinforces deterministic field validation rather than
 model-size escalation.
+
+## Reusable worker and evidence gates
+
+`propose-batch` creates a durable worker session contract containing the
+loopback endpoint, approved model digest, fixed generation options,
+prompt-template version and digest, active-rule digest, batch ID, and session
+ID. The
+worker resolves the model once, keeps it loaded with Ollama's `keep_alive`
+setting, and sends related evidence packages one at a time. It does not make
+an inference during construction or model-digest lookup; each request is an
+explicit batch item.
+
+Each request retains its raw response and records request elapsed time,
+Ollama model-load duration, prompt-evaluation duration, generation duration,
+and token counts when Ollama supplies them. The first request's load duration
+is reported separately as session warm-up; it is not mixed into the
+per-request generation measurement. When `--database` is supplied, the
+session and request audit rows are also stored in the SQLite evidence
+database.
+The session contract is immutable: `running`, `completed`, and `failed`
+transitions are append-only session events. A session ID cannot be reused for
+a different batch, and each request has an immutable request ID. Staged and
+rejected files include that request ID before the payload digest, so repeated
+identical evidence packages retain distinct raw responses.
+
+The prompt is a ground-or-abstain contract. Missing source facts or observed
+results require empty positive patterns and empty suggested tests. For
+grounded evidence, Sourcebridge checks the proposal against the evidence
+envelope before staging it:
+
+- source language and every stated variant/compiler field must be present and
+  equal;
+- positive snippets must be literal observed source operations;
+- source fixture path, symbol, observed input, expected result, and variant
+  are resolved from the evidence, not accepted as model-authored executable
+  fields;
+- candidate target backends and evidence references must be present in the
+  envelope; and
+- a mismatch is rejected and the raw response is written below
+  `evidence/proposals/rejected/`.
+
+The resulting staged JSON may contain a deterministic test projection, but it
+continues to claim only `unvalidated-llm-proposal`. No command in this
+workflow writes a rule revision, generated output, or promoted profile. A
+later, human-triggered rule registration must provide proposal provenance and
+human review; the evidence database trigger rejects model-authored rule rows
+without that review.
+
+## Token accounting
+
+Every durable Ollama proposal request records the exact counters supplied by
+Ollama: `prompt_tokens` from `prompt_eval_count` and `generated_tokens` from
+`eval_count`. Sourcebridge does not estimate either value from source text.
+
+Host-agent usage, including Copilot orchestration, is imported separately as
+an `agent_usage` JSON record. It must contain at least one host-supplied token
+counter and link to a proposal worker request, rule revision, or work item.
+Missing host counters remain null; they are never inferred. This keeps local
+model cost, host-agent cost, and their scope links queryable without treating
+either as rule-validation evidence.
 
 ## Prompt optimization is part of conversion
 

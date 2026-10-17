@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from datetime import UTC, datetime
 import hashlib
 import json
 from pathlib import Path
 import sqlite3
-from typing import Any, Mapping, Sequence
+from typing import Any, Iterator, Mapping, Sequence
 
+from sourcebridge.database import read_transaction, write_transaction
 from sourcebridge.pipeline import initialize
 
 
@@ -54,12 +56,47 @@ def _optional_text(value: object, field: str) -> str | None:
     return _text(value, field)
 
 
-def _connection(database: Path) -> sqlite3.Connection:
+def _implementation_reference(
+    definition: Any,
+    implementation: Mapping[str, Any] | None,
+) -> dict[str, str] | None:
+    """Normalize the version-controlled pack source for a rule implementation."""
+
+    candidate = implementation
+    embedded = definition.get("implementation") if isinstance(definition, Mapping) else None
+    if candidate is not None and embedded is not None and candidate != embedded:
+        raise ConversionProfileError(
+            "explicit implementation reference does not match definition implementation"
+        )
+    if candidate is None and isinstance(definition, Mapping):
+        if embedded is not None:
+            candidate = embedded
+    if candidate is None:
+        return None
+    if not isinstance(candidate, Mapping) or set(candidate) != {"pack_id", "path", "digest"}:
+        raise ConversionProfileError(
+            "implementation must contain only pack_id, path, and digest"
+        )
+    pack_id = _text(candidate.get("pack_id"), "implementation pack_id")
+    path = _text(candidate.get("path"), "implementation path")
+    relative = Path(path)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ConversionProfileError(
+            "implementation path must be relative to its version-controlled pack"
+        )
+    digest = _text(candidate.get("digest"), "implementation digest").lower()
+    if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+        raise ConversionProfileError("implementation digest must be a SHA-256 hex digest")
+    return {"pack_id": pack_id, "path": path, "digest": digest}
+
+
+@contextmanager
+def _connection(database: Path, *, write: bool = True) -> Iterator[sqlite3.Connection]:
     initialize(database)
-    connection = sqlite3.connect(database)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA foreign_keys = ON")
-    return connection
+    transaction = write_transaction if write else read_transaction
+    with transaction(database) as connection:
+        connection.row_factory = sqlite3.Row
+        yield connection
 
 
 def _latest_state(
@@ -151,6 +188,12 @@ def register_rule_revision(
     created_by: str,
     workspace_name: str | None = None,
     supersedes_revision_id: str | None = None,
+    proposal_id: str | None = None,
+    model_name: str | None = None,
+    model_digest: str | None = None,
+    human_reviewed_by: str | None = None,
+    human_reviewed_at: str | None = None,
+    implementation: Mapping[str, Any] | None = None,
 ) -> dict[str, object]:
     """Create an immutable draft revision for a generic or project-specific rule."""
 
@@ -159,10 +202,56 @@ def register_rule_revision(
     rationale = _text(rationale, "rationale")
     created_by = _text(created_by, "created_by")
     workspace_name = _optional_text(workspace_name, "workspace_name")
-    definition_json = _canonical(definition)
+    proposal_id = _optional_text(proposal_id, "proposal_id")
+    model_name = _optional_text(model_name, "model_name")
+    model_digest = _optional_text(model_digest, "model_digest")
+    human_reviewed_by = _optional_text(human_reviewed_by, "human_reviewed_by")
+    human_reviewed_at = _optional_text(human_reviewed_at, "human_reviewed_at")
+    implementation_reference = _implementation_reference(definition, implementation)
+    if model_name is not None and (
+        model_digest is None
+        or proposal_id is None
+        or human_reviewed_by is None
+        or human_reviewed_at is None
+    ):
+        raise ConversionProfileError(
+            "model-authored rule requires proposal provenance and human review"
+        )
+    definition_for_digest: Any = definition
+    if implementation_reference is not None and not isinstance(definition, Mapping):
+        definition_for_digest = {
+            "definition": definition,
+            "implementation": implementation_reference,
+        }
+    elif implementation_reference is not None and "implementation" not in definition:
+        definition_for_digest = {
+            **definition,
+            "implementation": implementation_reference,
+        }
+    definition_json = _canonical(definition_for_digest)
     content_digest = _digest(definition_json)
 
     with _connection(database) as connection:
+        if model_name is not None:
+            proposal = connection.execute(
+                """
+                SELECT model_name, model_digest
+                FROM sourcebridge_rule_proposal
+                WHERE id = ?
+                """,
+                (proposal_id,),
+            ).fetchone()
+            if proposal is None:
+                raise ConversionProfileError(
+                    f"{proposal_id}: persisted sourcebridge rule proposal does not exist"
+                )
+            if (
+                proposal["model_name"] != model_name
+                or proposal["model_digest"] != model_digest
+            ):
+                raise ConversionProfileError(
+                    "model-authored rule provenance does not match the persisted proposal"
+                )
         family = connection.execute(
             """
             SELECT id
@@ -225,8 +314,11 @@ def register_rule_revision(
             """
             INSERT INTO sourcebridge_rule_revision
                 (id, family_id, revision, definition_json, content_digest,
-                 workspace_name, supersedes_revision_id, rationale, created_by, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 workspace_name, supersedes_revision_id, rationale, created_by,
+                 proposal_id, model_name, model_digest, human_reviewed_by,
+                 human_reviewed_at, implementation_pack_id, implementation_path,
+                 implementation_digest, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 revision_id,
@@ -238,6 +330,14 @@ def register_rule_revision(
                 supersedes_revision_id,
                 rationale,
                 created_by,
+                proposal_id,
+                model_name,
+                model_digest,
+                human_reviewed_by,
+                human_reviewed_at,
+                None if implementation_reference is None else implementation_reference["pack_id"],
+                None if implementation_reference is None else implementation_reference["path"],
+                None if implementation_reference is None else implementation_reference["digest"],
                 _now(),
             ),
         )
@@ -257,6 +357,10 @@ def register_rule_revision(
         "revision": revision,
         "content_digest": content_digest,
         "state": "draft",
+        "proposal_id": proposal_id,
+        "model_name": model_name,
+        "model_digest": model_digest,
+        "implementation": implementation_reference,
     }
 
 
@@ -451,8 +555,9 @@ def _profile_payload(
     *,
     rule_overrides: Sequence[Mapping[str, object]],
     setting_overrides: Sequence[Mapping[str, object]],
+    toolchain_digest: str | None = None,
 ) -> dict[str, object]:
-    return {
+    payload: dict[str, object] = {
         "base_profile": {
             "id": base_profile["id"],
             "digest": _base_profile_digest(base_profile),
@@ -480,6 +585,9 @@ def _profile_payload(
             for setting in sorted(setting_overrides, key=lambda item: str(item["key"]))
         ],
     }
+    if toolchain_digest is not None:
+        payload["toolchain_digest"] = toolchain_digest
+    return payload
 
 
 def create_project_profile_revision(
@@ -489,6 +597,7 @@ def create_project_profile_revision(
     profile_name: str,
     base_profile_id: str,
     required_validation_tier: str,
+    toolchain_digest: str | None = None,
     rationale: str,
     created_by: str,
     rule_overrides: Sequence[Mapping[str, Any]] = (),
@@ -502,6 +611,7 @@ def create_project_profile_revision(
     profile_name = _text(profile_name, "profile_name")
     base_profile_id = _text(base_profile_id, "base_profile_id")
     required_validation_tier = _text(required_validation_tier, "required_validation_tier")
+    toolchain_digest = _optional_text(toolchain_digest, "toolchain_digest")
     rationale = _text(rationale, "rationale")
     created_by = _text(created_by, "created_by")
     workspace_name = _optional_text(workspace_name, "workspace_name")
@@ -598,6 +708,7 @@ def create_project_profile_revision(
             base_profile,
             rule_overrides=normalized_rules,
             setting_overrides=normalized_settings,
+            toolchain_digest=toolchain_digest,
         )
         resolved_digest = _digest(_canonical(resolved_payload))
         profile_revision_id = _id(
@@ -608,10 +719,11 @@ def create_project_profile_revision(
             """
             INSERT INTO sourcebridge_project_profile_revision
                 (id, project_id, profile_name, revision, base_profile_id,
-                 base_profile_digest, required_validation_tier, workspace_name,
+                 base_profile_digest, required_validation_tier, toolchain_digest,
+                 workspace_name,
                  supersedes_profile_revision_id, resolved_digest, rationale,
                  created_by, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 profile_revision_id,
@@ -621,6 +733,7 @@ def create_project_profile_revision(
                 base_profile_id,
                 _base_profile_digest(base_profile),
                 required_validation_tier,
+                toolchain_digest,
                 workspace_name,
                 supersedes_profile_revision_id,
                 resolved_digest,
@@ -695,6 +808,7 @@ def create_project_profile_revision(
         "profile_name": profile_name,
         "revision": revision,
         "resolved_digest": resolved_digest,
+        "toolchain_digest": toolchain_digest,
         "state": "draft",
     }
 
@@ -911,11 +1025,12 @@ def promote_project_profile(
 def resolve_project_profile(database: Path, profile_revision_id: str) -> dict[str, object]:
     """Return the exact base profile, project overlays, and digest for a revision."""
 
-    with _connection(database) as connection:
+    with _connection(database, write=False) as connection:
         profile = connection.execute(
             """
             SELECT id, project_id, profile_name, revision, base_profile_id,
-                   base_profile_digest, required_validation_tier, workspace_name,
+                   base_profile_digest, required_validation_tier, toolchain_digest,
+                   workspace_name,
                    supersedes_profile_revision_id, resolved_digest, rationale,
                    created_by, created_at
             FROM sourcebridge_project_profile_revision
@@ -934,6 +1049,8 @@ def resolve_project_profile(database: Path, profile_revision_id: str) -> dict[st
             """
             SELECT family.rule_key, override.directive, override.selected_rule_revision_id,
                    revision.content_digest AS selected_rule_digest,
+                   revision.implementation_pack_id, revision.implementation_path,
+                   revision.implementation_digest,
                    override.resolution_json, override.configuration_json, override.rationale
             FROM sourcebridge_project_profile_rule_override AS override
             JOIN sourcebridge_rule_family AS family ON family.id = override.rule_family_id
@@ -950,6 +1067,15 @@ def resolve_project_profile(database: Path, profile_revision_id: str) -> dict[st
                 "directive": str(rule["directive"]),
                 "rule_revision_id": rule["selected_rule_revision_id"],
                 "selected_rule_digest": rule["selected_rule_digest"],
+                "implementation": (
+                    {
+                        "pack_id": rule["implementation_pack_id"],
+                        "path": rule["implementation_path"],
+                        "digest": rule["implementation_digest"],
+                    }
+                    if rule["implementation_pack_id"] is not None
+                    else None
+                ),
                 "resolution": json.loads(str(rule["resolution_json"])),
                 "configuration": json.loads(str(rule["configuration_json"])),
                 "rationale": str(rule["rationale"]),
@@ -980,6 +1106,7 @@ def resolve_project_profile(database: Path, profile_revision_id: str) -> dict[st
                     base_profile,
                     rule_overrides=normalized_rules,
                     setting_overrides=normalized_settings,
+                    toolchain_digest=profile["toolchain_digest"],
                 )
             )
         )
@@ -1004,10 +1131,15 @@ def resolve_project_profile(database: Path, profile_revision_id: str) -> dict[st
             "id": base_profile["id"],
             "profile_name": base_profile["profile_name"],
             "source_frontend_pack_id": base_profile["source_frontend_pack_id"],
+            "corpus_pack_id": base_profile["corpus_pack_id"],
             "target_backend_pack_id": base_profile["target_backend_pack_id"],
+            "rule_layers_digest": base_profile["rule_layers_digest"],
+            "runtime_adapters_digest": base_profile["runtime_adapters_digest"],
+            "options_digest": base_profile["options_digest"],
             "digest": profile["base_profile_digest"],
         },
         "required_validation_tier": profile["required_validation_tier"],
+        "toolchain_digest": profile["toolchain_digest"],
         "workspace_name": profile["workspace_name"],
         "supersedes_profile_revision_id": profile["supersedes_profile_revision_id"],
         "resolved_digest": profile["resolved_digest"],
@@ -1028,7 +1160,7 @@ def list_project_profile_revisions(
         project_id = _text(project_id, "project_id")
     if state is not None and state not in _PROFILE_STATES:
         raise ConversionProfileError(f"unsupported profile state `{state}`")
-    with _connection(database) as connection:
+    with _connection(database, write=False) as connection:
         query = """
             SELECT profile.id, profile.project_id, profile.profile_name, profile.revision,
                    profile.resolved_digest, profile.required_validation_tier, state.state

@@ -1,0 +1,248 @@
+You are a local coding worker. Produce a unified diff only, with no prose, for the three files below.
+
+Task: preserve existing append-only proposal-worker behavior while adding `prompt_tokens INTEGER CHECK (prompt_tokens IS NULL OR prompt_tokens >= 0)` beside existing generated_tokens in the proposal worker request table. Populate it from existing `record["timing"]["prompt_tokens"]` in the current audit insert. Update both fresh schema and additive migration/init paths. Do not add tables, providers, or agent/Copilot tracking yet. Do not rename or alter existing columns.
+
+Existing code excerpts:
+--- core/schema/evidence.sql lines 780-855 ---
+    batch_id TEXT NOT NULL,
+    endpoint TEXT NOT NULL,
+    model_name TEXT NOT NULL,
+    model_digest TEXT NOT NULL,
+    generation_options_json TEXT NOT NULL,
+    prompt_template_version TEXT NOT NULL,
+    prompt_template_digest TEXT NOT NULL,
+    active_rule_digest TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed')),
+    summary_json TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    completed_at TEXT
+);
+
+CREATE TABLE sourcebridge_proposal_worker_request (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL REFERENCES sourcebridge_proposal_worker_session(id),
+    request_index INTEGER NOT NULL CHECK (request_index >= 0),
+    evidence_sha256 TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('staged', 'rejected', 'failed')),
+    elapsed_ms REAL NOT NULL CHECK (elapsed_ms >= 0),
+    load_duration_ms REAL NOT NULL CHECK (load_duration_ms >= 0),
+    generation_ms REAL NOT NULL CHECK (generation_ms >= 0),
+    generated_tokens INTEGER,
+    rejection_reasons_json TEXT NOT NULL,
+    proposal_json TEXT NOT NULL,
+    raw_response_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX sourcebridge_proposal_worker_request_session_idx
+    ON sourcebridge_proposal_worker_request (session_id, request_index);
+
+CREATE TABLE sourcebridge_proposal_worker_session_event (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL REFERENCES sourcebridge_proposal_worker_session(id),
+    sequence INTEGER NOT NULL CHECK (sequence > 0),
+    status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed')),
+    summary_json TEXT NOT NULL,
+    occurred_at TEXT NOT NULL,
+    UNIQUE (session_id, sequence)
+);
+
+CREATE INDEX sourcebridge_proposal_worker_session_event_idx
+    ON sourcebridge_proposal_worker_session_event (session_id, sequence);
+
+CREATE TRIGGER sourcebridge_proposal_worker_session_immutable_update
+BEFORE UPDATE ON sourcebridge_proposal_worker_session
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_proposal_worker_session_immutable_delete
+BEFORE DELETE ON sourcebridge_proposal_worker_session
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_proposal_worker_request_immutable_update
+BEFORE UPDATE ON sourcebridge_proposal_worker_request
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_request is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_proposal_worker_request_immutable_delete
+BEFORE DELETE ON sourcebridge_proposal_worker_request
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_request is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_proposal_worker_session_event_immutable_update
+BEFORE UPDATE ON sourcebridge_proposal_worker_session_event
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session_event is append-only');
+END;
+
+--- sourcebridge/pipeline.py lines 70-175 ---
+        connection,
+        f"""
+        {ddl}
+        UPDATE sourcebridge_schema_metadata
+        SET value = '{target_version}'
+        WHERE key = 'schema_version';
+        """,
+    )
+
+
+def _create_worker_audit_objects(connection: sqlite3.Connection) -> None:
+    """Create proposal-worker audit objects without leaving the writer transaction."""
+
+    for statement in (
+        """
+        CREATE TABLE IF NOT EXISTS sourcebridge_proposal_worker_session (
+            id TEXT PRIMARY KEY,
+            batch_id TEXT NOT NULL,
+            endpoint TEXT NOT NULL,
+            model_name TEXT NOT NULL,
+            model_digest TEXT NOT NULL,
+            generation_options_json TEXT NOT NULL,
+            prompt_template_version TEXT NOT NULL,
+            prompt_template_digest TEXT NOT NULL,
+            active_rule_digest TEXT NOT NULL,
+            status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed')),
+            summary_json TEXT NOT NULL,
+            started_at TEXT NOT NULL,
+            completed_at TEXT
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS sourcebridge_proposal_worker_request (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL
+                REFERENCES sourcebridge_proposal_worker_session(id),
+            request_index INTEGER NOT NULL CHECK (request_index >= 0),
+            evidence_sha256 TEXT NOT NULL,
+            payload_sha256 TEXT NOT NULL,
+            status TEXT NOT NULL CHECK (status IN ('staged', 'rejected', 'failed')),
+            elapsed_ms REAL NOT NULL CHECK (elapsed_ms >= 0),
+            load_duration_ms REAL NOT NULL CHECK (load_duration_ms >= 0),
+            generation_ms REAL NOT NULL CHECK (generation_ms >= 0),
+            generated_tokens INTEGER,
+            rejection_reasons_json TEXT NOT NULL,
+            proposal_json TEXT NOT NULL,
+            raw_response_json TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """,
+        """
+        CREATE INDEX IF NOT EXISTS sourcebridge_proposal_worker_request_session_idx
+            ON sourcebridge_proposal_worker_request (session_id, request_index)
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS sourcebridge_proposal_worker_session_event (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL
+                REFERENCES sourcebridge_proposal_worker_session(id),
+            sequence INTEGER NOT NULL CHECK (sequence > 0),
+            status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed')),
+            summary_json TEXT NOT NULL,
+            occurred_at TEXT NOT NULL,
+            UNIQUE (session_id, sequence)
+        )
+        """,
+        """
+        CREATE INDEX IF NOT EXISTS sourcebridge_proposal_worker_session_event_idx
+            ON sourcebridge_proposal_worker_session_event (session_id, sequence)
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_proposal_worker_session_immutable_update
+        BEFORE UPDATE ON sourcebridge_proposal_worker_session
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_proposal_worker_session_immutable_delete
+        BEFORE DELETE ON sourcebridge_proposal_worker_session
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_proposal_worker_request_immutable_update
+        BEFORE UPDATE ON sourcebridge_proposal_worker_request
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_request is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_proposal_worker_request_immutable_delete
+        BEFORE DELETE ON sourcebridge_proposal_worker_request
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_request is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_proposal_worker_session_event_immutable_update
+        BEFORE UPDATE ON sourcebridge_proposal_worker_session_event
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_proposal_worker_session_event is append-only');
+        END
+        """,
+        """
+
+--- sourcebridge/proposals.py lines 1150-1215 ---
+
+def _audit_worker_request(
+    database: Path | None,
+    session: ProposalWorkerSession,
+    record: Mapping[str, Any],
+    status: str,
+    reasons: Iterable[str],
+) -> None:
+    if database is None:
+        return
+    from datetime import UTC, datetime
+
+    from sourcebridge.database import write_transaction
+    from sourcebridge.pipeline import EvidencePipelineError, initialize
+
+    timing = record.get("timing", {})
+    if not isinstance(timing, Mapping):
+        timing = {}
+    if status not in {"staged", "rejected", "failed"}:
+        raise ProposalWorkerError(f"unsupported proposal worker request status `{status}`")
+    request_id = record.get("request_id")
+    if not isinstance(request_id, str) or not request_id:
+        raise ProposalWorkerError("proposal worker request is missing immutable request identity")
+    try:
+        initialize(database)
+        with write_transaction(database) as connection:
+            connection.execute(
+                """
+                INSERT INTO sourcebridge_proposal_worker_request
+                    (id, session_id, request_index, evidence_sha256, payload_sha256,
+                     status, elapsed_ms, load_duration_ms, generation_ms,
+                     generated_tokens, rejection_reasons_json, proposal_json,
+                     raw_response_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    request_id,
+                    session.session_id,
+                    timing.get("request_index", 0),
+                    record.get("evidence_sha256", ""),
+                    record["payload_sha256"],
+                    status,
+                    timing.get("request_elapsed_ms", 0),
+                    timing.get("load_duration_ms", 0),
+                    timing.get("generation_ms", 0),
+                    timing.get("generated_tokens"),
+                    json.dumps(list(reasons), sort_keys=True),
+                    json.dumps(record.get("proposal"), sort_keys=True),
+                    json.dumps(record.get("raw_response"), sort_keys=True),
+                    datetime.now(UTC).isoformat(),
+                ),
+            )
+    except sqlite3.IntegrityError as error:
+        raise ProposalWorkerError(f"cannot append proposal worker request: {error}") from error
+    except (OSError, sqlite3.Error, EvidencePipelineError, ValueError) as error:
+        raise ProposalWorkerError(f"cannot audit proposal worker request: {error}") from error

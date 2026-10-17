@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from sourcebridge.proposals import evidence_gate
+
 
 def _read(path: Path) -> dict[str, Any]:
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -57,8 +59,14 @@ def evaluate(proposal_path: Path) -> dict[str, Any]:
         if expected not in observed_results:
             reasons.append("suggested test does not state an observed concrete result")
 
+    gate_reasons, gate = evidence_gate(proposal, evidence)
+    for reason in gate_reasons:
+        if reason not in reasons:
+            reasons.append(reason)
+
     return {
         "proposal_path": proposal_path.as_posix(),
         "eligible_for_human_rule_review": not reasons,
         "reasons": reasons,
+        "evidence_gate": gate,
     }

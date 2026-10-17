@@ -88,8 +88,114 @@ class EngineTestTests(unittest.TestCase):
                     "AND name = 'sourcebridge_engine_test'"
                 ).fetchone()
 
-        self.assertEqual(version, "6")
+        self.assertEqual(version, "10")
         self.assertIsNotNone(test_table)
+
+    def test_initialize_v6_worker_migration_includes_prompt_digest(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            database = Path(temporary) / "evidence.db"
+            initialize(database)
+            with sqlite3.connect(database) as connection:
+                connection.execute("PRAGMA foreign_keys = ON")
+                connection.execute(
+                    "DROP TABLE sourcebridge_proposal_worker_session_event"
+                )
+                connection.execute("DROP TABLE sourcebridge_proposal_worker_request")
+                connection.execute("DROP TABLE sourcebridge_proposal_worker_session")
+                connection.execute(
+                    "UPDATE sourcebridge_schema_metadata SET value = '6' "
+                    "WHERE key = 'schema_version'"
+                )
+
+            initialize(database)
+            with sqlite3.connect(database) as connection:
+                columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(sourcebridge_proposal_worker_session)"
+                    )
+                }
+
+        self.assertIn("prompt_template_digest", columns)
+
+    def test_initialize_repairs_v7_worker_session_without_prompt_digest(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            database = Path(temporary) / "evidence.db"
+            initialize(database)
+            with sqlite3.connect(database) as connection:
+                connection.execute("PRAGMA foreign_keys = ON")
+                connection.execute(
+                    "DROP TABLE sourcebridge_proposal_worker_session_event"
+                )
+                connection.execute("DROP TABLE sourcebridge_proposal_worker_request")
+                connection.execute("DROP TABLE sourcebridge_proposal_worker_session")
+                connection.executescript(
+                    """
+                    CREATE TABLE sourcebridge_proposal_worker_session (
+                        id TEXT PRIMARY KEY,
+                        batch_id TEXT NOT NULL,
+                        endpoint TEXT NOT NULL,
+                        model_name TEXT NOT NULL,
+                        model_digest TEXT NOT NULL,
+                        generation_options_json TEXT NOT NULL,
+                        prompt_template_version TEXT NOT NULL,
+                        active_rule_digest TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        summary_json TEXT NOT NULL,
+                        started_at TEXT NOT NULL,
+                        completed_at TEXT
+                    );
+                    CREATE TABLE sourcebridge_proposal_worker_request (
+                        id TEXT PRIMARY KEY,
+                        session_id TEXT NOT NULL
+                            REFERENCES sourcebridge_proposal_worker_session(id),
+                        request_index INTEGER NOT NULL,
+                        evidence_sha256 TEXT NOT NULL,
+                        payload_sha256 TEXT NOT NULL,
+                        status TEXT NOT NULL CHECK (status IN ('staged', 'rejected')),
+                        elapsed_ms REAL NOT NULL,
+                        load_duration_ms REAL NOT NULL,
+                        generation_ms REAL NOT NULL,
+                        generated_tokens INTEGER,
+                        rejection_reasons_json TEXT NOT NULL,
+                        proposal_json TEXT NOT NULL,
+                        raw_response_json TEXT NOT NULL,
+                        created_at TEXT NOT NULL,
+                        UNIQUE (session_id, request_index)
+                    );
+                    """
+                )
+                connection.execute(
+                    "UPDATE sourcebridge_schema_metadata SET value = '7' "
+                    "WHERE key = 'schema_version'"
+                )
+
+            initialize(database)
+            with sqlite3.connect(database) as connection:
+                session_columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(sourcebridge_proposal_worker_session)"
+                    )
+                }
+                request_sql = connection.execute(
+                    """
+                    SELECT sql FROM sqlite_master
+                    WHERE type = 'table' AND name = 'sourcebridge_proposal_worker_request'
+                    """
+                ).fetchone()[0]
+                proposal_trigger_sql = connection.execute(
+                    """
+                    SELECT sql FROM sqlite_master
+                    WHERE type = 'trigger'
+                      AND name = 'sourcebridge_model_authored_rule_requires_human_review'
+                    """
+                ).fetchone()[0]
+
+        self.assertIn("prompt_template_digest", session_columns)
+        self.assertIn("'failed'", request_sql)
+        self.assertNotIn("UNIQUE (session_id, request_index)", request_sql)
+        self.assertIn("proposal.model_digest", proposal_trigger_sql)
 
     def test_imports_versioned_catalogue_with_relative_fixture(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
