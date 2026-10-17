@@ -11,6 +11,7 @@ import subprocess
 from typing import Any
 from uuid import uuid4
 
+from sourcebridge.database import read_transaction, write_transaction
 from sourcebridge.pipeline import initialize
 
 
@@ -59,7 +60,7 @@ def register(
     initialize(database)
 
     try:
-        with sqlite3.connect(database) as connection:
+        with write_transaction(database) as connection:
             if test_id is None:
                 result = connection.execute(
                     """
@@ -160,7 +161,7 @@ def import_catalogue(database: Path, catalogue: Path) -> dict[str, Any]:
     initialize(database)
     created = updated = 0
     try:
-        with sqlite3.connect(database) as connection:
+        with write_transaction(database) as connection:
             for test_id, name, fixture, expected in records:
                 current = connection.execute(
                     "SELECT pack_id FROM sourcebridge_engine_test WHERE id = ?",
@@ -230,7 +231,7 @@ def list_tests(database: Path, *, pack_id: str | None = None) -> list[dict[str, 
         query += " WHERE pack_id = ?"
         parameters = (pack_id,)
     query += " ORDER BY id"
-    with sqlite3.connect(database) as connection:
+    with read_transaction(database) as connection:
         rows = connection.execute(query, parameters).fetchall()
     return [
         {
@@ -251,7 +252,7 @@ def list_tests(database: Path, *, pack_id: str | None = None) -> list[dict[str, 
 def run(database: Path, test_id: int) -> dict[str, Any]:
     """Run a registered adapter and persist the normalized result."""
     initialize(database)
-    with sqlite3.connect(database) as connection:
+    with read_transaction(database) as connection:
         row = connection.execute(
             """
             SELECT adapter, fixture_path, fixture_digest, expected_json, adapter_config_json
@@ -281,7 +282,7 @@ def run(database: Path, test_id: int) -> dict[str, Any]:
     completed_at = _now()
     run_id = f"engine-test-run-{uuid4()}"
     try:
-        with sqlite3.connect(database) as connection:
+        with write_transaction(database) as connection:
             connection.execute(
                 """
                 INSERT INTO sourcebridge_engine_test_run

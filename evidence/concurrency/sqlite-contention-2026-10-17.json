@@ -1,0 +1,27 @@
+{
+  "benchmark": {
+    "command": "PYTHONPATH=. python tools/sqlite_contention_benchmark.py --database <isolated-db> --workers 8 --writes-per-worker 25 --hold-ms 1",
+    "workers": 8,
+    "writes_per_worker": 25,
+    "expected_writes": 200,
+    "successful_writes": 200,
+    "failed_writes": 0,
+    "row_count": 200,
+    "elapsed_ms": 1622.21,
+    "writer_transaction_p95_ms": 12.342,
+    "writer_transaction_p99_ms": 937.17,
+    "writer_transaction_max_ms": 1339.756,
+    "errors": []
+  },
+  "environment": {
+    "python": "3.15.0",
+    "database": "SQLite WAL",
+    "workload": "8 independent processes, 1 ms writer-lease hold, 25 mutations each",
+    "observed_at": "2026-10-17T11:52:31+11:00"
+  },
+  "decision": {
+    "outcome": "retain-sqlite",
+    "reason": "All 200 mutations committed without partial rows or exhausted busy retries; measured p95 and p99 writer transaction times remain below the escalation limits.",
+    "postgresql_escalation_criteria_met": []
+  }
+}

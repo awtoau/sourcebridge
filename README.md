@@ -301,6 +301,17 @@ sourcebridge init-db --database evidence/sourcebridge.db
 sourcebridge import-json --database evidence/sourcebridge.db --root . --tracked-only
 ```
 
+SQLite concurrency, transaction ownership, reader consistency, recovery, the
+repeatable contention benchmark, and objective PostgreSQL escalation criteria
+are documented in
+[`docs/evidence-database-concurrency.md`](docs/evidence-database-concurrency.md).
+An interrupted approved run can be made explicitly terminal with:
+
+```text
+sourcebridge recover-run --database evidence/sourcebridge.db RUN_ID \
+  --reason "worker was interrupted"
+```
+
 ## Engine-test orchestration
 
 Sourcebridge runs language-pack fixtures and upstream suites through a common,

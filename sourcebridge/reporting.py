@@ -5,38 +5,45 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import sqlite3
 from typing import Any, Iterable, Sequence
 
-from sqlalchemy import create_engine, text
+from sourcebridge.database import read_transaction
 
 
 class EvidenceReportError(ValueError):
     """Raised when a diagnostic report cannot be read."""
 
 
-def _engine(database: Path):
-    if not database.is_file():
-        raise EvidenceReportError(f"{database}: evidence database does not exist")
-    return create_engine(f"sqlite+pysqlite:///{database.resolve()}")
+def _rows(
+    database: Path,
+    query: str,
+    parameters: dict[str, object] | tuple[object, ...] = (),
+) -> list[dict[str, Any]]:
+    try:
+        with read_transaction(database) as connection:
+            connection.row_factory = sqlite3.Row
+            rows = connection.execute(query, parameters).fetchall()
+    except FileNotFoundError as error:
+        raise EvidenceReportError(str(error)) from error
+    except (OSError, sqlite3.Error) as error:
+        raise EvidenceReportError(f"{database}: cannot read evidence database: {error}") from error
+    return [dict(zip(row.keys(), row)) for row in rows]
 
 
 def diagnostic_groups(database: Path) -> list[dict[str, Any]]:
-    query = text(
-        """
+    query = """
         SELECT failure_signature, phase, severity, COUNT(*) AS occurrence_count,
                MIN(recorded_at) AS first_recorded_at, MAX(recorded_at) AS last_recorded_at
         FROM sourcebridge_diagnostic_occurrence
         GROUP BY failure_signature, phase, severity
         ORDER BY occurrence_count DESC, failure_signature
         """
-    )
-    with _engine(database).connect() as connection:
-        return [dict(row) for row in connection.execute(query).mappings()]
+    return _rows(database, query)
 
 
 def diagnostic_occurrences(database: Path, signature: str) -> list[dict[str, Any]]:
-    query = text(
-        """
+    query = """
         SELECT
             diagnostic.id,
             diagnostic.phase,
@@ -75,23 +82,23 @@ def diagnostic_occurrences(database: Path, signature: str) -> list[dict[str, Any
         WHERE diagnostic.failure_signature = :signature
         ORDER BY source.source_path, source.source_span, diagnostic.id
         """
-    )
-    with _engine(database).connect() as connection:
-        return [
-            dict(row)
-            for row in connection.execute(query, {"signature": signature}).mappings()
-        ]
+    return _rows(database, query, {"signature": signature})
 
 
 def execution_activity(database: Path) -> list[dict[str, Any]]:
-    query = text(
-        """
-        WITH activity AS (
+    query = """
+        WITH completed_runs AS (
+            SELECT *
+            FROM sourcebridge_execution_run
+            WHERE status IN ('passed', 'failed', 'cancelled')
+              AND completed_at IS NOT NULL
+        ),
+        activity AS (
             SELECT run.id AS run_id, run.action, run.status AS run_status,
                    run.requested_workers, worker.worker_slot, worker.status AS worker_status,
                    worker.units_completed, source.source_path, event.occurred_at,
                    event.kind AS event_kind, event.message, event.metrics_json
-            FROM sourcebridge_execution_run AS run
+            FROM completed_runs AS run
             JOIN sourcebridge_execution_event AS event ON event.run_id = run.id
             LEFT JOIN sourcebridge_execution_worker AS worker ON worker.id = event.worker_id
             LEFT JOIN sourcebridge_source_unit AS source ON source.id = worker.source_unit_id
@@ -102,7 +109,7 @@ def execution_activity(database: Path) -> list[dict[str, Any]]:
                    run.requested_workers, worker.worker_slot, worker.status AS worker_status,
                    worker.units_completed, source.source_path, NULL AS occurred_at,
                    NULL AS event_kind, NULL AS message, NULL AS metrics_json
-            FROM sourcebridge_execution_run AS run
+            FROM completed_runs AS run
             JOIN sourcebridge_execution_worker AS worker ON worker.run_id = run.id
             LEFT JOIN sourcebridge_source_unit AS source ON source.id = worker.source_unit_id
             WHERE NOT EXISTS (
@@ -115,9 +122,43 @@ def execution_activity(database: Path) -> list[dict[str, Any]]:
         FROM activity
         ORDER BY run_id DESC, worker_slot, occurred_at DESC
         """
-    )
-    with _engine(database).connect() as connection:
-        return [dict(row) for row in connection.execute(query).mappings()]
+    try:
+        with read_transaction(database) as connection:
+            connection.row_factory = sqlite3.Row
+            ambiguous = connection.execute(
+                """
+                SELECT id, status, completed_at
+                FROM sourcebridge_execution_run
+                WHERE (status IN ('passed', 'failed', 'cancelled') AND completed_at IS NULL)
+                   OR (status IN ('queued', 'running', 'stopping') AND completed_at IS NOT NULL)
+                   OR (
+                        status IN ('passed', 'failed', 'cancelled')
+                        AND EXISTS (
+                            SELECT 1
+                            FROM sourcebridge_execution_worker AS worker
+                            WHERE worker.run_id = sourcebridge_execution_run.id
+                              AND worker.status IN ('idle', 'running')
+                        )
+                   )
+                ORDER BY id
+                LIMIT 1
+                """
+            ).fetchone()
+            if ambiguous is not None:
+                raise EvidenceReportError(
+                    "execution activity contains an ambiguous run state "
+                    f"({ambiguous['id']}: status={ambiguous['status']}, "
+                    f"completed_at={ambiguous['completed_at']!r}); "
+                    "recover interrupted work before reporting it"
+                )
+            rows = connection.execute(query).fetchall()
+    except EvidenceReportError:
+        raise
+    except FileNotFoundError as error:
+        raise EvidenceReportError(str(error)) from error
+    except (OSError, sqlite3.Error) as error:
+        raise EvidenceReportError(f"{database}: cannot read evidence database: {error}") from error
+    return [dict(zip(row.keys(), row)) for row in rows]
 
 
 PACK_REPORT_SCHEMA_VERSION = 1
