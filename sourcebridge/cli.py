@@ -47,6 +47,7 @@ from sourcebridge.conversion_profiles import (
 from sourcebridge.engine_tests import EngineTestError, import_catalogue, list_tests, register, run
 from sourcebridge.proposal_evaluation import evaluate
 from sourcebridge.pipeline import EvidencePipelineError, import_json, initialize
+from sourcebridge.workers import audit_json
 
 
 def _proposal_parser() -> argparse.ArgumentParser:
@@ -130,6 +131,13 @@ def _model_digest(arguments: list[str]) -> int:
         print(error, file=sys.stderr)
         return 1
     print(model.digest)
+    return 0
+
+
+def _worker_audit(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge audit-workers")
+    parser.parse_args(arguments)
+    print(audit_json())
     return 0
 
 
@@ -553,6 +561,8 @@ def main() -> int:
         return _propose_batch(arguments[1:])
     if arguments and arguments[0] == "model-digest":
         return _model_digest(arguments[1:])
+    if arguments and arguments[0] in {"audit-workers", "worker-audit"}:
+        return _worker_audit(arguments[1:])
     if arguments and arguments[0] == "report-diagnostics":
         return _report_diagnostics(arguments[1:])
     if arguments and arguments[0] == "report-packs":

@@ -7,15 +7,20 @@ import json
 from pathlib import Path
 
 from sourcebridge.concurrency import run_contention_benchmark
+from sourcebridge.workers import DEFAULT_WORKERS
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS)
+    parser.add_argument("--writes-per-worker", type=int, default=25)
+    parser.add_argument("--hold-ms", type=float, default=1.0)
+    return parser
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--database", type=Path, required=True)
-    parser.add_argument("--workers", type=int, default=8)
-    parser.add_argument("--writes-per-worker", type=int, default=25)
-    parser.add_argument("--hold-ms", type=float, default=1.0)
-    args = parser.parse_args()
+    args = build_parser().parse_args()
     result = run_contention_benchmark(
         args.database,
         workers=args.workers,

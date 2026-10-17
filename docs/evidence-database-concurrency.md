@@ -103,6 +103,11 @@ committed row count equals the expected mutation count. Its JSON output should
 be retained with the run evidence when used for an escalation decision. The
 tracked 2026-10-17 run is the baseline for this policy.
 
+The explicit `--workers 8` preserves that historical evidence run. The routine
+default is now 24; run `sourcebridge audit-workers` to verify the Python API
+and CLI defaults. Worker count is an input override, not a license to change
+the rows, errors, or success disposition.
+
 ## PostgreSQL escalation criteria
 
 Do not migrate merely because multiple contributors exist. Escalate only when

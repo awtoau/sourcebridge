@@ -223,6 +223,21 @@ See [the local Ollama operating guide](docs/local-ollama.md) for the selected
 baseline, fixed safety/evidence constraints, and the hardware/workload settings
 users may measure and optimize without weakening proposal validation.
 
+## Worker defaults and audit
+
+Supported parallel work defaults to 24 workers, with an explicit `--workers`
+override where the operation supports it. Run the canonical audit to see the
+complete command inventory, the effective default, and every named exception
+for an operation that is deliberately serial:
+
+```sh
+sourcebridge audit-workers
+```
+
+See [the worker-default policy](docs/worker-defaults.md) for the deterministic
+one-worker/default contract and the evidence required before introducing
+parallelism to an exception.
+
 ## Cross-pack committed-evidence reports
 
 `report-packs` reads committed JSON evidence only below the supplied pack roots.
