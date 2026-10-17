@@ -11,7 +11,7 @@ import subprocess
 from typing import Any, Iterable
 
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 _ROOT = Path(__file__).parents[1]
 _SCHEMA = _ROOT / "core" / "schema" / "evidence.sql"
 
@@ -57,7 +57,8 @@ def initialize(database: Path) -> None:
                     "INSERT INTO sourcebridge_schema_metadata (key, value) VALUES (?, ?)",
                     ("schema_version", str(SCHEMA_VERSION)),
                 )
-            elif existing[0] == "1":
+            version = existing[0] if existing is not None else str(SCHEMA_VERSION)
+            if version == "1":
                 connection.execute(
                     "ALTER TABLE sourcebridge_imported_record "
                     "ADD COLUMN source_repository TEXT NOT NULL DEFAULT 'sourcebridge'"
@@ -67,8 +68,8 @@ def initialize(database: Path) -> None:
                     "WHERE key = 'schema_version'",
                     ("2",),
                 )
-                existing = ("2",)
-            if existing is not None and existing[0] == "2":
+                version = "2"
+            if version == "2":
                 connection.executescript(
                     """
                     CREATE TABLE sourcebridge_engine_test (
@@ -99,11 +100,27 @@ def initialize(database: Path) -> None:
                 connection.execute(
                     "UPDATE sourcebridge_schema_metadata SET value = ? "
                     "WHERE key = 'schema_version'",
+                    ("3",),
+                )
+                version = "3"
+            if version == "3":
+                connection.executescript(
+                    """
+                    ALTER TABLE sourcebridge_engine_test
+                        ADD COLUMN catalogue_path TEXT;
+                    ALTER TABLE sourcebridge_engine_test
+                        ADD COLUMN catalogue_digest TEXT;
+                    """
+                )
+                connection.execute(
+                    "UPDATE sourcebridge_schema_metadata SET value = ? "
+                    "WHERE key = 'schema_version'",
                     (str(SCHEMA_VERSION),),
                 )
-            elif existing is not None and existing[0] != str(SCHEMA_VERSION):
+                version = str(SCHEMA_VERSION)
+            if version != str(SCHEMA_VERSION):
                 raise EvidencePipelineError(
-                    f"{database}: unsupported schema version `{existing[0]}`"
+                    f"{database}: unsupported schema version `{version}`"
                 )
     except (OSError, sqlite3.Error) as error:
         raise EvidencePipelineError(f"{database}: cannot initialize evidence database: {error}") from error
