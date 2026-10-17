@@ -130,6 +130,37 @@ def validate_pack(path: Path) -> None:
             or rule_runtime["timeout_seconds"] <= 0
         ):
             raise ValueError(f"{path}: `rule_runtime.timeout_seconds` must be positive")
+    validation = entrypoints.get("validation")
+    if validation is not None:
+        required = {"id", "command", "source"}
+        if (
+            not isinstance(validation, dict)
+            or set(validation) - required - {"timeout_seconds"}
+            or required - set(validation)
+        ):
+            raise ValueError(
+                f"{path}: `validation` must declare id, command, source, "
+                "and optional timeout_seconds"
+            )
+        validate_identifier(path, "entrypoints.validation.id", validation["id"])
+        if (
+            not isinstance(validation["command"], list)
+            or not validation["command"]
+            or not all(
+                isinstance(value, str) and value for value in validation["command"]
+            )
+        ):
+            raise ValueError(
+                f"{path}: `validation.command` must be a non-empty string list"
+            )
+        if not isinstance(validation["source"], str) or not validation["source"].strip():
+            raise ValueError(f"{path}: `validation.source` must be a non-empty string")
+        if "timeout_seconds" in validation and (
+            not isinstance(validation["timeout_seconds"], int)
+            or isinstance(validation["timeout_seconds"], bool)
+            or validation["timeout_seconds"] <= 0
+        ):
+            raise ValueError(f"{path}: `validation.timeout_seconds` must be positive")
     if set(data) - allowed:
         raise ValueError(f"{path}: contains unsupported fields")
 

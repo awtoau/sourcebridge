@@ -283,6 +283,101 @@ def _create_rule_runtime_objects(connection: sqlite3.Connection) -> None:
     )
 
 
+def _create_validation_objects(connection: sqlite3.Connection) -> None:
+    """Install additive two-sided validation objects for existing databases."""
+
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sourcebridge_validation_case (
+            id TEXT PRIMARY KEY,
+            decision_id TEXT NOT NULL
+                REFERENCES sourcebridge_component_decision(id),
+            profile_revision_id TEXT NOT NULL
+                REFERENCES sourcebridge_project_profile_revision(id),
+            validator TEXT NOT NULL,
+            validator_digest TEXT NOT NULL,
+            status TEXT NOT NULL CHECK (status IN ('passed', 'failed', 'blocked')),
+            source_classification TEXT NOT NULL CHECK (
+                source_classification IN (
+                    'clean',
+                    'defect',
+                    'undefined-or-config-dependent',
+                    'unsupported'
+                )
+            ),
+            request_json TEXT NOT NULL,
+            raw_response TEXT NOT NULL,
+            raw_response_digest TEXT NOT NULL,
+            command_json TEXT NOT NULL,
+            requested_by TEXT NOT NULL,
+            started_at TEXT NOT NULL,
+            completed_at TEXT NOT NULL
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sourcebridge_validation_evidence (
+            id TEXT PRIMARY KEY,
+            validation_case_id TEXT NOT NULL
+                REFERENCES sourcebridge_validation_case(id),
+            validation_result_id TEXT NOT NULL
+                REFERENCES sourcebridge_validation_result(id),
+            side TEXT NOT NULL CHECK (side IN ('source', 'target', 'oracle')),
+            evidence_path TEXT NOT NULL,
+            evidence_digest TEXT NOT NULL,
+            raw_evidence TEXT NOT NULL,
+            details_json TEXT NOT NULL,
+            recorded_at TEXT NOT NULL,
+            UNIQUE (validation_case_id, side)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX IF NOT EXISTS sourcebridge_validation_case_decision_idx
+            ON sourcebridge_validation_case (decision_id, completed_at, id)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX IF NOT EXISTS sourcebridge_validation_evidence_result_idx
+            ON sourcebridge_validation_evidence (validation_result_id)
+        """
+    )
+    for statement in (
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_validation_case_immutable_update
+        BEFORE UPDATE ON sourcebridge_validation_case
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_validation_case is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_validation_case_immutable_delete
+        BEFORE DELETE ON sourcebridge_validation_case
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_validation_case is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_validation_evidence_immutable_update
+        BEFORE UPDATE ON sourcebridge_validation_evidence
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_validation_evidence is append-only');
+        END
+        """,
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_validation_evidence_immutable_delete
+        BEFORE DELETE ON sourcebridge_validation_evidence
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_validation_evidence is append-only');
+        END
+        """,
+    ):
+        connection.execute(statement)
+
+
 def initialize(database: Path) -> None:
     database.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -987,6 +1082,7 @@ def initialize(database: Path) -> None:
                 _run_atomic_migration(connection, ddl, "10")
                 version = "10"
             _create_rule_runtime_objects(connection)
+            _create_validation_objects(connection)
             if version != str(SCHEMA_VERSION):
                 raise EvidencePipelineError(
                     f"{database}: unsupported schema version `{version}`"

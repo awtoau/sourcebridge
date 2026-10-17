@@ -56,6 +56,12 @@ from sourcebridge.proposal_evaluation import evaluate
 from sourcebridge.pipeline import EvidencePipelineError, import_json, initialize
 from sourcebridge.workers import audit_json
 from sourcebridge.rule_runtime import RuleRuntimeError, execute as execute_rule_runtime
+from sourcebridge.validation import (
+    ValidationError,
+    get_validation_case,
+    list_validation_cases,
+    run_validation,
+)
 
 
 def _proposal_parser() -> argparse.ArgumentParser:
@@ -700,6 +706,60 @@ def _rule_runtime(arguments: list[str]) -> int:
     return 0 if result["status"] == "passed" else 1
 
 
+def _validation(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge validation")
+    subparsers = parser.add_subparsers(dest="action", required=True)
+    run_parser = subparsers.add_parser("run")
+    run_parser.add_argument("--database", type=Path, required=True)
+    run_parser.add_argument("--profile-revision", required=True)
+    run_parser.add_argument("--decision", required=True)
+    run_parser.add_argument("--pack-manifest", type=Path, required=True)
+    run_parser.add_argument("--input-json", required=True)
+    run_parser.add_argument("--requested-by", default="sourcebridge")
+    run_parser.add_argument("--toolchain-digest")
+    get_parser = subparsers.add_parser("get")
+    get_parser.add_argument("--database", type=Path, required=True)
+    get_parser.add_argument("case_id")
+    list_parser = subparsers.add_parser("list")
+    list_parser.add_argument("--database", type=Path, required=True)
+    list_parser.add_argument("--decision")
+    list_parser.add_argument("--profile-revision")
+    args = parser.parse_args(arguments)
+    try:
+        if args.action == "run":
+            input_payload = json.loads(args.input_json)
+            result = run_validation(
+                args.database,
+                profile_revision_id=args.profile_revision,
+                decision_id=args.decision,
+                pack_manifest=args.pack_manifest,
+                input_payload=input_payload,
+                requested_by=args.requested_by,
+                toolchain_digest=args.toolchain_digest,
+            )
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0 if result["status"] == "passed" else 1
+        if args.action == "get":
+            result = get_validation_case(args.database, args.case_id)
+        else:
+            result = list_validation_cases(
+                args.database,
+                decision_id=args.decision,
+                profile_revision_id=args.profile_revision,
+            )
+    except (
+        ValidationError,
+        EvidencePipelineError,
+        OSError,
+        sqlite3.Error,
+        json.JSONDecodeError,
+    ) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
 def _legacy_command(arguments: list[str]) -> int:
     sys.argv = [sys.argv[0], *arguments]
     return manifest_cli.main()
@@ -751,6 +811,8 @@ def main() -> int:
         return _dev(arguments[1:])
     if arguments and arguments[0] in {"rule-runtime", "run-rule-runtime"}:
         return _rule_runtime(arguments[1:])
+    if arguments and arguments[0] in {"validation", "validate"}:
+        return _validation(arguments[1:])
     return _legacy_command(arguments)
 
 
