@@ -8,12 +8,9 @@ import json
 from pathlib import Path
 import sqlite3
 import subprocess
-import time
 from typing import Any, Iterable
 
 from sourcebridge.database import (
-    BUSY_RETRY_ATTEMPTS,
-    BUSY_RETRY_BACKOFF_SECONDS,
     write_transaction,
 )
 
@@ -45,27 +42,25 @@ def _run_atomic_script(connection: sqlite3.Connection, script: str) -> None:
     """Run DDL and its metadata update as one explicit SQLite transaction.
 
     ``sqlite3.Connection.executescript`` commits an existing transaction
-    before running its input.  Therefore the script itself must contain both
-    ``BEGIN IMMEDIATE`` and ``COMMIT``; callers must not put a version update
-    after this helper.
+    before running its input.  Splitting the script into complete statements
+    keeps the transaction and the writer lease acquired by ``write_transaction``
+    intact, so schema inspection cannot become stale before the DDL runs.
     """
 
-    for attempt in range(BUSY_RETRY_ATTEMPTS + 1):
-        try:
-            connection.executescript(f"BEGIN IMMEDIATE;\n{script}\nCOMMIT;")
-            return
-        except sqlite3.OperationalError as error:
-            if "locked" not in str(error).lower() and "busy" not in str(error).lower():
-                raise
-            # Do not let a retry commit DDL that ran before a busy failure.
-            # The migration's version update must commit with that DDL.
-            connection.rollback()
-            if attempt >= BUSY_RETRY_ATTEMPTS:
-                raise sqlite3.OperationalError(
-                    "SQLite writer remained busy during schema migration; "
-                    "wait for the active writer to finish and retry"
-                ) from error
-            time.sleep(BUSY_RETRY_BACKOFF_SECONDS * (2**attempt))
+    if not connection.in_transaction:
+        raise sqlite3.ProgrammingError(
+            "SQLite migration scripts require an active writer transaction"
+        )
+    pending: list[str] = []
+    for line in script.splitlines(keepends=True):
+        pending.append(line)
+        statement = "".join(pending)
+        if sqlite3.complete_statement(statement):
+            if statement.strip():
+                connection.execute(statement)
+            pending.clear()
+    if "".join(pending).strip():
+        raise sqlite3.ProgrammingError("incomplete SQLite migration script")
 
 
 def _run_atomic_migration(
