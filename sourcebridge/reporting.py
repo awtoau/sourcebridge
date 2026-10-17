@@ -199,6 +199,28 @@ def changes_since(
     return _changes_since(database, prior_run_id, run_id=run_id)
 
 
+def staleness_report(
+    database: Path,
+    *,
+    profile_revision_id: str | None = None,
+    project_id: str | None = None,
+    profile_name: str | None = None,
+) -> dict[str, Any]:
+    """Return the compact digest comparison for one current profile."""
+
+    from sourcebridge.staleness import staleness_report as _staleness_report
+
+    try:
+        return _staleness_report(
+            database,
+            profile_revision_id=profile_revision_id,
+            project_id=project_id,
+            profile_name=profile_name,
+        )
+    except ValueError as error:
+        raise EvidenceReportError(str(error)) from error
+
+
 def record_run_provenance(*args: Any, **kwargs: Any) -> dict[str, Any]:
     """Append immutable run provenance through the agent queue API."""
 

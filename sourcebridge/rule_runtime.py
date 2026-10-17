@@ -14,6 +14,7 @@ from cli import sourcebridge as manifest_cli
 from sourcebridge.conversion_profiles import resolve_project_profile
 from sourcebridge.database import write_transaction
 from sourcebridge.pipeline import initialize
+from sourcebridge.staleness import link_runtime_evidence
 
 
 class RuleRuntimeError(ValueError):
@@ -390,6 +391,7 @@ def execute(
     *,
     input_payload: Any,
     requested_by: str = "sourcebridge",
+    toolchain_digest: str | None = None,
 ) -> dict[str, Any]:
     """Resolve a project profile, invoke its pack adapter, and record the run."""
 
@@ -400,6 +402,37 @@ def execute(
         profile = resolve_project_profile(database, profile_revision_id)
     except ValueError as error:
         raise RuleRuntimeError(str(error)) from error
+    declared_toolchain = profile.get("toolchain_digest")
+    if toolchain_digest is not None and declared_toolchain != toolchain_digest:
+        raise RuleRuntimeError(
+            f"{profile_revision_id}: toolchain_digest does not match the resolved profile"
+        )
+    effective_toolchain_digest = (
+        toolchain_digest
+        if toolchain_digest is not None
+        else (
+            str(declared_toolchain)
+            if isinstance(declared_toolchain, str) and declared_toolchain.strip()
+            else None
+        )
+    )
+
+    def link_run(run_id: str) -> None:
+        if effective_toolchain_digest is not None:
+            try:
+                link_runtime_evidence(
+                    database,
+                    run_id,
+                    profile_revision_id=profile_revision_id,
+                    toolchain_digest=effective_toolchain_digest,
+                )
+            except ValueError as error:
+                raise RuleRuntimeError(str(error)) from error
+
+    def finish(status: str, result: Mapping[str, Any]) -> None:
+        _finish_run(database, run_id, status=status, result=result)
+        link_run(run_id)
+
     try:
         request, rule_digest, implementation_digest, settings_digest = _resolve_request(
             profile, manifest, contract, root, input_payload
@@ -412,7 +445,17 @@ def execute(
             "settings": profile["setting_overrides"],
             "input": input_payload,
         }
-        rejected_rule_digest = _digest(profile["rule_overrides"])
+        rejected_rule_digest = _digest(
+            [
+                {
+                    "rule_key": rule["rule_key"],
+                    "directive": rule["directive"],
+                    "rule_revision_id": rule["rule_revision_id"],
+                    "selected_rule_digest": rule["selected_rule_digest"],
+                }
+                for rule in profile["rule_overrides"]
+            ]
+        )
         rejected_settings_digest = _digest(profile["setting_overrides"])
         rejected_implementation_digest = _digest(
             [
@@ -421,9 +464,10 @@ def execute(
                 if rule.get("implementation") is not None
             ]
         )
+        rejected_run_id = f"rule-runtime-run-{uuid4()}"
         _insert_run(
             database,
-            run_id=f"rule-runtime-run-{uuid4()}",
+            run_id=rejected_run_id,
             profile_revision_id=profile_revision_id,
             status="rejected",
             adapter_id=str(contract["id"]),
@@ -438,6 +482,7 @@ def execute(
             requested_by=requested_by,
             completed_at=_now(),
         )
+        link_run(rejected_run_id)
         raise
     command_values = {
         "adapter_source": str(root / str(contract["source"])),
@@ -469,7 +514,7 @@ def execute(
     timeout = contract.get("timeout_seconds", 60)
     if not isinstance(timeout, int) or timeout <= 0:
         result = {"status": "rejected", "error": "adapter timeout_seconds must be positive"}
-        _finish_run(database, run_id, status="rejected", result=result)
+        finish("rejected", result)
         raise RuleRuntimeError(result["error"])
     try:
         process = subprocess.run(
@@ -483,7 +528,7 @@ def execute(
         )
     except (OSError, subprocess.TimeoutExpired) as error:
         result = {"status": "failed", "error": str(error)}
-        _finish_run(database, run_id, status="failed", result=result)
+        finish("failed", result)
         raise RuleRuntimeError(f"adapter `{contract['id']}` failed: {error}") from error
     if process.returncode != 0:
         result = {
@@ -492,7 +537,7 @@ def execute(
             "stdout": process.stdout,
             "stderr": process.stderr,
         }
-        _finish_run(database, run_id, status="failed", result=result)
+        finish("failed", result)
         raise RuleRuntimeError(
             f"adapter `{contract['id']}` exited with {process.returncode}: {process.stderr.strip()}"
         )
@@ -500,16 +545,16 @@ def execute(
         result = json.loads(process.stdout)
     except json.JSONDecodeError as error:
         failed = {"status": "failed", "error": f"adapter emitted invalid JSON: {error}"}
-        _finish_run(database, run_id, status="failed", result=failed)
+        finish("failed", failed)
         raise RuleRuntimeError(failed["error"]) from error
     if not isinstance(result, dict) or result.get("status") not in {"passed", "failed", "blocked"}:
         failed = {
             "status": "failed",
             "error": "adapter result must be an object with status passed, failed, or blocked",
         }
-        _finish_run(database, run_id, status="failed", result=failed)
+        finish("failed", failed)
         raise RuleRuntimeError(failed["error"])
-    _finish_run(database, run_id, status=str(result["status"]), result=result)
+    finish(str(result["status"]), result)
     return {
         "run_id": run_id,
         "status": result["status"],
@@ -523,6 +568,7 @@ def execute(
             "rule_digest": rule_digest,
             "implementation_digest": implementation_digest,
             "settings_digest": settings_digest,
+            "toolchain_digest": effective_toolchain_digest,
         },
     }
 

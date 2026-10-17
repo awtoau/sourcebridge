@@ -15,7 +15,7 @@ from sourcebridge.database import (
 )
 
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 _ROOT = Path(__file__).parents[1]
 _SCHEMA = _ROOT / "core" / "schema" / "evidence.sql"
 
@@ -905,9 +905,87 @@ def initialize(database: Path) -> None:
                         );
                     END;
                     """,
-                    str(SCHEMA_VERSION),
+                    "9",
                 )
-                version = str(SCHEMA_VERSION)
+                version = "9"
+            if version == "9":
+                columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(sourcebridge_project_profile_revision)"
+                    )
+                }
+                ddl = ""
+                if "toolchain_digest" not in columns:
+                    ddl += (
+                        "ALTER TABLE sourcebridge_project_profile_revision "
+                        "ADD COLUMN toolchain_digest TEXT;"
+                    )
+                ddl += """
+                    CREATE TABLE IF NOT EXISTS sourcebridge_conversion_provenance (
+                        id TEXT PRIMARY KEY,
+                        execution_run_id TEXT
+                            REFERENCES sourcebridge_execution_run(id),
+                        runtime_run_id TEXT
+                            REFERENCES sourcebridge_rule_runtime_run(id),
+                        generated_artifact_id TEXT
+                            REFERENCES sourcebridge_generated_artifact(id),
+                        validation_result_id TEXT
+                            REFERENCES sourcebridge_validation_result(id),
+                        profile_revision_id TEXT NOT NULL
+                            REFERENCES sourcebridge_project_profile_revision(id),
+                        resolved_profile_digest TEXT NOT NULL,
+                        rule_digest TEXT NOT NULL,
+                        toolchain_digest TEXT NOT NULL,
+                        validation_tier TEXT,
+                        recorded_at TEXT NOT NULL,
+                        CHECK (
+                            (execution_run_id IS NOT NULL)
+                            + (runtime_run_id IS NOT NULL)
+                            + (generated_artifact_id IS NOT NULL)
+                            + (validation_result_id IS NOT NULL) = 1
+                        )
+                    );
+                    CREATE UNIQUE INDEX IF NOT EXISTS
+                        sourcebridge_conversion_provenance_execution_idx
+                        ON sourcebridge_conversion_provenance (execution_run_id)
+                        WHERE execution_run_id IS NOT NULL;
+                    CREATE UNIQUE INDEX IF NOT EXISTS
+                        sourcebridge_conversion_provenance_runtime_idx
+                        ON sourcebridge_conversion_provenance (runtime_run_id)
+                        WHERE runtime_run_id IS NOT NULL;
+                    CREATE UNIQUE INDEX IF NOT EXISTS
+                        sourcebridge_conversion_provenance_artifact_idx
+                        ON sourcebridge_conversion_provenance (generated_artifact_id)
+                        WHERE generated_artifact_id IS NOT NULL;
+                    CREATE UNIQUE INDEX IF NOT EXISTS
+                        sourcebridge_conversion_provenance_validation_idx
+                        ON sourcebridge_conversion_provenance (validation_result_id)
+                        WHERE validation_result_id IS NOT NULL;
+                    CREATE INDEX IF NOT EXISTS
+                        sourcebridge_conversion_provenance_profile_idx
+                        ON sourcebridge_conversion_provenance (profile_revision_id, recorded_at, id);
+                    CREATE TRIGGER IF NOT EXISTS
+                        sourcebridge_conversion_provenance_immutable_update
+                    BEFORE UPDATE ON sourcebridge_conversion_provenance
+                    BEGIN
+                        SELECT RAISE(
+                            ABORT,
+                            'sourcebridge_conversion_provenance is append-only'
+                        );
+                    END;
+                    CREATE TRIGGER IF NOT EXISTS
+                        sourcebridge_conversion_provenance_immutable_delete
+                    BEFORE DELETE ON sourcebridge_conversion_provenance
+                    BEGIN
+                        SELECT RAISE(
+                            ABORT,
+                            'sourcebridge_conversion_provenance is append-only'
+                        );
+                    END;
+                """
+                _run_atomic_migration(connection, ddl, "10")
+                version = "10"
             _create_rule_runtime_objects(connection)
             if version != str(SCHEMA_VERSION):
                 raise EvidencePipelineError(

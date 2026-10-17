@@ -367,7 +367,7 @@ class ConversionProfileTests(unittest.TestCase):
                     """
                 ).fetchone()
 
-        self.assertEqual(version, "9")
+        self.assertEqual(version, "10")
         self.assertIsNotNone(profile_table)
         self.assertIsNotNone(immutability_trigger)
 
@@ -409,7 +409,7 @@ class ConversionProfileTests(unittest.TestCase):
                     )
                 }
 
-        self.assertEqual(version, "9")
+        self.assertEqual(version, "10")
         self.assertIn("resolution_json", columns)
 
     def test_model_authored_rule_requires_human_review_provenance(self) -> None:

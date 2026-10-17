@@ -555,8 +555,9 @@ def _profile_payload(
     *,
     rule_overrides: Sequence[Mapping[str, object]],
     setting_overrides: Sequence[Mapping[str, object]],
+    toolchain_digest: str | None = None,
 ) -> dict[str, object]:
-    return {
+    payload: dict[str, object] = {
         "base_profile": {
             "id": base_profile["id"],
             "digest": _base_profile_digest(base_profile),
@@ -584,6 +585,9 @@ def _profile_payload(
             for setting in sorted(setting_overrides, key=lambda item: str(item["key"]))
         ],
     }
+    if toolchain_digest is not None:
+        payload["toolchain_digest"] = toolchain_digest
+    return payload
 
 
 def create_project_profile_revision(
@@ -593,6 +597,7 @@ def create_project_profile_revision(
     profile_name: str,
     base_profile_id: str,
     required_validation_tier: str,
+    toolchain_digest: str | None = None,
     rationale: str,
     created_by: str,
     rule_overrides: Sequence[Mapping[str, Any]] = (),
@@ -606,6 +611,7 @@ def create_project_profile_revision(
     profile_name = _text(profile_name, "profile_name")
     base_profile_id = _text(base_profile_id, "base_profile_id")
     required_validation_tier = _text(required_validation_tier, "required_validation_tier")
+    toolchain_digest = _optional_text(toolchain_digest, "toolchain_digest")
     rationale = _text(rationale, "rationale")
     created_by = _text(created_by, "created_by")
     workspace_name = _optional_text(workspace_name, "workspace_name")
@@ -702,6 +708,7 @@ def create_project_profile_revision(
             base_profile,
             rule_overrides=normalized_rules,
             setting_overrides=normalized_settings,
+            toolchain_digest=toolchain_digest,
         )
         resolved_digest = _digest(_canonical(resolved_payload))
         profile_revision_id = _id(
@@ -712,10 +719,11 @@ def create_project_profile_revision(
             """
             INSERT INTO sourcebridge_project_profile_revision
                 (id, project_id, profile_name, revision, base_profile_id,
-                 base_profile_digest, required_validation_tier, workspace_name,
+                 base_profile_digest, required_validation_tier, toolchain_digest,
+                 workspace_name,
                  supersedes_profile_revision_id, resolved_digest, rationale,
                  created_by, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 profile_revision_id,
@@ -725,6 +733,7 @@ def create_project_profile_revision(
                 base_profile_id,
                 _base_profile_digest(base_profile),
                 required_validation_tier,
+                toolchain_digest,
                 workspace_name,
                 supersedes_profile_revision_id,
                 resolved_digest,
@@ -799,6 +808,7 @@ def create_project_profile_revision(
         "profile_name": profile_name,
         "revision": revision,
         "resolved_digest": resolved_digest,
+        "toolchain_digest": toolchain_digest,
         "state": "draft",
     }
 
@@ -1019,7 +1029,8 @@ def resolve_project_profile(database: Path, profile_revision_id: str) -> dict[st
         profile = connection.execute(
             """
             SELECT id, project_id, profile_name, revision, base_profile_id,
-                   base_profile_digest, required_validation_tier, workspace_name,
+                   base_profile_digest, required_validation_tier, toolchain_digest,
+                   workspace_name,
                    supersedes_profile_revision_id, resolved_digest, rationale,
                    created_by, created_at
             FROM sourcebridge_project_profile_revision
@@ -1095,6 +1106,7 @@ def resolve_project_profile(database: Path, profile_revision_id: str) -> dict[st
                     base_profile,
                     rule_overrides=normalized_rules,
                     setting_overrides=normalized_settings,
+                    toolchain_digest=profile["toolchain_digest"],
                 )
             )
         )
@@ -1127,6 +1139,7 @@ def resolve_project_profile(database: Path, profile_revision_id: str) -> dict[st
             "digest": profile["base_profile_digest"],
         },
         "required_validation_tier": profile["required_validation_tier"],
+        "toolchain_digest": profile["toolchain_digest"],
         "workspace_name": profile["workspace_name"],
         "supersedes_profile_revision_id": profile["supersedes_profile_revision_id"],
         "resolved_digest": profile["resolved_digest"],

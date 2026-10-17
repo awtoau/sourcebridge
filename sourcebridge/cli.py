@@ -29,6 +29,7 @@ from sourcebridge.reporting import (
     diagnostic_groups,
     diagnostic_occurrences,
     report_packs,
+    staleness_report,
     work_item_evidence,
 )
 from sourcebridge.toolchains import ToolchainReportError, report_toolchains
@@ -234,6 +235,27 @@ def _report_changes(arguments: list[str]) -> int:
             args.database,
             prior_run_id,
             run_id=args.run_id,
+        )
+    except EvidenceReportError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+def _report_staleness(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-staleness")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--profile", dest="profile_revision_id")
+    parser.add_argument("--project", dest="project_id")
+    parser.add_argument("--profile-name")
+    args = parser.parse_args(arguments)
+    try:
+        report = staleness_report(
+            args.database,
+            profile_revision_id=args.profile_revision_id,
+            project_id=args.project_id,
+            profile_name=args.profile_name,
         )
     except EvidenceReportError as error:
         print(error, file=sys.stderr)
@@ -455,6 +477,7 @@ def _profile(arguments: list[str]) -> int:
                 profile_name=manifest.get("profile_name"),
                 base_profile_id=manifest.get("base_profile_id"),
                 required_validation_tier=manifest.get("required_validation_tier"),
+                toolchain_digest=manifest.get("toolchain_digest"),
                 rationale=manifest.get("rationale"),
                 created_by=manifest.get("created_by"),
                 rule_overrides=manifest.get("rule_overrides", []),
@@ -558,6 +581,7 @@ def _rule_runtime(arguments: list[str]) -> int:
     run_parser.add_argument("--pack-manifest", type=Path, required=True)
     run_parser.add_argument("--input-json", required=True)
     run_parser.add_argument("--requested-by", default="sourcebridge")
+    run_parser.add_argument("--toolchain-digest")
     args = parser.parse_args(arguments)
     try:
         input_payload = json.loads(args.input_json)
@@ -567,6 +591,7 @@ def _rule_runtime(arguments: list[str]) -> int:
             args.pack_manifest,
             input_payload=input_payload,
             requested_by=args.requested_by,
+            toolchain_digest=args.toolchain_digest,
         )
     except (RuleRuntimeError, EvidencePipelineError, OSError, sqlite3.Error, json.JSONDecodeError) as error:
         print(error, file=sys.stderr)
@@ -602,6 +627,8 @@ def main() -> int:
         return _report_work_item(arguments[1:])
     if arguments and arguments[0] == "report-changes":
         return _report_changes(arguments[1:])
+    if arguments and arguments[0] == "report-staleness":
+        return _report_staleness(arguments[1:])
     if arguments and arguments[0] == "run-approved":
         return _run_approved(arguments[1:])
     if arguments and arguments[0] == "recover-run":
