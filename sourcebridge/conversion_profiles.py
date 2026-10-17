@@ -154,6 +154,11 @@ def register_rule_revision(
     created_by: str,
     workspace_name: str | None = None,
     supersedes_revision_id: str | None = None,
+    proposal_id: str | None = None,
+    model_name: str | None = None,
+    model_digest: str | None = None,
+    human_reviewed_by: str | None = None,
+    human_reviewed_at: str | None = None,
 ) -> dict[str, object]:
     """Create an immutable draft revision for a generic or project-specific rule."""
 
@@ -162,10 +167,44 @@ def register_rule_revision(
     rationale = _text(rationale, "rationale")
     created_by = _text(created_by, "created_by")
     workspace_name = _optional_text(workspace_name, "workspace_name")
+    proposal_id = _optional_text(proposal_id, "proposal_id")
+    model_name = _optional_text(model_name, "model_name")
+    model_digest = _optional_text(model_digest, "model_digest")
+    human_reviewed_by = _optional_text(human_reviewed_by, "human_reviewed_by")
+    human_reviewed_at = _optional_text(human_reviewed_at, "human_reviewed_at")
+    if model_name is not None and (
+        model_digest is None
+        or proposal_id is None
+        or human_reviewed_by is None
+        or human_reviewed_at is None
+    ):
+        raise ConversionProfileError(
+            "model-authored rule requires proposal provenance and human review"
+        )
     definition_json = _canonical(definition)
     content_digest = _digest(definition_json)
 
     with _connection(database) as connection:
+        if model_name is not None:
+            proposal = connection.execute(
+                """
+                SELECT model_name, model_digest
+                FROM sourcebridge_rule_proposal
+                WHERE id = ?
+                """,
+                (proposal_id,),
+            ).fetchone()
+            if proposal is None:
+                raise ConversionProfileError(
+                    f"{proposal_id}: persisted sourcebridge rule proposal does not exist"
+                )
+            if (
+                proposal["model_name"] != model_name
+                or proposal["model_digest"] != model_digest
+            ):
+                raise ConversionProfileError(
+                    "model-authored rule provenance does not match the persisted proposal"
+                )
         family = connection.execute(
             """
             SELECT id
@@ -228,8 +267,10 @@ def register_rule_revision(
             """
             INSERT INTO sourcebridge_rule_revision
                 (id, family_id, revision, definition_json, content_digest,
-                 workspace_name, supersedes_revision_id, rationale, created_by, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 workspace_name, supersedes_revision_id, rationale, created_by,
+                 proposal_id, model_name, model_digest, human_reviewed_by,
+                 human_reviewed_at, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 revision_id,
@@ -241,6 +282,11 @@ def register_rule_revision(
                 supersedes_revision_id,
                 rationale,
                 created_by,
+                proposal_id,
+                model_name,
+                model_digest,
+                human_reviewed_by,
+                human_reviewed_at,
                 _now(),
             ),
         )
@@ -260,6 +306,9 @@ def register_rule_revision(
         "revision": revision,
         "content_digest": content_digest,
         "state": "draft",
+        "proposal_id": proposal_id,
+        "model_name": model_name,
+        "model_digest": model_digest,
     }
 
 

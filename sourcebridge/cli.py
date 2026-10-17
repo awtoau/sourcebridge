@@ -11,6 +11,8 @@ import sys
 from cli import sourcebridge as manifest_cli
 from sourcebridge.proposals import (
     DEFAULT_MODEL,
+    ProposalEvidenceError,
+    ProposalWorker,
     ProposalValidationError,
     installed_model,
     read_evidence,
@@ -59,17 +61,59 @@ def _propose_rule(arguments: list[str]) -> int:
     try:
         endpoint = validate_local_endpoint(args.endpoint)
         model = resolve_model(endpoint, args.model, args.model_digest)
-        staged = stage_proposal(endpoint, model, read_evidence(args.evidence))
+        staged = stage_proposal(
+            endpoint,
+            model,
+            read_evidence(args.evidence),
+            enforce_evidence=True,
+        )
         path = write_staged_proposal(args.output_dir, staged)
-    except ProposalValidationError as error:
-        path = write_rejected_proposal(args.output_dir, error.record)
+    except (ProposalValidationError, ProposalEvidenceError) as error:
+        try:
+            path = write_rejected_proposal(args.output_dir, error.record)
+        except OSError as write_error:
+            print(write_error, file=sys.stderr)
+            return 1
         print(f"{error}; raw response staged at {path}", file=sys.stderr)
         return 1
-    except ValueError as error:
+    except (OSError, ValueError) as error:
         print(error, file=sys.stderr)
         return 1
     print(path)
     return 0
+
+
+def _propose_batch(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge propose-batch")
+    parser.add_argument("evidence", type=Path, nargs="+")
+    parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--model-digest", required=True)
+    parser.add_argument("--active-rule-digest", required=True)
+    parser.add_argument("--batch-id")
+    parser.add_argument("--session-id")
+    parser.add_argument("--endpoint", default="http://127.0.0.1:11434")
+    parser.add_argument("--output-dir", type=Path, default=Path("evidence/proposals"))
+    parser.add_argument("--database", type=Path)
+    args = parser.parse_args(arguments)
+    try:
+        worker = ProposalWorker(
+            args.endpoint,
+            args.model,
+            args.model_digest,
+            active_rule_digest=args.active_rule_digest,
+            batch_id=args.batch_id,
+            session_id=args.session_id,
+            database=args.database,
+        )
+        report = worker.run_batch(
+            [read_evidence(path) for path in args.evidence],
+            output_directory=args.output_dir,
+        )
+    except (OSError, ValueError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0 if report["summary"]["rejected"] == 0 else 1
 
 
 def _model_digest(arguments: list[str]) -> int:
@@ -446,6 +490,8 @@ def main() -> int:
     arguments = sys.argv[1:]
     if arguments and arguments[0] == "propose-rule":
         return _propose_rule(arguments[1:])
+    if arguments and arguments[0] in {"propose-batch", "propose-rules", "proposal-worker"}:
+        return _propose_batch(arguments[1:])
     if arguments and arguments[0] == "model-digest":
         return _model_digest(arguments[1:])
     if arguments and arguments[0] == "report-diagnostics":
