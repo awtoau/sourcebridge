@@ -168,6 +168,12 @@ linked result's current/stale status, and the full validation tier required
 before certification. It derives this view without rewriting historical
 evidence; see [`docs/staleness.md`](docs/staleness.md).
 
+Per-source-unit decisions can be queried from the same component-decision
+records.  The prototype also provides deterministic annotated-review and
+clean-release output helpers; clean output refuses unresolved boundaries and
+writes a `.provenance.json` sidecar.  See
+[`docs/dispositions-output.md`](docs/dispositions-output.md).
+
 ### Efficient, constrained agent operations
 
 Agent-facing tooling must expose stable structured APIs and compact CLI output

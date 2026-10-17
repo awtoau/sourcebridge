@@ -314,6 +314,47 @@ def link_validation_evidence(
     )
 
 
+def profile_provenance(
+    database: Path,
+    profile_revision_id: str,
+) -> dict[str, Any]:
+    """Return the digest-pinned identity used by reproducible output.
+
+    Unlike :func:`staleness_report`, this is only the selected profile
+    identity.  It is useful to emit provenance for a new artifact before a
+    conversion-provenance link has been recorded for that artifact.
+    """
+
+    profile_revision_id = _text(profile_revision_id, "profile_revision_id")
+    initialize(database)
+    try:
+        resolved = resolve_project_profile(database, profile_revision_id)
+    except ValueError as error:
+        raise StalenessError(str(error)) from error
+    identity = _profile_identity(database, profile_revision_id)
+    return {
+        "profile_revision_id": profile_revision_id,
+        "project_id": resolved["project_id"],
+        "profile_name": resolved["profile_name"],
+        "revision": resolved["revision"],
+        "state": resolved["state"],
+        "base_profile_id": resolved["base_profile"]["id"],
+        "resolved_profile_digest": identity["resolved_profile_digest"],
+        "rule_digest": identity["rule_digest"],
+        "toolchain_digest": identity["toolchain_digest"],
+        "required_validation_tier": identity["validation_tier"],
+        "rules": [
+            {
+                "rule_key": rule["rule_key"],
+                "directive": rule["directive"],
+                "rule_revision_id": rule["rule_revision_id"],
+                "selected_rule_digest": rule["selected_rule_digest"],
+            }
+            for rule in resolved["rule_overrides"]
+        ],
+    }
+
+
 def _target_profile_id(
     connection: sqlite3.Connection,
     *,

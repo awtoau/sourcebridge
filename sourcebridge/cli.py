@@ -45,6 +45,12 @@ from sourcebridge.conversion_profiles import (
     set_project_profile_state,
     set_rule_revision_state,
 )
+from sourcebridge.dispositions import (
+    DispositionError,
+    write_conversion_output,
+    query_source_unit_dispositions,
+    record_source_unit_disposition,
+)
 from sourcebridge.engine_tests import EngineTestError, import_catalogue, list_tests, register, run
 from sourcebridge.proposal_evaluation import evaluate
 from sourcebridge.pipeline import EvidencePipelineError, import_json, initialize
@@ -261,6 +267,100 @@ def _report_staleness(arguments: list[str]) -> int:
         print(error, file=sys.stderr)
         return 1
     print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+def _disposition(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge disposition")
+    subparsers = parser.add_subparsers(dest="action", required=True)
+    record_parser = subparsers.add_parser("record")
+    record_parser.add_argument("--database", type=Path, required=True)
+    profile = record_parser.add_mutually_exclusive_group(required=True)
+    profile.add_argument("--profile")
+    profile.add_argument("--profile-revision")
+    record_parser.add_argument("--source-unit", required=True)
+    record_parser.add_argument(
+        "--disposition",
+        choices=(
+            "direct_translation",
+            "retain_runtime",
+            "runtime_replacement",
+            "native_reimplementation",
+            "external_dependency",
+            "stubbed_boundary",
+            "excluded",
+            "blocked",
+        ),
+        required=True,
+    )
+    record_parser.add_argument("--rationale", required=True)
+    record_parser.add_argument("--decided-by", required=True)
+    record_parser.add_argument("--target-backend")
+    record_parser.add_argument("--runtime-adapter")
+    record_parser.add_argument("--boundary-contract")
+    list_parser = subparsers.add_parser("list")
+    list_parser.add_argument("--database", type=Path, required=True)
+    list_profile = list_parser.add_mutually_exclusive_group(required=True)
+    list_profile.add_argument("--profile")
+    list_profile.add_argument("--profile-revision")
+    list_parser.add_argument("--source-unit")
+    args = parser.parse_args(arguments)
+    try:
+        if args.action == "record":
+            result = record_source_unit_disposition(
+                args.database,
+                profile_id=args.profile,
+                profile_revision_id=args.profile_revision,
+                source_unit_id=args.source_unit,
+                disposition=args.disposition,
+                rationale=args.rationale,
+                decided_by=args.decided_by,
+                target_backend_pack_id=args.target_backend,
+                runtime_adapter_id=args.runtime_adapter,
+                boundary_contract_id=args.boundary_contract,
+            )
+        else:
+            result = query_source_unit_dispositions(
+                args.database,
+                profile_id=args.profile,
+                profile_revision_id=args.profile_revision,
+                source_unit_id=args.source_unit,
+            )
+    except (DispositionError, OSError, sqlite3.Error) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def _render_output(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge render-output")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--profile-revision", required=True)
+    parser.add_argument(
+        "--mode", choices=("annotated-review", "clean-release"), required=True
+    )
+    parser.add_argument(
+        "--manifest",
+        type=Path,
+        required=True,
+        help="JSON array (or object with an artifacts array) of generated text records",
+    )
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    try:
+        manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+        result = write_conversion_output(
+            args.database,
+            profile_revision_id=args.profile_revision,
+            artifacts=manifest,
+            mode=args.mode,
+            output_path=args.output,
+        )
+    except (DispositionError, OSError, sqlite3.Error, json.JSONDecodeError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 
 
@@ -629,6 +729,10 @@ def main() -> int:
         return _report_changes(arguments[1:])
     if arguments and arguments[0] == "report-staleness":
         return _report_staleness(arguments[1:])
+    if arguments and arguments[0] in {"disposition", "dispositions"}:
+        return _disposition(arguments[1:])
+    if arguments and arguments[0] in {"render-output", "output"}:
+        return _render_output(arguments[1:])
     if arguments and arguments[0] == "run-approved":
         return _run_approved(arguments[1:])
     if arguments and arguments[0] == "recover-run":
