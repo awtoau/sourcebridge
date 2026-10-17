@@ -54,6 +54,7 @@ from sourcebridge.conversion_profiles import (
     set_project_profile_state,
     set_rule_revision_state,
 )
+from sourcebridge.conversion_census import ConversionCensusError, report as conversion_census_report
 from sourcebridge.dispositions import (
     DispositionError,
     write_conversion_output,
@@ -180,6 +181,19 @@ def _report_diagnostics(arguments: list[str]) -> int:
         print(error, file=sys.stderr)
         return 1
     print(json.dumps(report, indent=2, sort_keys=True))
+    return 0
+
+
+def _report_conversion_census(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-conversion-census")
+    parser.add_argument("--database", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    try:
+        result = conversion_census_report(args.database)
+    except ConversionCensusError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 
 
@@ -937,6 +951,8 @@ def main() -> int:
         return _worker_audit(arguments[1:])
     if arguments and arguments[0] == "report-diagnostics":
         return _report_diagnostics(arguments[1:])
+    if arguments and arguments[0] in {"report-conversion-census", "conversion-census-report"}:
+        return _report_conversion_census(arguments[1:])
     if arguments and arguments[0] in {"report-diagnostic", "diagnostic-report"}:
         return _report_diagnostic(arguments[1:])
     if arguments and arguments[0] in {"review-diagnostic", "diagnostic-review"}:
