@@ -305,6 +305,23 @@ workbench consumes the same records for click-through review.
 
 See [PLAN.md](PLAN.md) for the staged implementation plan.
 
+## Agent diagnosis queue
+
+Agents can consume the current blocking queue, one item's immutable
+provenance, and changes since a prior run without reading raw logs:
+
+```text
+sourcebridge report-work-queue --database evidence/sourcebridge.db
+sourcebridge report-work-item --database evidence/sourcebridge.db WORK_ITEM_ID
+sourcebridge report-changes --database evidence/sourcebridge.db --since RUN_ID
+```
+
+Reports require a completed run with complete immutable provenance and
+run-scoped evidence links; stale or incomplete evidence fails clearly instead
+of being presented as current. See
+[docs/agent-queue.md](docs/agent-queue.md) for the compact JSON contract,
+ownership/status rules, and append-only history guarantees.
+
 ## SQL evidence pipeline
 
 Operational evidence is stored in SQLite using the portable contract in

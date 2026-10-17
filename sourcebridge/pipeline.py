@@ -15,7 +15,7 @@ from sourcebridge.database import (
 )
 
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 _ROOT = Path(__file__).parents[1]
 _SCHEMA = _ROOT / "core" / "schema" / "evidence.sql"
 
@@ -702,6 +702,134 @@ def initialize(database: Path) -> None:
                 _create_worker_audit_objects(connection)
                 _run_atomic_migration(connection, "", "8")
                 version = "8"
+            if version == "8":
+                _run_atomic_migration(
+                    connection,
+                    """
+                    CREATE TABLE IF NOT EXISTS sourcebridge_execution_run_provenance (
+                        run_id TEXT PRIMARY KEY
+                            REFERENCES sourcebridge_execution_run(id),
+                        source_revision TEXT,
+                        input_digest TEXT NOT NULL,
+                        variant_digest TEXT NOT NULL,
+                        profile_digest TEXT NOT NULL,
+                        rule_digest TEXT NOT NULL,
+                        validation_state TEXT NOT NULL CHECK (
+                            validation_state IN ('complete', 'incomplete', 'stale')
+                        ),
+                        artifact_digest TEXT NOT NULL,
+                        evidence_digest TEXT NOT NULL,
+                        recorded_at TEXT NOT NULL
+                    );
+                    CREATE TABLE IF NOT EXISTS sourcebridge_work_item_state (
+                        id TEXT PRIMARY KEY,
+                        work_item_id TEXT NOT NULL
+                            REFERENCES sourcebridge_work_item(id),
+                        sequence INTEGER NOT NULL CHECK (sequence > 0),
+                        status TEXT NOT NULL CHECK (
+                            status IN (
+                                'open', 'claimed', 'in_progress', 'blocked',
+                                'resolved', 'closed', 'stale'
+                            )
+                        ),
+                        owner TEXT,
+                        ownership_scope TEXT NOT NULL
+                            CHECK (length(trim(ownership_scope)) > 0),
+                        disposition TEXT NOT NULL
+                            CHECK (length(trim(disposition)) > 0),
+                        rationale TEXT NOT NULL,
+                        recorded_at TEXT NOT NULL,
+                        UNIQUE (work_item_id, sequence)
+                    );
+                    CREATE INDEX IF NOT EXISTS sourcebridge_work_item_state_latest_idx
+                        ON sourcebridge_work_item_state (work_item_id, sequence DESC);
+                    CREATE TABLE IF NOT EXISTS sourcebridge_work_item_evidence (
+                        id TEXT PRIMARY KEY,
+                        work_item_id TEXT NOT NULL
+                            REFERENCES sourcebridge_work_item(id),
+                        execution_run_id TEXT NOT NULL
+                            REFERENCES sourcebridge_execution_run(id),
+                        diagnostic_occurrence_id TEXT
+                            REFERENCES sourcebridge_diagnostic_occurrence(id),
+                        validation_result_id TEXT
+                            REFERENCES sourcebridge_validation_result(id),
+                        generated_artifact_id TEXT
+                            REFERENCES sourcebridge_generated_artifact(id),
+                        evidence_fragment_id TEXT
+                            REFERENCES sourcebridge_evidence_fragment(id),
+                        relation TEXT NOT NULL
+                            CHECK (length(trim(relation)) > 0),
+                        recorded_at TEXT NOT NULL,
+                        CHECK (
+                            diagnostic_occurrence_id IS NOT NULL
+                            OR validation_result_id IS NOT NULL
+                            OR generated_artifact_id IS NOT NULL
+                            OR evidence_fragment_id IS NOT NULL
+                        ),
+                        UNIQUE (
+                            work_item_id, execution_run_id,
+                            diagnostic_occurrence_id, validation_result_id,
+                            generated_artifact_id, evidence_fragment_id, relation
+                        )
+                    );
+                    CREATE INDEX IF NOT EXISTS sourcebridge_work_item_evidence_run_idx
+                        ON sourcebridge_work_item_evidence (execution_run_id, work_item_id);
+                    CREATE TRIGGER IF NOT EXISTS
+                        sourcebridge_execution_run_provenance_immutable_update
+                    BEFORE UPDATE ON sourcebridge_execution_run_provenance
+                    BEGIN
+                        SELECT RAISE(
+                            ABORT,
+                            'sourcebridge_execution_run_provenance is append-only'
+                        );
+                    END;
+                    CREATE TRIGGER IF NOT EXISTS
+                        sourcebridge_execution_run_provenance_immutable_delete
+                    BEFORE DELETE ON sourcebridge_execution_run_provenance
+                    BEGIN
+                        SELECT RAISE(
+                            ABORT,
+                            'sourcebridge_execution_run_provenance is append-only'
+                        );
+                    END;
+                    CREATE TRIGGER IF NOT EXISTS sourcebridge_work_item_state_immutable_update
+                    BEFORE UPDATE ON sourcebridge_work_item_state
+                    BEGIN
+                        SELECT RAISE(
+                            ABORT,
+                            'sourcebridge_work_item_state is append-only'
+                        );
+                    END;
+                    CREATE TRIGGER IF NOT EXISTS sourcebridge_work_item_state_immutable_delete
+                    BEFORE DELETE ON sourcebridge_work_item_state
+                    BEGIN
+                        SELECT RAISE(
+                            ABORT,
+                            'sourcebridge_work_item_state is append-only'
+                        );
+                    END;
+                    CREATE TRIGGER IF NOT EXISTS
+                        sourcebridge_work_item_evidence_immutable_update
+                    BEFORE UPDATE ON sourcebridge_work_item_evidence
+                    BEGIN
+                        SELECT RAISE(
+                            ABORT,
+                            'sourcebridge_work_item_evidence is append-only'
+                        );
+                    END;
+                    CREATE TRIGGER IF NOT EXISTS
+                        sourcebridge_work_item_evidence_immutable_delete
+                    BEFORE DELETE ON sourcebridge_work_item_evidence
+                    BEGIN
+                        SELECT RAISE(
+                            ABORT,
+                            'sourcebridge_work_item_evidence is append-only'
+                        );
+                    END;
+                    """,
+                    str(SCHEMA_VERSION),
+                )
+                version = str(SCHEMA_VERSION)
             if version != str(SCHEMA_VERSION):
                 raise EvidencePipelineError(
                     f"{database}: unsupported schema version `{version}`"
