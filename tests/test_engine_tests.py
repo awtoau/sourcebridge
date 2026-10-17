@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import redirect_stdout
+from io import StringIO
 import json
 from pathlib import Path
 import sqlite3
@@ -7,7 +9,8 @@ import sys
 import tempfile
 import unittest
 
-from sourcebridge.engine_tests import EngineTestError, list_tests, register, run
+from sourcebridge.cli import _test
+from sourcebridge.engine_tests import EngineTestError, import_catalogue, list_tests, register, run
 from sourcebridge.pipeline import initialize
 
 
@@ -85,5 +88,127 @@ class EngineTestTests(unittest.TestCase):
                     "AND name = 'sourcebridge_engine_test'"
                 ).fetchone()
 
-        self.assertEqual(version, "3")
+        self.assertEqual(version, "4")
         self.assertIsNotNone(test_table)
+
+    def test_imports_versioned_catalogue_with_relative_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixtures = root / "fixtures"
+            fixtures.mkdir()
+            fixture = fixtures / "case.py"
+            fixture.write_text("print('catalogue')", encoding="utf-8")
+            catalogue = root / "engine-tests.json"
+            catalogue.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "pack_id": "csharp-to-rust",
+                        "adapter": {
+                            "id": "command",
+                            "config": {"argv": [sys.executable, "{fixture_path}"]},
+                        },
+                        "tests": [
+                            {
+                                "id": 434,
+                                "name": "catalogue-fixture",
+                                "fixture": "fixtures/case.py",
+                                "expected": {"exit_code": 0, "stdout": "catalogue\n"},
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            database = root / "evidence.db"
+
+            first = import_catalogue(database, catalogue)
+            result = run(database, 434)
+            second = import_catalogue(database, catalogue)
+            tests = list_tests(database)
+
+        self.assertEqual((first["created"], first["updated"]), (1, 0))
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual((second["created"], second["updated"]), (0, 1))
+        self.assertEqual(tests[0]["catalogue_path"], "engine-tests.json")
+
+    def test_catalogue_rejects_fixture_outside_its_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            catalogue = root / "engine-tests.json"
+            catalogue.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "pack_id": "csharp-to-rust",
+                        "adapter": {"id": "command", "config": {"argv": ["true"]}},
+                        "tests": [
+                            {
+                                "id": 1,
+                                "name": "escape",
+                                "fixture": "../outside.cs",
+                                "expected": {"exit_code": 0},
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(EngineTestError, "must stay below"):
+                import_catalogue(root / "evidence.db", catalogue)
+
+    def test_cli_imports_catalogue_declared_by_pack_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = root / "case.py"
+            fixture.write_text("print('pack')", encoding="utf-8")
+            catalogue = root / "engine-tests.json"
+            catalogue.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "pack_id": "sourcebridge-csharp",
+                        "adapter": {
+                            "id": "command",
+                            "config": {"argv": [sys.executable, "{fixture_path}"]},
+                        },
+                        "tests": [
+                            {
+                                "id": 1,
+                                "name": "manifest-catalogue",
+                                "fixture": "case.py",
+                                "expected": {"exit_code": 0, "stdout": "pack\n"},
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            manifest = root / "sourcebridge-csharp.pack.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "id": "sourcebridge-csharp",
+                        "kind": "frontend",
+                        "version": "0.1.0",
+                        "provides": {
+                            "source_languages": ["csharp"],
+                            "target_environments": [],
+                        },
+                        "entrypoints": {"engine_tests": "engine-tests.json"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            database = root / "evidence.db"
+
+            with redirect_stdout(StringIO()):
+                exit_code = _test(
+                    ["import-pack", "--database", str(database), str(manifest)]
+                )
+            result = run(database, 1)
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(result["status"], "passed")

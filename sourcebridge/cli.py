@@ -26,7 +26,7 @@ from sourcebridge.reporting import (
     report_packs,
 )
 from sourcebridge.execution import run_approved
-from sourcebridge.engine_tests import EngineTestError, list_tests, register, run
+from sourcebridge.engine_tests import EngineTestError, import_catalogue, list_tests, register, run
 from sourcebridge.proposal_evaluation import evaluate
 from sourcebridge.pipeline import EvidencePipelineError, import_json, initialize
 
@@ -175,6 +175,12 @@ def _test(arguments: list[str]) -> int:
     register_parser.add_argument("--expected", required=True)
     register_parser.add_argument("--adapter-config", required=True)
     register_parser.add_argument("--id", type=int)
+    import_parser = subparsers.add_parser("import")
+    import_parser.add_argument("--database", type=Path, required=True)
+    import_parser.add_argument("catalogue", type=Path)
+    import_pack_parser = subparsers.add_parser("import-pack")
+    import_pack_parser.add_argument("--database", type=Path, required=True)
+    import_pack_parser.add_argument("pack_manifest", type=Path)
     list_parser = subparsers.add_parser("list")
     list_parser.add_argument("--database", type=Path, required=True)
     list_parser.add_argument("--pack")
@@ -196,6 +202,25 @@ def _test(arguments: list[str]) -> int:
                     test_id=args.id,
                 )
             )
+        elif args.action == "import":
+            print(json.dumps(import_catalogue(args.database, args.catalogue), indent=2, sort_keys=True))
+        elif args.action == "import-pack":
+            manifest_cli.validate_pack(args.pack_manifest)
+            manifest = manifest_cli.read_json(args.pack_manifest)
+            entrypoints = manifest.get("entrypoints", {})
+            catalogue_text = entrypoints.get("engine_tests") if isinstance(entrypoints, dict) else None
+            if not isinstance(catalogue_text, str):
+                raise EngineTestError(
+                    f"{args.pack_manifest}: pack must declare an `engine_tests` entrypoint"
+                )
+            result = import_catalogue(
+                args.database, (args.pack_manifest.parent / catalogue_text).resolve()
+            )
+            if result["pack_id"] != manifest["id"]:
+                raise EngineTestError(
+                    f"{args.pack_manifest}: test catalogue pack ID does not match manifest"
+                )
+            print(json.dumps(result, indent=2, sort_keys=True))
         elif args.action == "list":
             print(json.dumps(list_tests(args.database, pack_id=args.pack), indent=2, sort_keys=True))
         else:

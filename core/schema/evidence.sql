@@ -254,6 +254,8 @@ CREATE TABLE sourcebridge_engine_test (
     fixture_digest TEXT NOT NULL,
     expected_json TEXT NOT NULL,
     adapter_config_json TEXT NOT NULL,
+    catalogue_path TEXT,
+    catalogue_digest TEXT,
     created_at TEXT NOT NULL,
     UNIQUE (pack_id, name)
 );

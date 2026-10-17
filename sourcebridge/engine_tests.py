@@ -104,11 +104,125 @@ def register(
         raise EngineTestError(f"cannot register engine test: {error}") from error
 
 
+def import_catalogue(database: Path, catalogue: Path) -> dict[str, Any]:
+    """Import a versioned pack catalogue into the operational test registry."""
+    try:
+        raw = catalogue.read_bytes()
+    except OSError as error:
+        raise EngineTestError(f"{catalogue}: cannot read test catalogue: {error}") from error
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise EngineTestError(f"{catalogue}: invalid test catalogue JSON: {error}") from error
+    if not isinstance(payload, dict):
+        raise EngineTestError(f"{catalogue}: test catalogue must be a JSON object")
+    required = {"schema_version", "pack_id", "adapter", "tests"}
+    unknown = set(payload) - required
+    if required - set(payload) or unknown:
+        raise EngineTestError(f"{catalogue}: test catalogue has missing or unsupported fields")
+    if payload["schema_version"] != 1 or not isinstance(payload["pack_id"], str):
+        raise EngineTestError(f"{catalogue}: unsupported test catalogue schema or pack ID")
+    adapter = payload["adapter"]
+    if not isinstance(adapter, dict) or set(adapter) != {"id", "config"}:
+        raise EngineTestError(f"{catalogue}: adapter must contain only `id` and `config`")
+    if not isinstance(adapter["id"], str) or not isinstance(adapter["config"], dict):
+        raise EngineTestError(f"{catalogue}: adapter ID and config must be a string and object")
+    cases = payload["tests"]
+    if not isinstance(cases, list) or not cases:
+        raise EngineTestError(f"{catalogue}: tests must be a non-empty list")
+
+    root = catalogue.parent.resolve()
+    catalogue_digest = hashlib.sha256(raw).hexdigest()
+    seen_ids: set[int] = set()
+    records: list[tuple[int, str, Path, dict[str, Any]]] = []
+    for index, case in enumerate(cases):
+        if not isinstance(case, dict) or set(case) != {"id", "name", "fixture", "expected"}:
+            raise EngineTestError(f"{catalogue}: test {index} has missing or unsupported fields")
+        test_id = case["id"]
+        if not isinstance(test_id, int) or test_id <= 0 or test_id in seen_ids:
+            raise EngineTestError(f"{catalogue}: test {index} has an invalid or duplicate numeric ID")
+        if not isinstance(case["name"], str) or not isinstance(case["fixture"], str):
+            raise EngineTestError(f"{catalogue}: test {index} name and fixture must be strings")
+        if not isinstance(case["expected"], dict):
+            raise EngineTestError(f"{catalogue}: test {index} expected result must be an object")
+        relative = Path(case["fixture"])
+        if relative.is_absolute() or ".." in relative.parts:
+            raise EngineTestError(f"{catalogue}: test {index} fixture must stay below the catalogue")
+        fixture = (root / relative).resolve()
+        try:
+            fixture.relative_to(root)
+        except ValueError as error:
+            raise EngineTestError(f"{catalogue}: test {index} fixture escapes the catalogue") from error
+        _digest(fixture)
+        seen_ids.add(test_id)
+        records.append((test_id, case["name"], fixture, case["expected"]))
+
+    initialize(database)
+    created = updated = 0
+    try:
+        with sqlite3.connect(database) as connection:
+            for test_id, name, fixture, expected in records:
+                current = connection.execute(
+                    "SELECT pack_id FROM sourcebridge_engine_test WHERE id = ?",
+                    (test_id,),
+                ).fetchone()
+                if current is not None and current[0] != payload["pack_id"]:
+                    raise EngineTestError(
+                        f"{catalogue}: test ID `{test_id}` already belongs to pack `{current[0]}`"
+                    )
+                values = (
+                    payload["pack_id"],
+                    adapter["id"],
+                    name,
+                    str(fixture),
+                    _digest(fixture),
+                    json.dumps(expected, sort_keys=True),
+                    json.dumps(adapter["config"], sort_keys=True),
+                    catalogue.name,
+                    catalogue_digest,
+                    _now(),
+                    test_id,
+                )
+                if current is None:
+                    connection.execute(
+                        """
+                        INSERT INTO sourcebridge_engine_test
+                            (pack_id, adapter, name, fixture_path, fixture_digest,
+                             expected_json, adapter_config_json, catalogue_path,
+                             catalogue_digest, created_at, id)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        values,
+                    )
+                    created += 1
+                else:
+                    connection.execute(
+                        """
+                        UPDATE sourcebridge_engine_test
+                        SET pack_id = ?, adapter = ?, name = ?, fixture_path = ?,
+                            fixture_digest = ?, expected_json = ?, adapter_config_json = ?,
+                            catalogue_path = ?, catalogue_digest = ?, created_at = ?
+                        WHERE id = ?
+                        """,
+                        values,
+                    )
+                    updated += 1
+    except sqlite3.Error as error:
+        raise EngineTestError(f"{catalogue}: cannot import test catalogue: {error}") from error
+    return {
+        "pack_id": payload["pack_id"],
+        "catalogue_digest": catalogue_digest,
+        "created": created,
+        "updated": updated,
+    }
+
+
 def list_tests(database: Path, *, pack_id: str | None = None) -> list[dict[str, Any]]:
     """List discoverable test metadata without running adapters."""
     initialize(database)
     query = """
-        SELECT id, pack_id, adapter, name, fixture_path, fixture_digest, expected_json
+        SELECT id, pack_id, adapter, name, fixture_path, fixture_digest, expected_json,
+               catalogue_path, catalogue_digest
         FROM sourcebridge_engine_test
     """
     parameters: tuple[str, ...] = ()
@@ -127,6 +241,8 @@ def list_tests(database: Path, *, pack_id: str | None = None) -> list[dict[str, 
             "fixture_path": row[4],
             "fixture_digest": row[5],
             "expected": json.loads(row[6]),
+            "catalogue_path": row[7],
+            "catalogue_digest": row[8],
         }
         for row in rows
     ]

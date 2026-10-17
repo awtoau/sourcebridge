@@ -258,16 +258,18 @@ database-backed registry. The fixture source remains a normal versioned file;
 SQL stores its stable numeric ID, expected structured result, hash, adapter
 configuration, and every execution result.
 
-Register and run a C#→Rust fixture with the built-in command adapter:
+Packs declare a version-controlled test catalogue. Import it before running:
 
 ```text
-sourcebridge test register --database evidence/sourcebridge.db --id 434 \
-  --pack csharp-to-rust --adapter command --name composite-format \
-  --fixture packs/csharp-to-rust/engine-tests/00434/input.cs \
-  --expected '{"exit_code": 0}' \
-  --adapter-config '{"argv":["python3","run_case.py","{fixture_path}"]}'
+sourcebridge test import-pack --database evidence/sourcebridge.db \
+  packs/sourcebridge-csharp.pack.json
 sourcebridge test run --database evidence/sourcebridge.db 434
 ```
+
+The catalogue stores pack-relative fixture paths, one pack-wide adapter
+configuration, and each test's numeric ID, name, and expected structured
+result. Import records the catalogue and fixture SHA-256 digests so its
+operational SQL rows can be rebuilt on another checkout.
 
 The command adapter does not invoke a shell. Pack adapters may wrap existing
 C#, C, Delphi, Python, or Rust compiler suites by supplying their executable
