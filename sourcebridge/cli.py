@@ -26,6 +26,7 @@ from sourcebridge.reporting import (
     diagnostic_occurrences,
     report_packs,
 )
+from sourcebridge.toolchains import ToolchainReportError, report_toolchains
 from sourcebridge.execution import recover_interrupted, run_approved
 from sourcebridge.conversion_profiles import (
     ConversionProfileError,
@@ -110,6 +111,19 @@ def _report_packs(arguments: list[str]) -> int:
     try:
         report = report_packs(args.roots)
     except (EvidenceReportError, OSError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0
+
+
+def _report_toolchains(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-toolchains")
+    parser.add_argument("roots", metavar="ROOT", type=Path, nargs="+")
+    args = parser.parse_args(arguments)
+    try:
+        report = report_toolchains(args.roots)
+    except (ToolchainReportError, OSError) as error:
         print(error, file=sys.stderr)
         return 1
     print(json.dumps(report, indent=2, sort_keys=True))
@@ -438,6 +452,8 @@ def main() -> int:
         return _report_diagnostics(arguments[1:])
     if arguments and arguments[0] == "report-packs":
         return _report_packs(arguments[1:])
+    if arguments and arguments[0] in {"report-toolchains", "toolchain-report"}:
+        return _report_toolchains(arguments[1:])
     if arguments and arguments[0] == "run-approved":
         return _run_approved(arguments[1:])
     if arguments and arguments[0] == "recover-run":

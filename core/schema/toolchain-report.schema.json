@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/awtoau/sourcebridge/schemas/toolchain-report.schema.json",
+  "title": "Sourcebridge toolchain currency report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "report_type",
+    "pack",
+    "observations",
+    "conversion_capability",
+    "upgrade_proposals"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "report_type": {
+      "const": "sourcebridge.toolchain_currency"
+    },
+    "pack": {
+      "type": "object",
+      "required": ["id", "kind"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "kind": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "observations": {
+      "type": "object",
+      "required": ["installed", "declared", "resolved", "latest"],
+      "properties": {
+        "installed": {"type": "object"},
+        "declared": {"type": "object"},
+        "resolved": {"type": "object"},
+        "latest": {"type": "object"}
+      },
+      "additionalProperties": true
+    },
+    "conversion_capability": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {"const": "not_claimed"}
+      },
+      "additionalProperties": true
+    },
+    "upgrade_proposals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "component",
+          "from",
+          "to",
+          "compatibility_evidence",
+          "validation",
+          "decision"
+        ],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "component": {"type": "string", "minLength": 1},
+          "from": {"type": "string", "minLength": 1},
+          "to": {"type": "string", "minLength": 1},
+          "compatibility_evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "object", "minProperties": 1}
+          },
+          "validation": {
+            "type": "object",
+            "required": ["command", "result"],
+            "properties": {
+              "command": {"type": "string", "minLength": 1},
+              "result": {"type": "string", "minLength": 1}
+            },
+            "additionalProperties": true
+          },
+          "decision": {
+            "type": "object",
+            "required": ["status", "evidence"],
+            "properties": {
+              "status": {"enum": ["adopt", "defer"]},
+              "evidence": {"type": "string", "minLength": 1}
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
