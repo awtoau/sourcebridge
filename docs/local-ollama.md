@@ -103,6 +103,19 @@ later, human-triggered rule registration must provide proposal provenance and
 human review; the evidence database trigger rejects model-authored rule rows
 without that review.
 
+## Token accounting
+
+Every durable Ollama proposal request records the exact counters supplied by
+Ollama: `prompt_tokens` from `prompt_eval_count` and `generated_tokens` from
+`eval_count`. Sourcebridge does not estimate either value from source text.
+
+Host-agent usage, including Copilot orchestration, is imported separately as
+an `agent_usage` JSON record. It must contain at least one host-supplied token
+counter and link to a proposal worker request, rule revision, or work item.
+Missing host counters remain null; they are never inferred. This keeps local
+model cost, host-agent cost, and their scope links queryable without treating
+either as rule-validation evidence.
+
 ## Prompt optimization is part of conversion
 
 Prompt templates are versioned conversion inputs, not operator preferences.

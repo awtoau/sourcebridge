@@ -528,6 +528,60 @@ CREATE TABLE sourcebridge_ollama_test_inventory (
 CREATE INDEX sourcebridge_ollama_test_inventory_test_idx
     ON sourcebridge_ollama_test_inventory (pack_id, test_id, recorded_at);
 
+-- Agent usage is imported only from host-provided counters. It never derives
+-- token values from prompts, text length, or model estimates.
+CREATE TABLE sourcebridge_agent_usage (
+    id TEXT PRIMARY KEY,
+    imported_record_id TEXT NOT NULL UNIQUE
+        REFERENCES sourcebridge_imported_record(id),
+    provider TEXT NOT NULL,
+    session_id TEXT,
+    model_name TEXT,
+    model_digest TEXT,
+    input_tokens INTEGER CHECK (input_tokens IS NULL OR input_tokens >= 0),
+    output_tokens INTEGER CHECK (output_tokens IS NULL OR output_tokens >= 0),
+    cache_read_tokens INTEGER CHECK (
+        cache_read_tokens IS NULL OR cache_read_tokens >= 0
+    ),
+    cache_write_tokens INTEGER CHECK (
+        cache_write_tokens IS NULL OR cache_write_tokens >= 0
+    ),
+    duration_ms REAL CHECK (duration_ms IS NULL OR duration_ms >= 0),
+    local_only INTEGER NOT NULL CHECK (local_only IN (0, 1)),
+    proposal_worker_request_id TEXT
+        REFERENCES sourcebridge_proposal_worker_request(id),
+    rule_revision_id TEXT REFERENCES sourcebridge_rule_revision(id),
+    work_item_id TEXT REFERENCES sourcebridge_work_item(id),
+    recorded_at TEXT NOT NULL,
+    CHECK (
+        input_tokens IS NOT NULL
+        OR output_tokens IS NOT NULL
+        OR cache_read_tokens IS NOT NULL
+        OR cache_write_tokens IS NOT NULL
+    ),
+    CHECK (
+        proposal_worker_request_id IS NOT NULL
+        OR rule_revision_id IS NOT NULL
+        OR work_item_id IS NOT NULL
+    )
+);
+
+CREATE INDEX sourcebridge_agent_usage_scope_idx
+    ON sourcebridge_agent_usage
+        (proposal_worker_request_id, rule_revision_id, work_item_id, recorded_at);
+
+CREATE TRIGGER sourcebridge_agent_usage_immutable_update
+BEFORE UPDATE ON sourcebridge_agent_usage
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_agent_usage is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_agent_usage_immutable_delete
+BEFORE DELETE ON sourcebridge_agent_usage
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_agent_usage is append-only');
+END;
+
 -- Rule definitions are immutable. Lifecycle changes are recorded as append-only
 -- state events so historical conversions always retain the rule content and
 -- state that they used.
@@ -801,6 +855,7 @@ CREATE TABLE sourcebridge_proposal_worker_request (
     elapsed_ms REAL NOT NULL CHECK (elapsed_ms >= 0),
     load_duration_ms REAL NOT NULL CHECK (load_duration_ms >= 0),
     generation_ms REAL NOT NULL CHECK (generation_ms >= 0),
+    prompt_tokens INTEGER CHECK (prompt_tokens IS NULL OR prompt_tokens >= 0),
     generated_tokens INTEGER,
     rejection_reasons_json TEXT NOT NULL,
     proposal_json TEXT NOT NULL,

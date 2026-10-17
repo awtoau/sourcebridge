@@ -229,7 +229,11 @@ class ProposalTests(unittest.TestCase):
             initialize(database)
             with patch(
                 "sourcebridge.proposals._request_json",
-                return_value={"message": {"content": __import__("json").dumps(proposal)}},
+                return_value={
+                    "message": {"content": __import__("json").dumps(proposal)},
+                    "prompt_eval_count": 17,
+                    "eval_count": 9,
+                },
             ):
                 report = ProposalWorker(
                     "http://127.0.0.1:11434",
@@ -248,14 +252,16 @@ class ProposalTests(unittest.TestCase):
                     "WHERE session_id = 'session-audit' ORDER BY sequence"
                 ).fetchall()
                 request = connection.execute(
-                    "SELECT status, raw_response_json FROM sourcebridge_proposal_worker_request "
+                    "SELECT status, prompt_tokens, generated_tokens, raw_response_json "
+                    "FROM sourcebridge_proposal_worker_request "
                     "WHERE session_id = 'session-audit'"
                 ).fetchone()
         self.assertEqual(report["summary"]["accepted"], 1)
         self.assertEqual(session, ("running", "rules-v1"))
         self.assertEqual([event[0] for event in events], ["running", "completed"])
         self.assertEqual(request[0], "staged")
-        self.assertIn("message", request[1])
+        self.assertEqual(request[1:3], (17, 9))
+        self.assertIn("message", request[3])
 
     def test_evidence_gate_rejects_mismatched_executable_fields(self) -> None:
         evidence = {

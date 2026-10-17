@@ -15,7 +15,7 @@ from sourcebridge.database import (
 )
 
 
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 14
 _ROOT = Path(__file__).parents[1]
 _SCHEMA = _ROOT / "core" / "schema" / "evidence.sql"
 
@@ -110,6 +110,7 @@ def _create_worker_audit_objects(connection: sqlite3.Connection) -> None:
             elapsed_ms REAL NOT NULL CHECK (elapsed_ms >= 0),
             load_duration_ms REAL NOT NULL CHECK (load_duration_ms >= 0),
             generation_ms REAL NOT NULL CHECK (generation_ms >= 0),
+            prompt_tokens INTEGER CHECK (prompt_tokens IS NULL OR prompt_tokens >= 0),
             generated_tokens INTEGER,
             rejection_reasons_json TEXT NOT NULL,
             proposal_json TEXT NOT NULL,
@@ -1154,6 +1155,85 @@ def initialize(database: Path) -> None:
                     )
                 _run_atomic_migration(connection, ddl, "12")
                 version = "12"
+            if version == "12":
+                columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(sourcebridge_proposal_worker_request)"
+                    )
+                }
+                ddl = ""
+                if "prompt_tokens" not in columns:
+                    ddl = (
+                        "ALTER TABLE sourcebridge_proposal_worker_request "
+                        "ADD COLUMN prompt_tokens INTEGER "
+                        "CHECK (prompt_tokens IS NULL OR prompt_tokens >= 0);"
+                    )
+                _run_atomic_migration(connection, ddl, "13")
+                version = "13"
+            if version == "13":
+                _run_atomic_migration(
+                    connection,
+                    """
+                    CREATE TABLE IF NOT EXISTS sourcebridge_agent_usage (
+                        id TEXT PRIMARY KEY,
+                        imported_record_id TEXT NOT NULL UNIQUE
+                            REFERENCES sourcebridge_imported_record(id),
+                        provider TEXT NOT NULL,
+                        session_id TEXT,
+                        model_name TEXT,
+                        model_digest TEXT,
+                        input_tokens INTEGER CHECK (
+                            input_tokens IS NULL OR input_tokens >= 0
+                        ),
+                        output_tokens INTEGER CHECK (
+                            output_tokens IS NULL OR output_tokens >= 0
+                        ),
+                        cache_read_tokens INTEGER CHECK (
+                            cache_read_tokens IS NULL OR cache_read_tokens >= 0
+                        ),
+                        cache_write_tokens INTEGER CHECK (
+                            cache_write_tokens IS NULL OR cache_write_tokens >= 0
+                        ),
+                        duration_ms REAL CHECK (
+                            duration_ms IS NULL OR duration_ms >= 0
+                        ),
+                        local_only INTEGER NOT NULL CHECK (local_only IN (0, 1)),
+                        proposal_worker_request_id TEXT
+                            REFERENCES sourcebridge_proposal_worker_request(id),
+                        rule_revision_id TEXT
+                            REFERENCES sourcebridge_rule_revision(id),
+                        work_item_id TEXT REFERENCES sourcebridge_work_item(id),
+                        recorded_at TEXT NOT NULL,
+                        CHECK (
+                            input_tokens IS NOT NULL
+                            OR output_tokens IS NOT NULL
+                            OR cache_read_tokens IS NOT NULL
+                            OR cache_write_tokens IS NOT NULL
+                        ),
+                        CHECK (
+                            proposal_worker_request_id IS NOT NULL
+                            OR rule_revision_id IS NOT NULL
+                            OR work_item_id IS NOT NULL
+                        )
+                    );
+                    CREATE INDEX IF NOT EXISTS sourcebridge_agent_usage_scope_idx
+                        ON sourcebridge_agent_usage
+                            (proposal_worker_request_id, rule_revision_id, work_item_id, recorded_at);
+                    CREATE TRIGGER IF NOT EXISTS sourcebridge_agent_usage_immutable_update
+                    BEFORE UPDATE ON sourcebridge_agent_usage
+                    BEGIN
+                        SELECT RAISE(ABORT, 'sourcebridge_agent_usage is append-only');
+                    END;
+                    CREATE TRIGGER IF NOT EXISTS sourcebridge_agent_usage_immutable_delete
+                    BEFORE DELETE ON sourcebridge_agent_usage
+                    BEGIN
+                        SELECT RAISE(ABORT, 'sourcebridge_agent_usage is append-only');
+                    END;
+                    """,
+                    "14",
+                )
+                version = "14"
             _create_diagnostic_review_objects(connection)
             _create_rule_runtime_objects(connection)
             _create_validation_objects(connection)
@@ -1218,6 +1298,9 @@ def import_json(
             elif kind == "ollama_test_inventory":
                 _import_ollama_test_inventory(connection, record_id, record)
                 projected += 1
+            elif kind == "agent_usage":
+                _import_agent_usage(connection, record_id, record)
+                projected += 1
     return {
         "repository": repository,
         "imported": imported,
@@ -1279,6 +1362,8 @@ def _kind(relative: str, record: Any) -> str:
         return "rule_proposal"
     if isinstance(record, dict) and record.get("kind") == "ollama_test_inventory":
         return "ollama_test_inventory"
+    if isinstance(record, dict) and record.get("kind") == "agent_usage":
+        return "agent_usage"
     if isinstance(record, dict) and {"source_facts", "observed_behavior"} <= set(record):
         return "fact_grounded_evidence"
     if relative.startswith("examples/"):
@@ -1462,6 +1547,110 @@ def _import_ollama_test_inventory(
             json.dumps(record["inventory"], sort_keys=True, separators=(",", ":")),
             json.dumps(record["statuses"], sort_keys=True, separators=(",", ":")),
             record["status_source"],
+            _now(),
+        ),
+    )
+
+
+def _import_agent_usage(
+    connection: sqlite3.Connection, record_id: str, record: dict[str, Any]
+) -> None:
+    required = {
+        "kind",
+        "provider",
+        "session_id",
+        "model_name",
+        "model_digest",
+        "input_tokens",
+        "output_tokens",
+        "cache_read_tokens",
+        "cache_write_tokens",
+        "duration_ms",
+        "local_only",
+        "proposal_worker_request_id",
+        "rule_revision_id",
+        "work_item_id",
+    }
+    if set(record) != required or record["kind"] != "agent_usage":
+        raise EvidencePipelineError(
+            "Agent usage must contain exactly the supported host usage fields"
+        )
+    if not isinstance(record["provider"], str) or not record["provider"]:
+        raise EvidencePipelineError("Agent usage requires a non-empty provider")
+    for field in ("session_id", "model_name", "model_digest"):
+        if record[field] is not None and (
+            not isinstance(record[field], str) or not record[field]
+        ):
+            raise EvidencePipelineError(f"Agent usage `{field}` must be a non-empty string or null")
+    token_fields = (
+        "input_tokens",
+        "output_tokens",
+        "cache_read_tokens",
+        "cache_write_tokens",
+    )
+    for field in token_fields:
+        value = record[field]
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, int) or value < 0
+        ):
+            raise EvidencePipelineError(
+                f"Agent usage `{field}` must be a non-negative integer or null"
+            )
+    if not any(record[field] is not None for field in token_fields):
+        raise EvidencePipelineError("Agent usage requires at least one known token counter")
+    duration = record["duration_ms"]
+    if duration is not None and (
+        isinstance(duration, bool) or not isinstance(duration, (int, float)) or duration < 0
+    ):
+        raise EvidencePipelineError(
+            "Agent usage `duration_ms` must be a non-negative number or null"
+        )
+    if not isinstance(record["local_only"], bool):
+        raise EvidencePipelineError("Agent usage `local_only` must be a boolean")
+    scope_fields = (
+        "proposal_worker_request_id",
+        "rule_revision_id",
+        "work_item_id",
+    )
+    for field in scope_fields:
+        value = record[field]
+        if value is not None and (
+            not isinstance(value, str) or not value
+        ):
+            raise EvidencePipelineError(
+                f"Agent usage `{field}` must be a non-empty string or null"
+            )
+    if not any(record[field] is not None for field in scope_fields):
+        raise EvidencePipelineError(
+            "Agent usage requires a proposal request, rule revision, or work item link"
+        )
+    connection.execute(
+        """
+        INSERT INTO sourcebridge_agent_usage
+            (id, imported_record_id, provider, session_id, model_name,
+             model_digest, input_tokens, output_tokens, cache_read_tokens,
+             cache_write_tokens, duration_ms, local_only,
+             proposal_worker_request_id, rule_revision_id, work_item_id,
+             recorded_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(imported_record_id) DO NOTHING
+        """,
+        (
+            _id("agent-usage", record_id),
+            record_id,
+            record["provider"],
+            record["session_id"],
+            record["model_name"],
+            record["model_digest"],
+            record["input_tokens"],
+            record["output_tokens"],
+            record["cache_read_tokens"],
+            record["cache_write_tokens"],
+            record["duration_ms"],
+            int(record["local_only"]),
+            record["proposal_worker_request_id"],
+            record["rule_revision_id"],
+            record["work_item_id"],
             _now(),
         ),
     )
