@@ -253,6 +253,21 @@ CREATE TABLE sourcebridge_diagnostic_review (
     created_at TEXT NOT NULL
 );
 
+CREATE INDEX sourcebridge_diagnostic_review_occurrence_idx
+    ON sourcebridge_diagnostic_review (diagnostic_occurrence_id, created_at, id);
+
+CREATE TRIGGER sourcebridge_diagnostic_review_immutable_update
+BEFORE UPDATE ON sourcebridge_diagnostic_review
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_diagnostic_review is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_diagnostic_review_immutable_delete
+BEFORE DELETE ON sourcebridge_diagnostic_review
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_diagnostic_review is append-only');
+END;
+
 CREATE TABLE sourcebridge_execution_run (
     id TEXT PRIMARY KEY,
     profile_id TEXT NOT NULL REFERENCES sourcebridge_profile(id),

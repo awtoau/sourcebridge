@@ -25,6 +25,15 @@ AGENT_QUEUE_SCHEMA_VERSION = 1
 _TERMINAL_RUN_STATUSES = {"passed", "failed"}
 _BLOCKING_STATUSES = {"open", "claimed", "in_progress", "blocked"}
 _ALL_WORK_ITEM_STATUSES = _BLOCKING_STATUSES | {"resolved", "closed", "stale"}
+_DIAGNOSTIC_REVIEW_DISPOSITIONS = {
+    "unreviewed",
+    "accepted_source_behavior",
+    "known_converter_gap",
+    "known_target_constraint",
+    "false_grouping",
+    "needs_investigation",
+    "resolved",
+}
 
 
 def _now() -> str:
@@ -958,3 +967,302 @@ def link_work_item_evidence(
         "execution_run_id": run_id,
         "relation": relation,
     }
+
+
+def _diagnostic_work_item_id(failure_signature: str) -> str:
+    digest = hashlib.sha256(failure_signature.encode("utf-8")).hexdigest()
+    return f"diagnostic-{digest[:24]}"
+
+
+def _append_work_item_state(
+    connection: sqlite3.Connection,
+    work_item_id: str,
+    *,
+    status: str,
+    ownership_scope: str,
+    disposition: str,
+    rationale: str,
+    recorded_at: str,
+) -> dict[str, Any]:
+    sequence = connection.execute(
+        """
+        SELECT COALESCE(MAX(sequence), 0) + 1
+        FROM sourcebridge_work_item_state
+        WHERE work_item_id = ?
+        """,
+        (work_item_id,),
+    ).fetchone()[0]
+    state_id = f"state-{uuid4()}"
+    connection.execute(
+        """
+        INSERT INTO sourcebridge_work_item_state
+            (id, work_item_id, sequence, status, owner,
+             ownership_scope, disposition, rationale, recorded_at)
+        VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?)
+        """,
+        (
+            state_id,
+            work_item_id,
+            sequence,
+            status,
+            ownership_scope,
+            disposition,
+            rationale,
+            recorded_at,
+        ),
+    )
+    return {
+        "id": state_id,
+        "work_item_id": work_item_id,
+        "sequence": sequence,
+        "status": status,
+        "owner": None,
+        "ownership_scope": ownership_scope,
+        "disposition": disposition,
+        "rationale": rationale,
+    }
+
+
+def record_diagnostic_review(
+    database: Path,
+    diagnostic_occurrence_id: str,
+    *,
+    disposition: str,
+    rationale: str,
+    reviewed_by: str,
+    work_item_id: str | None = None,
+    create_work_item: bool = False,
+    run_id: str | None = None,
+    category: str = "diagnostic",
+    summary: str | None = None,
+    issue_url: str | None = None,
+    recorded_at: str | None = None,
+) -> dict[str, Any]:
+    """Append a diagnostic classification and optionally queue its evidence.
+
+    The occurrence and all evidence rows are immutable.  A created work item
+    receives a deterministic ID derived from the failure signature; existing
+    work items are never rewritten.  Linking requires a producing run so the
+    queue can retain run-scoped provenance.
+    """
+
+    diagnostic_occurrence_id = _text(
+        diagnostic_occurrence_id, "diagnostic_occurrence_id"
+    )
+    if disposition not in _DIAGNOSTIC_REVIEW_DISPOSITIONS:
+        raise ValueError(f"unsupported diagnostic disposition `{disposition}`")
+    rationale = _text(rationale, "rationale")
+    reviewed_by = _text(reviewed_by, "reviewed_by")
+    if work_item_id is not None and create_work_item:
+        raise ValueError("work_item_id and create_work_item are mutually exclusive")
+    if work_item_id is not None:
+        work_item_id = _text(work_item_id, "work_item_id")
+    if run_id is not None:
+        run_id = _text(run_id, "run_id")
+    category = _text(category, "category")
+    if summary is not None:
+        summary = _text(summary, "summary")
+    if issue_url is not None:
+        issue_url = _text(issue_url, "issue_url")
+    recorded_at = recorded_at or _now()
+
+    with write_transaction(database) as connection:
+        connection.row_factory = sqlite3.Row
+        occurrence = connection.execute(
+            """
+            SELECT diagnostic.id, diagnostic.failure_signature,
+                   diagnostic.message, diagnostic.validation_result_id,
+                   diagnostic.source_fragment_id,
+                   diagnostic.generated_fragment_id,
+                   diagnostic.generated_artifact_id,
+                   validation.decision_id
+            FROM sourcebridge_diagnostic_occurrence AS diagnostic
+            JOIN sourcebridge_validation_result AS validation
+              ON validation.id = diagnostic.validation_result_id
+            WHERE diagnostic.id = ?
+            """,
+            (diagnostic_occurrence_id,),
+        ).fetchone()
+        if occurrence is None:
+            raise ValueError(
+                f"diagnostic occurrence `{diagnostic_occurrence_id}` does not exist"
+            )
+
+        requested_work_item_id = work_item_id
+        created_work_item = False
+        if create_work_item:
+            work_item_id = _diagnostic_work_item_id(
+                str(occurrence["failure_signature"])
+            )
+            work_item_summary = summary or (
+                f"{occurrence['failure_signature']}: {occurrence['message']}"
+            )
+            existing = connection.execute(
+                "SELECT id, decision_id, summary FROM sourcebridge_work_item WHERE id = ?",
+                (work_item_id,),
+            ).fetchone()
+            if existing is None:
+                connection.execute(
+                    """
+                    INSERT INTO sourcebridge_work_item
+                        (id, decision_id, category, status, issue_url, summary,
+                         created_at, updated_at)
+                    VALUES (?, ?, ?, 'open', ?, ?, ?, ?)
+                    """,
+                    (
+                        work_item_id,
+                        occurrence["decision_id"],
+                        category,
+                        issue_url,
+                        work_item_summary,
+                        recorded_at,
+                        recorded_at,
+                    ),
+                )
+                created_work_item = True
+            elif summary is not None and existing["summary"] != work_item_summary:
+                raise ValueError(
+                    f"stable diagnostic work item `{work_item_id}` already exists "
+                    "with a different summary"
+                )
+        elif work_item_id is not None:
+            if connection.execute(
+                "SELECT 1 FROM sourcebridge_work_item WHERE id = ?",
+                (work_item_id,),
+            ).fetchone() is None:
+                raise ValueError(f"work item `{work_item_id}` does not exist")
+
+        review_id = f"diagnostic-review-{uuid4()}"
+        connection.execute(
+            """
+            INSERT INTO sourcebridge_diagnostic_review
+                (id, diagnostic_occurrence_id, disposition, rationale,
+                 reviewed_by, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                review_id,
+                diagnostic_occurrence_id,
+                disposition,
+                rationale,
+                reviewed_by,
+                recorded_at,
+            ),
+        )
+
+        evidence_link: dict[str, Any] | None = None
+        work_item_state: dict[str, Any] | None = None
+        if work_item_id is not None:
+            if run_id is None:
+                candidate_runs = connection.execute(
+                    """
+                    SELECT DISTINCT execution_run_id
+                    FROM sourcebridge_work_item_evidence
+                    WHERE diagnostic_occurrence_id = ?
+                    ORDER BY execution_run_id
+                    """,
+                    (diagnostic_occurrence_id,),
+                ).fetchall()
+                if len(candidate_runs) != 1:
+                    raise ValueError(
+                        "run_id is required when the occurrence is not linked to "
+                        "exactly one producing run"
+                    )
+                run_id = str(candidate_runs[0]["execution_run_id"])
+            run = connection.execute(
+                "SELECT 1 FROM sourcebridge_execution_run WHERE id = ?",
+                (run_id,),
+            ).fetchone()
+            if run is None:
+                raise ValueError(f"execution run `{run_id}` does not exist")
+
+            if created_work_item:
+                work_item_state = _append_work_item_state(
+                    connection,
+                    work_item_id,
+                    status="open",
+                    ownership_scope=f"diagnostic:{occurrence['failure_signature']}",
+                    disposition=disposition,
+                    rationale=rationale,
+                    recorded_at=recorded_at,
+                )
+
+            fragment_id = (
+                occurrence["source_fragment_id"]
+                or occurrence["generated_fragment_id"]
+            )
+            existing_link = connection.execute(
+                """
+                SELECT id, work_item_id, execution_run_id, relation
+                FROM sourcebridge_work_item_evidence
+                WHERE work_item_id = ?
+                  AND execution_run_id = ?
+                  AND diagnostic_occurrence_id = ?
+                  AND validation_result_id = ?
+                  AND generated_artifact_id IS ?
+                  AND evidence_fragment_id IS ?
+                  AND relation = 'diagnostic-review'
+                LIMIT 1
+                """,
+                (
+                    work_item_id,
+                    run_id,
+                    diagnostic_occurrence_id,
+                    occurrence["validation_result_id"],
+                    occurrence["generated_artifact_id"],
+                    fragment_id,
+                ),
+            ).fetchone()
+            if existing_link is not None:
+                evidence_link = dict(existing_link)
+            else:
+                link_id = f"evidence-link-{uuid4()}"
+                connection.execute(
+                    """
+                    INSERT INTO sourcebridge_work_item_evidence
+                        (id, work_item_id, execution_run_id,
+                         diagnostic_occurrence_id, validation_result_id,
+                         generated_artifact_id, evidence_fragment_id,
+                         relation, recorded_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'diagnostic-review', ?)
+                    """,
+                    (
+                        link_id,
+                        work_item_id,
+                        run_id,
+                        diagnostic_occurrence_id,
+                        occurrence["validation_result_id"],
+                        occurrence["generated_artifact_id"],
+                        fragment_id,
+                        recorded_at,
+                    ),
+                )
+                evidence_link = {
+                    "id": link_id,
+                    "work_item_id": work_item_id,
+                    "execution_run_id": run_id,
+                    "relation": "diagnostic-review",
+                }
+
+        result: dict[str, Any] = {
+            "schema_version": AGENT_QUEUE_SCHEMA_VERSION,
+            "review": {
+                "id": review_id,
+                "diagnostic_occurrence_id": diagnostic_occurrence_id,
+                "failure_signature": occurrence["failure_signature"],
+                "disposition": disposition,
+                "rationale": rationale,
+                "reviewed_by": reviewed_by,
+                "created_at": recorded_at,
+            },
+            "work_item": None,
+            "work_item_state": work_item_state,
+            "evidence_link": evidence_link,
+        }
+        if work_item_id is not None:
+            result["work_item"] = {
+                "id": work_item_id,
+                "created": created_work_item,
+                "requested_id": requested_work_item_id,
+            }
+        return result
