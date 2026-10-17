@@ -142,14 +142,15 @@ def _basics(database: Path, pack_manifest: Path) -> dict[str, Any]:
     entries = payload.get("entries") if isinstance(payload, dict) else payload
     if not isinstance(entries, list) or not entries:
         raise RuleSelectionError(f"{curriculum_path}: curriculum entries must be non-empty")
+    normalized_entries = [_normalize_curriculum_entry(item) for item in entries]
     with read_transaction(database) as connection:
         connection.row_factory = sqlite3.Row
         entry = next(
             (
-                item for item in entries
-                if isinstance(item, dict)
+                item for item in normalized_entries
+                if item is not None
                 and not _has_latest_passed_engine_test(
-                    connection, item.get("test_references", [])
+                    connection, item["test_references"]
                 )
             ),
             None,
@@ -160,12 +161,32 @@ def _basics(database: Path, pack_manifest: Path) -> dict[str, Any]:
             reason="Every ordered curriculum entry has a latest passed engine test.",
         )
     return _candidate(
-        "basics", candidate=entry.get("id"), evidence=entry.get("evidence_references", []),
-        tests=entry.get("test_references", []),
-        scope=entry.get("expected_profile_scope", {}),
+        "basics", candidate=entry["id"], evidence=entry["evidence_references"],
+        tests=entry["test_references"],
+        scope=entry["expected_profile_scope"],
         reason="Selected the first ordered entry from the version-controlled pack curriculum.",
-        curriculum_entry=entry,
+        curriculum_entry=entry["raw"],
     )
+
+
+def _normalize_curriculum_entry(item: Any) -> dict[str, Any] | None:
+    if not isinstance(item, dict):
+        return None
+    identifier = item.get("id", item.get("rule"))
+    references = item.get("test_references")
+    if references is None and "test_id" in item:
+        references = [item["test_id"]]
+    if not isinstance(identifier, str) or not identifier:
+        return None
+    if not isinstance(references, list) or not references:
+        return None
+    return {
+        "id": identifier,
+        "evidence_references": item.get("evidence_references", []),
+        "test_references": references,
+        "expected_profile_scope": item.get("expected_profile_scope", {}),
+        "raw": item,
+    }
 
 
 def _has_latest_passed_engine_test(
