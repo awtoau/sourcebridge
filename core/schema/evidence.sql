@@ -501,6 +501,33 @@ CREATE TABLE sourcebridge_rule_proposal (
     UNIQUE (imported_record_id)
 );
 
+-- A pack-owned Ollama inventory is supplemental planning evidence. It is kept
+-- separate from execution results and rule proposals because it cannot prove
+-- target behavior or promote a rule.
+CREATE TABLE sourcebridge_ollama_test_inventory (
+    id TEXT PRIMARY KEY,
+    imported_record_id TEXT NOT NULL UNIQUE
+        REFERENCES sourcebridge_imported_record(id),
+    pack_id TEXT NOT NULL,
+    test_id INTEGER NOT NULL REFERENCES sourcebridge_engine_test(id),
+    fixture_path TEXT NOT NULL,
+    fixture_digest TEXT NOT NULL,
+    model_name TEXT NOT NULL,
+    model_digest TEXT NOT NULL,
+    prompt_template_version TEXT NOT NULL,
+    prompt_template_digest TEXT NOT NULL,
+    prompt_json TEXT NOT NULL,
+    prompt_sha256 TEXT NOT NULL,
+    raw_response_json TEXT NOT NULL,
+    inventory_json TEXT NOT NULL,
+    statuses_json TEXT NOT NULL,
+    status_source TEXT NOT NULL,
+    recorded_at TEXT NOT NULL
+);
+
+CREATE INDEX sourcebridge_ollama_test_inventory_test_idx
+    ON sourcebridge_ollama_test_inventory (pack_id, test_id, recorded_at);
+
 -- Rule definitions are immutable. Lifecycle changes are recorded as append-only
 -- state events so historical conversions always retain the rule content and
 -- state that they used.
