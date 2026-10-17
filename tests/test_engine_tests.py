@@ -158,6 +158,44 @@ class EngineTestTests(unittest.TestCase):
             with self.assertRaisesRegex(EngineTestError, "must stay below"):
                 import_catalogue(root / "evidence.db", catalogue)
 
+    def test_json_command_records_expected_blocked_target(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = root / "result.py"
+            fixture.write_text(
+                "import json\n"
+                "print(json.dumps({"
+                "'schema_version': 1, "
+                "'source': {'status': 'passed'}, "
+                "'extraction': {'status': 'blocked'}, "
+                "'target': {'status': 'blocked'}, "
+                "'oracle': {'status': 'skipped'}"
+                "}))\n",
+                encoding="utf-8",
+            )
+            database = root / "evidence.db"
+            test_id = register(
+                database,
+                pack_id="csharp-to-rust",
+                adapter="json-command",
+                name="structured-result",
+                fixture=fixture,
+                expected_json=json.dumps(
+                    {
+                        "source": {"status": "passed"},
+                        "extraction": {"status": "blocked"},
+                        "target": {"status": "blocked"},
+                        "oracle": {"status": "skipped"},
+                    }
+                ),
+                adapter_config_json=json.dumps({"argv": [sys.executable, "{fixture_path}"]}),
+            )
+
+            result = run(database, test_id)
+
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual(result["actual"]["adapter_result"]["target"]["status"], "blocked")
+
     def test_cli_imports_catalogue_declared_by_pack_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -272,9 +272,12 @@ def run(database: Path, test_id: int) -> dict[str, Any]:
     expected = json.loads(expected_text)
     config = json.loads(config_text)
     started_at = _now()
-    if adapter != "command":
+    if adapter == "command":
+        result, command = _run_command(test_id, fixture, expected, config)
+    elif adapter == "json-command":
+        result, command = _run_json_command(test_id, fixture, expected, config)
+    else:
         raise EngineTestError(f"engine test `{test_id}` uses unsupported adapter `{adapter}`")
-    result, command = _run_command(test_id, fixture, expected, config)
     completed_at = _now()
     run_id = f"engine-test-run-{uuid4()}"
     try:
@@ -302,6 +305,87 @@ def run(database: Path, test_id: int) -> dict[str, Any]:
 
 def _run_command(
     test_id: int, fixture: Path, expected: dict[str, Any], config: dict[str, Any]
+) -> tuple[dict[str, Any], list[str]]:
+    actual, command = _execute_command(test_id, fixture, config)
+    if "timeout_seconds" in actual:
+        return ({"status": "blocked", "expected": expected, "actual": actual}, command)
+    checks = {
+        key: actual.get(key) == value
+        for key, value in expected.items()
+        if key in {"exit_code", "stdout", "stderr"}
+    }
+    if not checks:
+        raise EngineTestError(
+            f"engine test `{test_id}`: expected JSON must declare exit_code, stdout, or stderr"
+        )
+    return (
+        {"status": "passed" if all(checks.values()) else "failed", "expected": expected, "actual": actual},
+        command,
+    )
+
+
+def _run_json_command(
+    test_id: int, fixture: Path, expected: dict[str, Any], config: dict[str, Any]
+) -> tuple[dict[str, Any], list[str]]:
+    actual, command = _execute_command(test_id, fixture, config)
+    if "timeout_seconds" in actual:
+        return ({"status": "blocked", "expected": expected, "actual": actual}, command)
+    if actual["exit_code"] != 0:
+        return ({"status": "failed", "expected": expected, "actual": actual}, command)
+    try:
+        envelope = json.loads(actual["stdout"])
+    except json.JSONDecodeError as error:
+        raise EngineTestError(
+            f"engine test `{test_id}`: json-command emitted invalid JSON: {error}"
+        ) from error
+    _validate_result_envelope(test_id, envelope)
+    expected_sides = {
+        side: value
+        for side, value in expected.items()
+        if side in {"source", "extraction", "target", "oracle"}
+    }
+    if not expected_sides:
+        raise EngineTestError(
+            f"engine test `{test_id}`: JSON adapter expected result must declare validation sides"
+        )
+    matches = {
+        side: envelope[side]["status"] == expectation.get("status")
+        for side, expectation in expected_sides.items()
+        if isinstance(expectation, dict)
+    }
+    if len(matches) != len(expected_sides):
+        raise EngineTestError(
+            f"engine test `{test_id}`: each expected validation side must be an object"
+        )
+    return (
+        {
+            "status": "passed" if all(matches.values()) else "failed",
+            "expected": expected,
+            "actual": {**actual, "adapter_result": envelope},
+        },
+        command,
+    )
+
+
+def _validate_result_envelope(test_id: int, envelope: Any) -> None:
+    sides = {"source", "extraction", "target", "oracle"}
+    if not isinstance(envelope, dict) or set(envelope) != {"schema_version", *sides}:
+        raise EngineTestError(f"engine test `{test_id}`: invalid JSON adapter result envelope")
+    if envelope["schema_version"] != 1:
+        raise EngineTestError(f"engine test `{test_id}`: unsupported adapter result schema")
+    valid_statuses = {"passed", "failed", "blocked", "skipped"}
+    for side in sides:
+        value = envelope[side]
+        if not isinstance(value, dict) or not isinstance(value.get("status"), str):
+            raise EngineTestError(f"engine test `{test_id}`: `{side}` result needs a status")
+        if value["status"] not in valid_statuses:
+            raise EngineTestError(
+                f"engine test `{test_id}`: `{side}` has invalid status `{value['status']}`"
+            )
+
+
+def _execute_command(
+    test_id: int, fixture: Path, config: dict[str, Any]
 ) -> tuple[dict[str, Any], list[str]]:
     argv = config.get("argv")
     if not isinstance(argv, list) or not argv or not all(isinstance(value, str) for value in argv):
@@ -334,27 +418,17 @@ def _run_command(
     except subprocess.TimeoutExpired as error:
         return (
             {
-                "status": "blocked",
-                "expected": expected,
-                "actual": {"timeout_seconds": timeout, "stdout": error.stdout or "", "stderr": error.stderr or ""},
+                "timeout_seconds": timeout,
+                "stdout": error.stdout or "",
+                "stderr": error.stderr or "",
             },
             command,
         )
-    actual = {
-        "exit_code": process.returncode,
-        "stdout": process.stdout,
-        "stderr": process.stderr,
-    }
-    checks = {
-        key: actual.get(key) == value
-        for key, value in expected.items()
-        if key in {"exit_code", "stdout", "stderr"}
-    }
-    if not checks:
-        raise EngineTestError(
-            f"engine test `{test_id}`: expected JSON must declare exit_code, stdout, or stderr"
-        )
     return (
-        {"status": "passed" if all(checks.values()) else "failed", "expected": expected, "actual": actual},
+        {
+            "exit_code": process.returncode,
+            "stdout": process.stdout,
+            "stderr": process.stderr,
+        },
         command,
     )
