@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "sourcebridge-csharp-rule-runtime-fixture",
+  "kind": "frontend",
+  "version": "0.1.0",
+  "provides": {
+    "source_languages": [
+      "csharp"
+    ],
+    "target_environments": []
+  },
+  "entrypoints": {
+    "rule_runtime": {
+      "id": "fixture-rule-runtime-v1",
+      "command": [
+        "python3",
+        "adapter.py"
+      ],
+      "source": "adapter.py",
+      "supported_directives": [
+        "replace",
+        "configure"
+      ],
+      "supported_settings": [
+        "runtime_adapter"
+      ],
+      "configuration_schema": {
+        "schema_version": 1,
+        "type": "object",
+        "properties": {
+          "receiver": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "receiver"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

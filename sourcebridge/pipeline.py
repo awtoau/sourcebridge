@@ -205,6 +205,84 @@ def _create_worker_audit_objects(connection: sqlite3.Connection) -> None:
         connection.execute(statement)
 
 
+def _create_rule_runtime_objects(connection: sqlite3.Connection) -> None:
+    """Install additive rule-runtime objects for existing evidence databases."""
+
+    revision_columns = {
+        row[1]
+        for row in connection.execute(
+            "PRAGMA table_info(sourcebridge_rule_revision)"
+        )
+    }
+    for column in ("implementation_pack_id", "implementation_path", "implementation_digest"):
+        if column not in revision_columns:
+            connection.execute(
+                f"ALTER TABLE sourcebridge_rule_revision ADD COLUMN {column} TEXT"
+            )
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sourcebridge_rule_runtime_run (
+            id TEXT PRIMARY KEY,
+            profile_revision_id TEXT NOT NULL
+                REFERENCES sourcebridge_project_profile_revision(id),
+            status TEXT NOT NULL CHECK (
+                status IN ('running', 'passed', 'failed', 'blocked', 'rejected')
+            ),
+            adapter_id TEXT NOT NULL,
+            adapter_digest TEXT NOT NULL,
+            resolved_profile_digest TEXT NOT NULL,
+            rule_digest TEXT NOT NULL,
+            implementation_digest TEXT NOT NULL,
+            settings_digest TEXT NOT NULL,
+            request_json TEXT NOT NULL,
+            result_json TEXT NOT NULL,
+            command_json TEXT NOT NULL,
+            requested_by TEXT NOT NULL,
+            started_at TEXT NOT NULL,
+            completed_at TEXT
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX IF NOT EXISTS sourcebridge_rule_runtime_run_profile_idx
+            ON sourcebridge_rule_runtime_run (profile_revision_id, completed_at, id)
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_rule_runtime_run_provenance_immutable_update
+        BEFORE UPDATE ON sourcebridge_rule_runtime_run
+        WHEN NEW.profile_revision_id != OLD.profile_revision_id
+          OR NEW.adapter_id != OLD.adapter_id
+          OR NEW.adapter_digest != OLD.adapter_digest
+          OR NEW.resolved_profile_digest != OLD.resolved_profile_digest
+          OR NEW.rule_digest != OLD.rule_digest
+          OR NEW.implementation_digest != OLD.implementation_digest
+          OR NEW.settings_digest != OLD.settings_digest
+          OR NEW.request_json != OLD.request_json
+          OR NEW.command_json != OLD.command_json
+          OR NEW.requested_by != OLD.requested_by
+          OR NEW.started_at != OLD.started_at
+        BEGIN
+            SELECT RAISE(
+                ABORT,
+                'sourcebridge_rule_runtime_run provenance is append-only'
+            );
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS sourcebridge_rule_runtime_run_immutable_delete
+        BEFORE DELETE ON sourcebridge_rule_runtime_run
+        BEGIN
+            SELECT RAISE(ABORT, 'sourcebridge_rule_runtime_run is append-only');
+        END
+        """
+    )
+
+
 def initialize(database: Path) -> None:
     database.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -830,6 +908,7 @@ def initialize(database: Path) -> None:
                     str(SCHEMA_VERSION),
                 )
                 version = str(SCHEMA_VERSION)
+            _create_rule_runtime_objects(connection)
             if version != str(SCHEMA_VERSION):
                 raise EvidencePipelineError(
                     f"{database}: unsupported schema version `{version}`"
