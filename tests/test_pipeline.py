@@ -14,6 +14,71 @@ from sourcebridge.pipeline import EvidencePipelineError, import_json, initialize
 
 
 class PipelineTests(unittest.TestCase):
+    def test_imports_host_usage_with_explicit_request_link(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            database = root / "evidence.db"
+            initialize(database)
+            with sqlite3.connect(database) as connection:
+                connection.execute("PRAGMA foreign_keys = ON")
+                connection.execute(
+                    """
+                    INSERT INTO sourcebridge_proposal_worker_session
+                        (id, batch_id, endpoint, model_name, model_digest,
+                         generation_options_json, prompt_template_version,
+                         prompt_template_digest, active_rule_digest, status,
+                         summary_json, started_at)
+                    VALUES
+                        ('session-1', 'batch-1', 'http://127.0.0.1:11434',
+                         'local', 'digest', '{}', 'v1', 'prompt', 'rules',
+                         'completed', '{}', 'now')
+                    """
+                )
+                connection.execute(
+                    """
+                    INSERT INTO sourcebridge_proposal_worker_request
+                        (id, session_id, request_index, evidence_sha256,
+                         payload_sha256, status, elapsed_ms, load_duration_ms,
+                         generation_ms, prompt_tokens, generated_tokens,
+                         rejection_reasons_json, proposal_json,
+                         raw_response_json, created_at)
+                    VALUES
+                        ('request-1', 'session-1', 0, 'evidence', 'payload',
+                         'rejected', 1, 0, 1, 2, 3, '[]', '{}', '{}', 'now')
+                    """
+                )
+                connection.commit()
+            usage = {
+                "kind": "agent_usage",
+                "provider": "copilot-sdk",
+                "session_id": "host-session",
+                "model_name": "host-model",
+                "model_digest": None,
+                "input_tokens": 101,
+                "output_tokens": 22,
+                "cache_read_tokens": 3,
+                "cache_write_tokens": None,
+                "duration_ms": 12.5,
+                "local_only": False,
+                "proposal_worker_request_id": "request-1",
+                "rule_revision_id": None,
+                "work_item_id": None,
+            }
+            (root / "usage.json").write_text(json.dumps(usage), encoding="utf-8")
+
+            report = import_json(database, root, repository="fixture")
+            with sqlite3.connect(database) as connection:
+                row = connection.execute(
+                    """
+                    SELECT provider, input_tokens, output_tokens, cache_read_tokens,
+                           cache_write_tokens, local_only, proposal_worker_request_id
+                    FROM sourcebridge_agent_usage
+                    """
+                ).fetchone()
+
+        self.assertEqual(report["projected"], 1)
+        self.assertEqual(row, ("copilot-sdk", 101, 22, 3, None, 0, "request-1"))
+
     def test_imports_ollama_inventory_with_registered_fixture_provenance(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -185,7 +250,7 @@ class PipelineTests(unittest.TestCase):
             finally:
                 connection.close()
 
-        self.assertEqual(version, "12")
+        self.assertEqual(version, "14")
         self.assertTrue({"catalogue_path", "catalogue_digest"} <= columns)
 
     def test_initialize_recovers_interrupted_v3_migration(self) -> None:
@@ -229,7 +294,7 @@ class PipelineTests(unittest.TestCase):
             finally:
                 connection.close()
 
-        self.assertEqual(version, "12")
+        self.assertEqual(version, "14")
         self.assertTrue({"catalogue_path", "catalogue_digest"} <= columns)
 
     def test_imports_legacy_json_with_provenance_and_is_idempotent(self) -> None:

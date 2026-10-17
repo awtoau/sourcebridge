@@ -1178,9 +1178,9 @@ def _audit_worker_request(
                 INSERT INTO sourcebridge_proposal_worker_request
                     (id, session_id, request_index, evidence_sha256, payload_sha256,
                      status, elapsed_ms, load_duration_ms, generation_ms,
-                     generated_tokens, rejection_reasons_json, proposal_json,
+                     prompt_tokens, generated_tokens, rejection_reasons_json, proposal_json,
                      raw_response_json, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     request_id,
@@ -1192,6 +1192,7 @@ def _audit_worker_request(
                     timing.get("request_elapsed_ms", 0),
                     timing.get("load_duration_ms", 0),
                     timing.get("generation_ms", 0),
+                    timing.get("prompt_tokens"),
                     timing.get("generated_tokens"),
                     json.dumps(list(reasons), sort_keys=True),
                     json.dumps(record.get("proposal"), sort_keys=True),
