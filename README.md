@@ -276,6 +276,23 @@ C#, C, Delphi, Python, or Rust compiler suites by supplying their executable
 argument vector. Add a dedicated adapter only when its reusable result
 normalization needs exceed this contract.
 
+Use `json-command` when a pack adapter emits a structured result envelope:
+
+```json
+{
+  "schema_version": 1,
+  "source": {"status": "passed"},
+  "extraction": {"status": "blocked"},
+  "target": {"status": "blocked"},
+  "oracle": {"status": "skipped"}
+}
+```
+
+The catalogue's expected result declares the same validation sides. A run
+passes only when those side statuses match; its stored evidence always retains
+the complete adapter envelope, so a blocked target cannot be mistaken for a
+completed equivalence test.
+
 The importer is idempotent. It retains every JSON record in SQL, projects
 profiles, fact-grounded evidence, and rule proposals into typed tables where
 the neutral contract applies, and keeps JSON schemas, manifests, examples, and
