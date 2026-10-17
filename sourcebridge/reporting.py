@@ -244,6 +244,63 @@ def link_work_item_evidence(*args: Any, **kwargs: Any) -> dict[str, Any]:
 
     return _record(*args, **kwargs)
 
+
+def record_source_unit_disposition(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Record one immutable per-source-unit component decision."""
+
+    from sourcebridge.dispositions import (
+        record_source_unit_disposition as _record,
+    )
+
+    return _record(*args, **kwargs)
+
+
+def query_source_unit_dispositions(*args: Any, **kwargs: Any) -> list[dict[str, Any]]:
+    """Return source-unit decisions with their evidence and provenance."""
+
+    from sourcebridge.dispositions import (
+        query_source_unit_dispositions as _query,
+    )
+
+    return _query(*args, **kwargs)
+
+
+def source_unit_dispositions(*args: Any, **kwargs: Any) -> list[dict[str, Any]]:
+    """Compatibility name for the source-unit disposition query."""
+
+    return query_source_unit_dispositions(*args, **kwargs)
+
+
+def render_annotated_review(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Render deterministic annotated review output."""
+
+    from sourcebridge.dispositions import (
+        render_annotated_review as _render,
+    )
+
+    return _render(*args, **kwargs)
+
+
+def annotated_review_output(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Compatibility name for annotated review output."""
+
+    return render_annotated_review(*args, **kwargs)
+
+
+def render_clean_release(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Render clean output with a mandatory provenance sidecar report."""
+
+    from sourcebridge.dispositions import render_clean_release as _render
+
+    return _render(*args, **kwargs)
+
+
+def clean_release_output(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Compatibility name for clean release output."""
+
+    return render_clean_release(*args, **kwargs)
+
+
 PACK_REPORT_SCHEMA_VERSION = 1
 _PACK_REPORT_SECTIONS = (
     "source_validation",
