@@ -300,3 +300,245 @@ CREATE TABLE sourcebridge_rule_proposal (
     created_at TEXT NOT NULL,
     UNIQUE (imported_record_id)
 );
+
+-- Rule definitions are immutable. Lifecycle changes are recorded as append-only
+-- state events so historical conversions always retain the rule content and
+-- state that they used.
+CREATE TABLE sourcebridge_rule_family (
+    id TEXT PRIMARY KEY,
+    rule_key TEXT NOT NULL,
+    source_frontend_pack_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (source_frontend_pack_id, rule_key)
+);
+
+CREATE TABLE sourcebridge_rule_revision (
+    id TEXT PRIMARY KEY,
+    family_id TEXT NOT NULL REFERENCES sourcebridge_rule_family(id),
+    revision INTEGER NOT NULL CHECK (revision > 0),
+    definition_json TEXT NOT NULL,
+    content_digest TEXT NOT NULL,
+    workspace_name TEXT,
+    supersedes_revision_id TEXT REFERENCES sourcebridge_rule_revision(id),
+    rationale TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (family_id, revision),
+    UNIQUE (family_id, content_digest)
+);
+
+CREATE TABLE sourcebridge_rule_revision_state (
+    id TEXT PRIMARY KEY,
+    rule_revision_id TEXT NOT NULL REFERENCES sourcebridge_rule_revision(id),
+    sequence INTEGER NOT NULL CHECK (sequence > 0),
+    state TEXT NOT NULL CHECK (
+        state IN ('draft', 'active', 'deprecated', 'retired', 'rejected')
+    ),
+    rationale TEXT NOT NULL,
+    decided_by TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (rule_revision_id, sequence)
+);
+
+CREATE INDEX sourcebridge_rule_revision_state_latest_idx
+    ON sourcebridge_rule_revision_state (rule_revision_id, sequence DESC);
+
+-- A project or corpus profile is an immutable overlay over a generic base
+-- profile. The overlay records exactly which rules/settings differ for that
+-- project, without mutating the generic language profile.
+CREATE TABLE sourcebridge_project_profile_revision (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    profile_name TEXT NOT NULL,
+    revision INTEGER NOT NULL CHECK (revision > 0),
+    base_profile_id TEXT NOT NULL REFERENCES sourcebridge_profile(id),
+    base_profile_digest TEXT NOT NULL,
+    required_validation_tier TEXT NOT NULL,
+    workspace_name TEXT,
+    supersedes_profile_revision_id TEXT
+        REFERENCES sourcebridge_project_profile_revision(id),
+    resolved_digest TEXT NOT NULL,
+    rationale TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (project_id, profile_name, revision)
+);
+
+CREATE TABLE sourcebridge_project_profile_state (
+    id TEXT PRIMARY KEY,
+    profile_revision_id TEXT NOT NULL
+        REFERENCES sourcebridge_project_profile_revision(id),
+    sequence INTEGER NOT NULL CHECK (sequence > 0),
+    state TEXT NOT NULL CHECK (
+        state IN ('draft', 'candidate', 'current', 'retired')
+    ),
+    rationale TEXT NOT NULL,
+    decided_by TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (profile_revision_id, sequence)
+);
+
+CREATE INDEX sourcebridge_project_profile_state_latest_idx
+    ON sourcebridge_project_profile_state (profile_revision_id, sequence DESC);
+
+CREATE TABLE sourcebridge_project_profile_rule_override (
+    id TEXT PRIMARY KEY,
+    profile_revision_id TEXT NOT NULL
+        REFERENCES sourcebridge_project_profile_revision(id),
+    rule_family_id TEXT NOT NULL REFERENCES sourcebridge_rule_family(id),
+    directive TEXT NOT NULL CHECK (
+        directive IN ('enable', 'disable', 'replace', 'configure')
+    ),
+    selected_rule_revision_id TEXT
+        REFERENCES sourcebridge_rule_revision(id),
+    resolution_json TEXT NOT NULL,
+    configuration_json TEXT NOT NULL,
+    configuration_digest TEXT NOT NULL,
+    rationale TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (profile_revision_id, rule_family_id, directive)
+);
+
+CREATE INDEX sourcebridge_project_profile_rule_override_profile_idx
+    ON sourcebridge_project_profile_rule_override (profile_revision_id, rule_family_id);
+
+CREATE TABLE sourcebridge_project_profile_setting_override (
+    id TEXT PRIMARY KEY,
+    profile_revision_id TEXT NOT NULL
+        REFERENCES sourcebridge_project_profile_revision(id),
+    setting_key TEXT NOT NULL,
+    schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+    value_json TEXT NOT NULL,
+    value_digest TEXT NOT NULL,
+    rationale TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (profile_revision_id, setting_key)
+);
+
+CREATE TABLE sourcebridge_project_profile_certification (
+    id TEXT PRIMARY KEY,
+    profile_revision_id TEXT NOT NULL
+        REFERENCES sourcebridge_project_profile_revision(id),
+    validation_tier TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('passed', 'failed', 'blocked')),
+    evidence_reference TEXT NOT NULL,
+    evidence_digest TEXT NOT NULL,
+    details_json TEXT NOT NULL,
+    certified_by TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX sourcebridge_project_profile_certification_profile_idx
+    ON sourcebridge_project_profile_certification (profile_revision_id, created_at);
+
+CREATE TRIGGER sourcebridge_rule_family_immutable_update
+BEFORE UPDATE ON sourcebridge_rule_family
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_rule_family is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_rule_family_immutable_delete
+BEFORE DELETE ON sourcebridge_rule_family
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_rule_family is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_rule_revision_immutable_update
+BEFORE UPDATE ON sourcebridge_rule_revision
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_rule_revision is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_rule_revision_immutable_delete
+BEFORE DELETE ON sourcebridge_rule_revision
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_rule_revision is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_rule_revision_state_immutable_update
+BEFORE UPDATE ON sourcebridge_rule_revision_state
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_rule_revision_state is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_rule_revision_state_immutable_delete
+BEFORE DELETE ON sourcebridge_rule_revision_state
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_rule_revision_state is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_project_profile_revision_immutable_update
+BEFORE UPDATE ON sourcebridge_project_profile_revision
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_project_profile_revision is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_project_profile_revision_immutable_delete
+BEFORE DELETE ON sourcebridge_project_profile_revision
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_project_profile_revision is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_project_profile_state_immutable_update
+BEFORE UPDATE ON sourcebridge_project_profile_state
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_project_profile_state is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_project_profile_state_immutable_delete
+BEFORE DELETE ON sourcebridge_project_profile_state
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_project_profile_state is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_project_profile_rule_override_immutable_update
+BEFORE UPDATE ON sourcebridge_project_profile_rule_override
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_project_profile_rule_override is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_project_profile_rule_override_immutable_delete
+BEFORE DELETE ON sourcebridge_project_profile_rule_override
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_project_profile_rule_override is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_project_profile_setting_override_immutable_update
+BEFORE UPDATE ON sourcebridge_project_profile_setting_override
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_project_profile_setting_override is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_project_profile_setting_override_immutable_delete
+BEFORE DELETE ON sourcebridge_project_profile_setting_override
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_project_profile_setting_override is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_project_profile_certification_immutable_update
+BEFORE UPDATE ON sourcebridge_project_profile_certification
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_project_profile_certification is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_project_profile_certification_immutable_delete
+BEFORE DELETE ON sourcebridge_project_profile_certification
+BEGIN
+    SELECT RAISE(ABORT, 'sourcebridge_project_profile_certification is append-only');
+END;
+
+CREATE TRIGGER sourcebridge_project_profile_state_current_requires_certification
+BEFORE INSERT ON sourcebridge_project_profile_state
+WHEN NEW.state = 'current'
+ AND NOT EXISTS (
+    SELECT 1
+    FROM sourcebridge_project_profile_revision AS profile
+    JOIN sourcebridge_project_profile_certification AS certification
+      ON certification.profile_revision_id = profile.id
+    WHERE profile.id = NEW.profile_revision_id
+      AND certification.validation_tier = profile.required_validation_tier
+      AND certification.status = 'passed'
+ )
+BEGIN
+    SELECT RAISE(ABORT, 'current profile requires passed required-tier certification');
+END;

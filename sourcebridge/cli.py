@@ -26,6 +26,17 @@ from sourcebridge.reporting import (
     report_packs,
 )
 from sourcebridge.execution import run_approved
+from sourcebridge.conversion_profiles import (
+    ConversionProfileError,
+    create_project_profile_revision,
+    list_project_profile_revisions,
+    promote_project_profile,
+    record_project_profile_certification,
+    register_rule_revision,
+    resolve_project_profile,
+    set_project_profile_state,
+    set_rule_revision_state,
+)
 from sourcebridge.engine_tests import EngineTestError, import_catalogue, list_tests, register, run
 from sourcebridge.proposal_evaluation import evaluate
 from sourcebridge.pipeline import EvidencePipelineError, import_json, initialize
@@ -219,6 +230,137 @@ def _test(arguments: list[str]) -> int:
     return 0
 
 
+def _profile(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge profile")
+    subparsers = parser.add_subparsers(dest="action", required=True)
+    register_rule_parser = subparsers.add_parser("register-rule")
+    register_rule_parser.add_argument("--database", type=Path, required=True)
+    register_rule_parser.add_argument("--rule-key", required=True)
+    register_rule_parser.add_argument("--source-frontend", required=True)
+    register_rule_parser.add_argument("--definition", type=Path, required=True)
+    register_rule_parser.add_argument("--rationale", required=True)
+    register_rule_parser.add_argument("--created-by", required=True)
+    register_rule_parser.add_argument("--workspace")
+    register_rule_parser.add_argument("--supersedes")
+    rule_state_parser = subparsers.add_parser("set-rule-state")
+    rule_state_parser.add_argument("--database", type=Path, required=True)
+    rule_state_parser.add_argument("rule_revision_id")
+    rule_state_parser.add_argument("state")
+    rule_state_parser.add_argument("--rationale", required=True)
+    rule_state_parser.add_argument("--decided-by", required=True)
+    create_parser = subparsers.add_parser("create")
+    create_parser.add_argument("--database", type=Path, required=True)
+    create_parser.add_argument("manifest", type=Path)
+    profile_state_parser = subparsers.add_parser("set-state")
+    profile_state_parser.add_argument("--database", type=Path, required=True)
+    profile_state_parser.add_argument("profile_revision_id")
+    profile_state_parser.add_argument("state", choices=("candidate", "retired"))
+    profile_state_parser.add_argument("--rationale", required=True)
+    profile_state_parser.add_argument("--decided-by", required=True)
+    certify_parser = subparsers.add_parser("certify")
+    certify_parser.add_argument("--database", type=Path, required=True)
+    certify_parser.add_argument("profile_revision_id")
+    certify_parser.add_argument("--tier", required=True)
+    certify_parser.add_argument("--status", choices=("passed", "failed", "blocked"), required=True)
+    certify_parser.add_argument("--evidence-reference", required=True)
+    certify_parser.add_argument("--evidence-digest", required=True)
+    certify_parser.add_argument("--details", required=True)
+    certify_parser.add_argument("--certified-by", required=True)
+    promote_parser = subparsers.add_parser("promote")
+    promote_parser.add_argument("--database", type=Path, required=True)
+    promote_parser.add_argument("profile_revision_id")
+    promote_parser.add_argument("--rationale", required=True)
+    promote_parser.add_argument("--decided-by", required=True)
+    resolve_parser = subparsers.add_parser("resolve")
+    resolve_parser.add_argument("--database", type=Path, required=True)
+    resolve_parser.add_argument("profile_revision_id")
+    list_parser = subparsers.add_parser("list")
+    list_parser.add_argument("--database", type=Path, required=True)
+    list_parser.add_argument("--project")
+    list_parser.add_argument("--state", choices=("draft", "candidate", "current", "retired"))
+    args = parser.parse_args(arguments)
+    try:
+        if args.action == "register-rule":
+            definition = json.loads(args.definition.read_text(encoding="utf-8"))
+            result = register_rule_revision(
+                args.database,
+                rule_key=args.rule_key,
+                source_frontend_pack_id=args.source_frontend,
+                definition=definition,
+                rationale=args.rationale,
+                created_by=args.created_by,
+                workspace_name=args.workspace,
+                supersedes_revision_id=args.supersedes,
+            )
+        elif args.action == "set-rule-state":
+            result = set_rule_revision_state(
+                args.database,
+                args.rule_revision_id,
+                state=args.state,
+                rationale=args.rationale,
+                decided_by=args.decided_by,
+            )
+        elif args.action == "create":
+            manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+            if not isinstance(manifest, dict):
+                raise ConversionProfileError("profile manifest must be a JSON object")
+            result = create_project_profile_revision(
+                args.database,
+                project_id=manifest.get("project_id"),
+                profile_name=manifest.get("profile_name"),
+                base_profile_id=manifest.get("base_profile_id"),
+                required_validation_tier=manifest.get("required_validation_tier"),
+                rationale=manifest.get("rationale"),
+                created_by=manifest.get("created_by"),
+                rule_overrides=manifest.get("rule_overrides", []),
+                setting_overrides=manifest.get("setting_overrides", []),
+                workspace_name=manifest.get("workspace_name"),
+                supersedes_profile_revision_id=manifest.get(
+                    "supersedes_profile_revision_id"
+                ),
+            )
+        elif args.action == "set-state":
+            result = set_project_profile_state(
+                args.database,
+                args.profile_revision_id,
+                state=args.state,
+                rationale=args.rationale,
+                decided_by=args.decided_by,
+            )
+        elif args.action == "certify":
+            details = json.loads(args.details)
+            result = record_project_profile_certification(
+                args.database,
+                args.profile_revision_id,
+                validation_tier=args.tier,
+                status=args.status,
+                evidence_reference=args.evidence_reference,
+                evidence_digest=args.evidence_digest,
+                details=details,
+                certified_by=args.certified_by,
+            )
+        elif args.action == "promote":
+            result = promote_project_profile(
+                args.database,
+                args.profile_revision_id,
+                rationale=args.rationale,
+                decided_by=args.decided_by,
+            )
+        elif args.action == "resolve":
+            result = resolve_project_profile(args.database, args.profile_revision_id)
+        else:
+            result = list_project_profile_revisions(
+                args.database,
+                project_id=args.project,
+                state=args.state,
+            )
+    except (ConversionProfileError, EvidencePipelineError, OSError, json.JSONDecodeError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
 def _import_pack_catalogue(database: Path, pack_manifest: Path) -> dict[str, object]:
     manifest_cli.validate_pack(pack_manifest)
     manifest = manifest_cli.read_json(pack_manifest)
@@ -281,6 +423,8 @@ def main() -> int:
         return _import_json(arguments[1:])
     if arguments and arguments[0] == "test":
         return _test(arguments[1:])
+    if arguments and arguments[0] == "profile":
+        return _profile(arguments[1:])
     if arguments and arguments[0] == "dev":
         return _dev(arguments[1:])
     return _legacy_command(arguments)
