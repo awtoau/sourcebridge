@@ -11,6 +11,7 @@ from typing import Any
 
 from sourcebridge.database import read_transaction, write_transaction
 from sourcebridge.pipeline import initialize
+from sourcebridge.workers import DEFAULT_WORKERS
 
 
 def _contention_worker(
@@ -57,7 +58,7 @@ def _percentile(values: list[float], percentile: float) -> float:
 def run_contention_benchmark(
     database: Path,
     *,
-    workers: int = 8,
+    workers: int = DEFAULT_WORKERS,
     writes_per_worker: int = 25,
     hold_seconds: float = 0.001,
 ) -> dict[str, object]:
