@@ -241,6 +241,36 @@ CREATE TABLE sourcebridge_schema_metadata (
     value TEXT NOT NULL
 );
 
+-- Engine tests are a language-neutral registry for invoking pack-owned or
+-- upstream-suite fixtures. Source code and golden artifacts remain normal
+-- versioned files; this table records their identity, expected result, and
+-- reproducible execution evidence.
+CREATE TABLE sourcebridge_engine_test (
+    id INTEGER PRIMARY KEY,
+    pack_id TEXT NOT NULL,
+    adapter TEXT NOT NULL,
+    name TEXT NOT NULL,
+    fixture_path TEXT NOT NULL,
+    fixture_digest TEXT NOT NULL,
+    expected_json TEXT NOT NULL,
+    adapter_config_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (pack_id, name)
+);
+
+CREATE TABLE sourcebridge_engine_test_run (
+    id TEXT PRIMARY KEY,
+    test_id INTEGER NOT NULL REFERENCES sourcebridge_engine_test(id),
+    status TEXT NOT NULL CHECK (status IN ('passed', 'failed', 'blocked')),
+    command_json TEXT NOT NULL,
+    result_json TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    completed_at TEXT NOT NULL
+);
+
+CREATE INDEX sourcebridge_engine_test_run_test_idx
+    ON sourcebridge_engine_test_run (test_id, completed_at);
+
 -- Every imported legacy JSON record retains its original relative path, exact
 -- bytes, and digest. Typed tables may project facts from this immutable source.
 CREATE TABLE sourcebridge_imported_record (

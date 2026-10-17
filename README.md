@@ -251,6 +251,29 @@ sourcebridge init-db --database evidence/sourcebridge.db
 sourcebridge import-json --database evidence/sourcebridge.db --root . --tracked-only
 ```
 
+## Engine-test orchestration
+
+Sourcebridge runs language-pack fixtures and upstream suites through a common,
+database-backed registry. The fixture source remains a normal versioned file;
+SQL stores its stable numeric ID, expected structured result, hash, adapter
+configuration, and every execution result.
+
+Register and run a C#→Rust fixture with the built-in command adapter:
+
+```text
+sourcebridge test register --database evidence/sourcebridge.db --id 434 \
+  --pack csharp-to-rust --adapter command --name composite-format \
+  --fixture packs/csharp-to-rust/engine-tests/00434/input.cs \
+  --expected '{"exit_code": 0}' \
+  --adapter-config '{"argv":["python3","run_case.py","{fixture_path}"]}'
+sourcebridge test run --database evidence/sourcebridge.db 434
+```
+
+The command adapter does not invoke a shell. Pack adapters may wrap existing
+C#, C, Delphi, Python, or Rust compiler suites by supplying their executable
+argument vector. Add a dedicated adapter only when its reusable result
+normalization needs exceed this contract.
+
 The importer is idempotent. It retains every JSON record in SQL, projects
 profiles, fact-grounded evidence, and rule proposals into typed tables where
 the neutral contract applies, and keeps JSON schemas, manifests, examples, and

@@ -11,7 +11,7 @@ import subprocess
 from typing import Any, Iterable
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 _ROOT = Path(__file__).parents[1]
 _SCHEMA = _ROOT / "core" / "schema" / "evidence.sql"
 
@@ -65,9 +65,43 @@ def initialize(database: Path) -> None:
                 connection.execute(
                     "UPDATE sourcebridge_schema_metadata SET value = ? "
                     "WHERE key = 'schema_version'",
+                    ("2",),
+                )
+                existing = ("2",)
+            if existing is not None and existing[0] == "2":
+                connection.executescript(
+                    """
+                    CREATE TABLE sourcebridge_engine_test (
+                        id INTEGER PRIMARY KEY,
+                        pack_id TEXT NOT NULL,
+                        adapter TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        fixture_path TEXT NOT NULL,
+                        fixture_digest TEXT NOT NULL,
+                        expected_json TEXT NOT NULL,
+                        adapter_config_json TEXT NOT NULL,
+                        created_at TEXT NOT NULL,
+                        UNIQUE (pack_id, name)
+                    );
+                    CREATE TABLE sourcebridge_engine_test_run (
+                        id TEXT PRIMARY KEY,
+                        test_id INTEGER NOT NULL REFERENCES sourcebridge_engine_test(id),
+                        status TEXT NOT NULL CHECK (status IN ('passed', 'failed', 'blocked')),
+                        command_json TEXT NOT NULL,
+                        result_json TEXT NOT NULL,
+                        started_at TEXT NOT NULL,
+                        completed_at TEXT NOT NULL
+                    );
+                    CREATE INDEX sourcebridge_engine_test_run_test_idx
+                        ON sourcebridge_engine_test_run (test_id, completed_at);
+                    """
+                )
+                connection.execute(
+                    "UPDATE sourcebridge_schema_metadata SET value = ? "
+                    "WHERE key = 'schema_version'",
                     (str(SCHEMA_VERSION),),
                 )
-            elif existing[0] != str(SCHEMA_VERSION):
+            elif existing is not None and existing[0] != str(SCHEMA_VERSION):
                 raise EvidencePipelineError(
                     f"{database}: unsupported schema version `{existing[0]}`"
                 )

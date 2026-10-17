@@ -26,6 +26,7 @@ from sourcebridge.reporting import (
     report_packs,
 )
 from sourcebridge.execution import run_approved
+from sourcebridge.engine_tests import EngineTestError, list_tests, register, run
 from sourcebridge.proposal_evaluation import evaluate
 from sourcebridge.pipeline import EvidencePipelineError, import_json, initialize
 
@@ -162,6 +163,51 @@ def _import_json(arguments: list[str]) -> int:
     return 0
 
 
+def _test(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge test")
+    subparsers = parser.add_subparsers(dest="action", required=True)
+    register_parser = subparsers.add_parser("register")
+    register_parser.add_argument("--database", type=Path, required=True)
+    register_parser.add_argument("--pack", required=True)
+    register_parser.add_argument("--adapter", required=True)
+    register_parser.add_argument("--name", required=True)
+    register_parser.add_argument("--fixture", type=Path, required=True)
+    register_parser.add_argument("--expected", required=True)
+    register_parser.add_argument("--adapter-config", required=True)
+    register_parser.add_argument("--id", type=int)
+    list_parser = subparsers.add_parser("list")
+    list_parser.add_argument("--database", type=Path, required=True)
+    list_parser.add_argument("--pack")
+    run_parser = subparsers.add_parser("run")
+    run_parser.add_argument("--database", type=Path, required=True)
+    run_parser.add_argument("test_id", type=int)
+    args = parser.parse_args(arguments)
+    try:
+        if args.action == "register":
+            print(
+                register(
+                    args.database,
+                    pack_id=args.pack,
+                    adapter=args.adapter,
+                    name=args.name,
+                    fixture=args.fixture,
+                    expected_json=args.expected,
+                    adapter_config_json=args.adapter_config,
+                    test_id=args.id,
+                )
+            )
+        elif args.action == "list":
+            print(json.dumps(list_tests(args.database, pack_id=args.pack), indent=2, sort_keys=True))
+        else:
+            result = run(args.database, args.test_id)
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0 if result["status"] == "passed" else 1
+    except EngineTestError as error:
+        print(error, file=sys.stderr)
+        return 1
+    return 0
+
+
 def _legacy_command(arguments: list[str]) -> int:
     sys.argv = [sys.argv[0], *arguments]
     return manifest_cli.main()
@@ -185,6 +231,8 @@ def main() -> int:
         return _init_db(arguments[1:])
     if arguments and arguments[0] == "import-json":
         return _import_json(arguments[1:])
+    if arguments and arguments[0] == "test":
+        return _test(arguments[1:])
     return _legacy_command(arguments)
 
 
