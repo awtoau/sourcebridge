@@ -133,16 +133,46 @@ class SQLiteConcurrencyTests(unittest.TestCase):
                         "analyze",
                         1,
                         "queued",
-                        json.dumps({"argv": [sys.executable, "-c", "print('done')"]}),
+                        json.dumps(
+                            {
+                                "argv": [
+                                    sys.executable,
+                                    "-c",
+                                    (
+                                        "import json; "
+                                        "print(json.dumps({'kind': 'progress', "
+                                        "'worker_slot': 0, 'units_completed': 1}))"
+                                    ),
+                                ]
+                            }
+                        ),
                         "tester",
                         "t",
                     ),
+                )
+                connection.execute(
+                    "INSERT INTO sourcebridge_execution_worker "
+                    "(id, run_id, worker_slot, status, source_unit_id, "
+                    "current_work_item_id, units_completed, updated_at) "
+                    "VALUES (?, ?, ?, 'idle', NULL, NULL, 0, ?)",
+                    ("run:worker:1", "run", 1, "t"),
                 )
 
             self.assertEqual(run_approved(database, "run"), 0)
             with self.assertRaisesRegex(ValueError, "not queued"):
                 run_approved(database, "run")
             activity = execution_activity(database)
+            with read_transaction(database) as connection:
+                worker_statuses = [
+                    row[0]
+                    for row in connection.execute(
+                        "SELECT status FROM sourcebridge_execution_worker "
+                        "WHERE run_id = ? ORDER BY worker_slot",
+                        ("run",),
+                    )
+                ]
 
         self.assertEqual(activity[0]["run_status"], "passed")
         self.assertEqual(activity[0]["event_kind"], "progress")
+        self.assertEqual(activity[0]["worker_status"], "completed")
+        self.assertEqual(worker_statuses, ["completed", "completed"])

@@ -33,6 +33,28 @@ def _command(value: str) -> tuple[list[str], str | None]:
     return argv, cwd
 
 
+def _finalize_run(
+    database: Path,
+    run_id: str,
+    *,
+    run_status: str,
+    worker_status: str,
+) -> None:
+    with write_transaction(database) as connection:
+        finished_at = _now()
+        connection.execute(
+            "UPDATE sourcebridge_execution_worker "
+            "SET status = ?, updated_at = ? "
+            "WHERE run_id = ? AND status IN ('idle', 'running')",
+            (worker_status, finished_at, run_id),
+        )
+        connection.execute(
+            "UPDATE sourcebridge_execution_run SET status = ?, completed_at = ? "
+            "WHERE id = ? AND status = 'running'",
+            (run_status, finished_at, run_id),
+        )
+
+
 def run_approved(database: Path, run_id: str) -> int:
     if not database.is_file():
         raise ValueError(f"{database}: evidence database does not exist")
@@ -65,13 +87,12 @@ def run_approved(database: Path, run_id: str) -> int:
             text=True, bufsize=1, shell=False,
         )
     except OSError:
-        with write_transaction(database) as connection:
-            connection.execute(
-                "UPDATE sourcebridge_execution_run "
-                "SET status = 'failed', completed_at = ? "
-                "WHERE id = ? AND status = 'running'",
-                (_now(), run_id),
-            )
+        _finalize_run(
+            database,
+            run_id,
+            run_status="failed",
+            worker_status="failed",
+        )
         raise
     assert process.stdout is not None
     for line in process.stdout:
@@ -79,12 +100,12 @@ def run_approved(database: Path, run_id: str) -> int:
     process.stdout.close()
     result = process.wait()
     status = "passed" if result == 0 else "failed"
-    with write_transaction(database) as connection:
-        connection.execute(
-            "UPDATE sourcebridge_execution_run SET status = ?, completed_at = ? "
-            "WHERE id = ? AND status = 'running'",
-            (status, _now(), run_id),
-        )
+    _finalize_run(
+        database,
+        run_id,
+        run_status=status,
+        worker_status="completed" if result == 0 else "failed",
+    )
     return result
 
 

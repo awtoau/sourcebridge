@@ -41,28 +41,45 @@ def _id(prefix: str, value: str) -> str:
     return f"{prefix}-{_digest(value)[:24]}"
 
 
-def _executescript_in_writer(connection: sqlite3.Connection, script: str) -> None:
-    """Keep schema scripts inside the same serialized writer lease.
+def _run_atomic_script(connection: sqlite3.Connection, script: str) -> None:
+    """Run DDL and its metadata update as one explicit SQLite transaction.
 
-    ``sqlite3.Connection.executescript`` commits an existing transaction before
-    running its input.  Re-enter the immediate transaction around the script
-    and leave one open for the caller's following metadata updates.
+    ``sqlite3.Connection.executescript`` commits an existing transaction
+    before running its input.  Therefore the script itself must contain both
+    ``BEGIN IMMEDIATE`` and ``COMMIT``; callers must not put a version update
+    after this helper.
     """
 
-    connection.executescript(f"BEGIN IMMEDIATE;\n{script}\nCOMMIT;")
     for attempt in range(BUSY_RETRY_ATTEMPTS + 1):
         try:
-            connection.execute("BEGIN IMMEDIATE")
+            connection.executescript(f"BEGIN IMMEDIATE;\n{script}\nCOMMIT;")
             return
         except sqlite3.OperationalError as error:
             if "locked" not in str(error).lower() and "busy" not in str(error).lower():
                 raise
+            # Do not let a retry commit DDL that ran before a busy failure.
+            # The migration's version update must commit with that DDL.
+            connection.rollback()
             if attempt >= BUSY_RETRY_ATTEMPTS:
                 raise sqlite3.OperationalError(
                     "SQLite writer remained busy during schema migration; "
                     "wait for the active writer to finish and retry"
                 ) from error
             time.sleep(BUSY_RETRY_BACKOFF_SECONDS * (2**attempt))
+
+
+def _run_atomic_migration(
+    connection: sqlite3.Connection, ddl: str, target_version: str
+) -> None:
+    _run_atomic_script(
+        connection,
+        f"""
+        {ddl}
+        UPDATE sourcebridge_schema_metadata
+        SET value = '{target_version}'
+        WHERE key = 'schema_version';
+        """,
+    )
 
 
 def initialize(database: Path) -> None:
@@ -79,7 +96,14 @@ def initialize(database: Path) -> None:
                 """
             ).fetchone()
             if metadata_exists is None:
-                _executescript_in_writer(connection, schema)
+                _run_atomic_script(
+                    connection,
+                    f"""
+                    {schema}
+                    INSERT INTO sourcebridge_schema_metadata (key, value)
+                    VALUES ('schema_version', '{SCHEMA_VERSION}');
+                    """,
+                )
             existing = connection.execute(
                 "SELECT value FROM sourcebridge_schema_metadata WHERE key = 'schema_version'"
             ).fetchone()
@@ -90,21 +114,25 @@ def initialize(database: Path) -> None:
                 )
             version = existing[0] if existing is not None else str(SCHEMA_VERSION)
             if version == "1":
-                connection.execute(
-                    "ALTER TABLE sourcebridge_imported_record "
-                    "ADD COLUMN source_repository TEXT NOT NULL DEFAULT 'sourcebridge'"
-                )
-                connection.execute(
-                    "UPDATE sourcebridge_schema_metadata SET value = ? "
-                    "WHERE key = 'schema_version'",
-                    ("2",),
-                )
+                columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(sourcebridge_imported_record)"
+                    )
+                }
+                ddl = ""
+                if "source_repository" not in columns:
+                    ddl = (
+                        "ALTER TABLE sourcebridge_imported_record "
+                        "ADD COLUMN source_repository TEXT NOT NULL DEFAULT 'sourcebridge';"
+                    )
+                _run_atomic_migration(connection, ddl, "2")
                 version = "2"
             if version == "2":
-                _executescript_in_writer(
+                _run_atomic_migration(
                     connection,
                     """
-                    CREATE TABLE sourcebridge_engine_test (
+                    CREATE TABLE IF NOT EXISTS sourcebridge_engine_test (
                         id INTEGER PRIMARY KEY,
                         pack_id TEXT NOT NULL,
                         adapter TEXT NOT NULL,
@@ -116,7 +144,7 @@ def initialize(database: Path) -> None:
                         created_at TEXT NOT NULL,
                         UNIQUE (pack_id, name)
                     );
-                    CREATE TABLE sourcebridge_engine_test_run (
+                    CREATE TABLE IF NOT EXISTS sourcebridge_engine_test_run (
                         id TEXT PRIMARY KEY,
                         test_id INTEGER NOT NULL REFERENCES sourcebridge_engine_test(id),
                         status TEXT NOT NULL CHECK (status IN ('passed', 'failed', 'blocked')),
@@ -125,34 +153,39 @@ def initialize(database: Path) -> None:
                         started_at TEXT NOT NULL,
                         completed_at TEXT NOT NULL
                     );
-                    CREATE INDEX sourcebridge_engine_test_run_test_idx
+                    CREATE INDEX IF NOT EXISTS sourcebridge_engine_test_run_test_idx
                         ON sourcebridge_engine_test_run (test_id, completed_at);
-                    """
-                )
-                connection.execute(
-                    "UPDATE sourcebridge_schema_metadata SET value = ? "
-                    "WHERE key = 'schema_version'",
-                    ("3",),
+                    """,
+                    "3",
                 )
                 version = "3"
             if version == "3":
-                _executescript_in_writer(
-                    connection,
-                    """
-                    ALTER TABLE sourcebridge_engine_test
-                        ADD COLUMN catalogue_path TEXT;
-                    ALTER TABLE sourcebridge_engine_test
-                        ADD COLUMN catalogue_digest TEXT;
-                    """
+                columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(sourcebridge_engine_test)"
+                    )
+                }
+                ddl = "\n".join(
+                    statement
+                    for column, statement in (
+                        (
+                            "catalogue_path",
+                            "ALTER TABLE sourcebridge_engine_test "
+                            "ADD COLUMN catalogue_path TEXT;",
+                        ),
+                        (
+                            "catalogue_digest",
+                            "ALTER TABLE sourcebridge_engine_test "
+                            "ADD COLUMN catalogue_digest TEXT;",
+                        ),
+                    )
+                    if column not in columns
                 )
-                connection.execute(
-                    "UPDATE sourcebridge_schema_metadata SET value = ? "
-                    "WHERE key = 'schema_version'",
-                    ("4",),
-                )
+                _run_atomic_migration(connection, ddl, "4")
                 version = "4"
             if version == "4":
-                _executescript_in_writer(
+                _run_atomic_migration(
                     connection,
                     """
                     CREATE TABLE IF NOT EXISTS sourcebridge_rule_family (
@@ -364,12 +397,8 @@ def initialize(database: Path) -> None:
                     BEGIN
                         SELECT RAISE(ABORT, 'current profile requires passed required-tier certification');
                     END;
-                    """
-                )
-                connection.execute(
-                    "UPDATE sourcebridge_schema_metadata SET value = ? "
-                    "WHERE key = 'schema_version'",
-                    ("5",),
+                    """,
+                    "5",
                 )
                 version = "5"
             if version == "5":
@@ -379,18 +408,13 @@ def initialize(database: Path) -> None:
                         "PRAGMA table_info(sourcebridge_project_profile_rule_override)"
                     )
                 }
+                ddl = ""
                 if "resolution_json" not in columns:
-                    connection.execute(
-                        """
-                        ALTER TABLE sourcebridge_project_profile_rule_override
-                        ADD COLUMN resolution_json TEXT NOT NULL DEFAULT '{}'
-                        """
+                    ddl = (
+                        "ALTER TABLE sourcebridge_project_profile_rule_override "
+                        "ADD COLUMN resolution_json TEXT NOT NULL DEFAULT '{}';"
                     )
-                connection.execute(
-                    "UPDATE sourcebridge_schema_metadata SET value = ? "
-                    "WHERE key = 'schema_version'",
-                    (str(SCHEMA_VERSION),),
-                )
+                _run_atomic_migration(connection, ddl, str(SCHEMA_VERSION))
                 version = str(SCHEMA_VERSION)
             if version != str(SCHEMA_VERSION):
                 raise EvidencePipelineError(

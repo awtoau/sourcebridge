@@ -10,6 +10,50 @@ from sourcebridge.pipeline import import_json, initialize
 
 
 class PipelineTests(unittest.TestCase):
+    def test_initialize_recovers_interrupted_v3_migration(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            database = Path(temporary) / "evidence.db"
+            initialize(database)
+
+            connection = sqlite3.connect(database)
+            try:
+                columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(sourcebridge_engine_test)"
+                    )
+                }
+                self.assertTrue({"catalogue_path", "catalogue_digest"} <= columns)
+                # This is the state left by the previous implementation after
+                # ALTER TABLE committed but before schema metadata advanced.
+                connection.execute(
+                    "UPDATE sourcebridge_schema_metadata SET value = '3' "
+                    "WHERE key = 'schema_version'"
+                )
+                connection.commit()
+            finally:
+                connection.close()
+
+            initialize(database)
+
+            connection = sqlite3.connect(database)
+            try:
+                version = connection.execute(
+                    "SELECT value FROM sourcebridge_schema_metadata "
+                    "WHERE key = 'schema_version'"
+                ).fetchone()[0]
+                columns = {
+                    row[1]
+                    for row in connection.execute(
+                        "PRAGMA table_info(sourcebridge_engine_test)"
+                    )
+                }
+            finally:
+                connection.close()
+
+        self.assertEqual(version, "6")
+        self.assertTrue({"catalogue_path", "catalogue_digest"} <= columns)
+
     def test_imports_legacy_json_with_provenance_and_is_idempotent(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
