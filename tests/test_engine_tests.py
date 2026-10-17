@@ -88,7 +88,7 @@ class EngineTestTests(unittest.TestCase):
                     "AND name = 'sourcebridge_engine_test'"
                 ).fetchone()
 
-        self.assertEqual(version, "4")
+        self.assertEqual(version, "6")
         self.assertIsNotNone(test_table)
 
     def test_imports_versioned_catalogue_with_relative_fixture(self) -> None:
