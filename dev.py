@@ -14,7 +14,29 @@ _COMMANDS = {
     "select-next-rule": "select one evidence-backed rule work item",
     "rule-runtime": "run a declared rule runtime through its contract",
     "validation": "run declared source/target/oracle validation",
-    "report-conversion-census": "report persisted emitted-artifact outcomes",
+    "census": "report persisted emitted-artifact outcomes",
+    "diagnostics": "report grouped compiler and conversion diagnostics",
+    "diagnostic": "report one diagnostic signature",
+    "packs": "report committed evidence across pack repositories",
+    "toolchains": "report declared and observed toolchain evidence",
+    "work-queue": "report current evidence-backed work items",
+    "work-item": "report one work item's immutable evidence",
+    "changes": "report changes since a completed run",
+    "staleness": "report stale rule/profile/toolchain evidence",
+    "tests": "list registered pack engine tests",
+}
+
+_FORWARD = {
+    "census": "report-conversion-census",
+    "diagnostics": "report-diagnostics",
+    "diagnostic": "report-diagnostic",
+    "packs": "report-packs",
+    "toolchains": "report-toolchains",
+    "work-queue": "report-work-queue",
+    "work-item": "report-work-item",
+    "changes": "report-changes",
+    "staleness": "report-staleness",
+    "tests": "test",
 }
 
 
@@ -31,7 +53,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
     result = subprocess.run(
-        [sys.executable, "-m", "sourcebridge.cli", command, *arguments[1:]],
+        [sys.executable, "-m", "sourcebridge.cli", _FORWARD.get(command, command), *arguments[1:]],
         check=False,
     )
     return result.returncode
