@@ -5,8 +5,8 @@ __pycache__/
 # Local editor workspace state.
 .vscode/
 
-# Local operational evidence; committed evidence remains explicit JSON inputs.
-evidence/sourcebridge.db
+# SQLite journal sidecars are transient; the evidence database itself is durable
+# conversion work and must remain visible for deliberate review/versioning.
 evidence/sourcebridge.db-shm
 evidence/sourcebridge.db-wal
 evidence/proposals/
