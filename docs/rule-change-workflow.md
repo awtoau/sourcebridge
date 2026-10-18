@@ -14,10 +14,11 @@ conversion rule, output shape, semantic policy, or emitter fallback.
 - Do not change this workflow ad hoc.
 
 If any step is unsuitable, incomplete, too expensive, or technically wrong,
-open a GitHub issue with the label/title prefix **`port-process-change`**.
-The issue must describe the current step, the proposed replacement, affected
-packs/profiles, evidence retained or lost, validation impact, and rollback
-plan. It requires approval by **Dan** before the process changes.
+open a GitHub issue whose title starts **`[port-process-change]`**. Apply the
+`port-process-change` label when it exists. The issue must describe the
+current step, the proposed replacement, affected packs/profiles, evidence
+retained or lost, validation impact, and rollback plan. It requires approval
+by **Dan** before the process changes.
 
 ## Required sequence
 
@@ -86,4 +87,3 @@ plan. It requires approval by **Dan** before the process changes.
   deterministic validation.
 - A model proposal never bypasses steps 1–7 and never becomes a promoted rule
   or a conversion result without the required evidence.
-
