@@ -73,6 +73,34 @@ from sourcebridge.validation import (
     run_validation,
 )
 from sourcebridge.rule_selection import RuleSelectionError, select_next_rule
+from sourcebridge.process_change import ProcessChangeError, open_issue, proposal
+
+
+def _process_change(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge process-change")
+    parser.add_argument("--repo", default="awtoau/sourcebridge")
+    parser.add_argument("--summary", required=True)
+    parser.add_argument("--current-step", required=True)
+    parser.add_argument("--replacement", required=True)
+    parser.add_argument("--affected-scope", required=True)
+    parser.add_argument("--evidence-impact", required=True)
+    parser.add_argument("--validation-impact", required=True)
+    parser.add_argument("--rollback-plan", required=True)
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args(arguments)
+    try:
+        title, body = proposal(
+            summary=args.summary, current_step=args.current_step,
+            replacement=args.replacement, affected_scope=args.affected_scope,
+            evidence_impact=args.evidence_impact, validation_impact=args.validation_impact,
+            rollback_plan=args.rollback_plan,
+        )
+        result = open_issue(repository=args.repo, title=title, body=body, dry_run=args.dry_run)
+    except ProcessChangeError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
 
 
 def _proposal_parser() -> argparse.ArgumentParser:
@@ -941,6 +969,8 @@ def main() -> int:
     arguments = sys.argv[1:]
     if arguments and arguments[0] == "propose-rule":
         return _propose_rule(arguments[1:])
+    if arguments and arguments[0] == "process-change":
+        return _process_change(arguments[1:])
     if arguments and arguments[0] == "select-next-rule":
         return _select_next_rule(arguments[1:])
     if arguments and arguments[0] in {"propose-batch", "propose-rules", "proposal-worker"}:

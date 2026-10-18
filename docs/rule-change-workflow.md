@@ -20,6 +20,14 @@ current step, the proposed replacement, affected packs/profiles, evidence
 retained or lost, validation impact, and rollback plan. It requires approval
 by **Dan** before the process changes.
 
+Create a validated draft or issue through:
+
+```text
+sourcebridge process-change --dry-run --summary "..." --current-step "..." \
+  --replacement "..." --affected-scope "..." --evidence-impact "..." \
+  --validation-impact "..." --rollback-plan "..."
+```
+
 ## Required sequence
 
 1. **Name the work item**
