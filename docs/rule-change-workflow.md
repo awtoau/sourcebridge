@@ -37,9 +37,13 @@ sourcebridge process-change --dry-run --summary "..." --current-step "..." \
      rule digest, and current source/target/oracle status.
 
 2. **Reproduce with the pack entry point**
-   - Use the pack's documented command, normally:
+   - Use the repository or pack's documented `dev.py` command, normally:
      ```text
-     python3 scripts/dev.py <command>
+     python3 dev.py <command>
+     ```
+   - Sourcebridge agents may use only commands listed by:
+     ```text
+     python3 dev.py describe
      ```
    - For C# Renode compiler evidence:
      ```text
