@@ -209,6 +209,11 @@ required symbol prevents a valid target program, the result is
 
 ## Data-driven rules, reusable interpreters
 
+Rule changes follow the mandatory
+[rule-change workflow](docs/rule-change-workflow.md). A process deviation
+requires a `port-process-change` GitHub issue and Dan's approval; it must not
+be improvised in a rule, generated artifact, or agent run.
+
 Rules own language mappings, output shapes, semantic policies, applicability,
 required evidence, and validation tiers. For example, a generic C# rule may
 declare that an explicit-interface member name is emitted with the
