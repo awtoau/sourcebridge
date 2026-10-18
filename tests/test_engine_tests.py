@@ -11,7 +11,7 @@ import unittest
 
 from sourcebridge.cli import _dev, _test
 from sourcebridge.engine_tests import EngineTestError, import_catalogue, list_tests, register, run
-from sourcebridge.pipeline import initialize
+from sourcebridge.pipeline import SCHEMA_VERSION, initialize
 
 
 class EngineTestTests(unittest.TestCase):
@@ -88,7 +88,7 @@ class EngineTestTests(unittest.TestCase):
                     "AND name = 'sourcebridge_engine_test'"
                 ).fetchone()
 
-        self.assertEqual(version, "10")
+        self.assertEqual(version, str(SCHEMA_VERSION))
         self.assertIsNotNone(test_table)
 
     def test_initialize_v6_worker_migration_includes_prompt_digest(self) -> None:

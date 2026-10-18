@@ -20,7 +20,7 @@ from sourcebridge.conversion_profiles import (
     set_project_profile_state,
     set_rule_revision_state,
 )
-from sourcebridge.pipeline import initialize
+from sourcebridge.pipeline import SCHEMA_VERSION, initialize
 
 
 class ConversionProfileTests(unittest.TestCase):
@@ -367,7 +367,7 @@ class ConversionProfileTests(unittest.TestCase):
                     """
                 ).fetchone()
 
-        self.assertEqual(version, "10")
+        self.assertEqual(version, str(SCHEMA_VERSION))
         self.assertIsNotNone(profile_table)
         self.assertIsNotNone(immutability_trigger)
 
@@ -409,7 +409,7 @@ class ConversionProfileTests(unittest.TestCase):
                     )
                 }
 
-        self.assertEqual(version, "10")
+        self.assertEqual(version, str(SCHEMA_VERSION))
         self.assertIn("resolution_json", columns)
 
     def test_model_authored_rule_requires_human_review_provenance(self) -> None:

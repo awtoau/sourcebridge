@@ -19,8 +19,9 @@ source corpus + concrete variant
   -> frontend extracts language facts
   -> normalized source model and conversion decisions
   -> profile selects rules, runtime adapters, and a target backend
-  -> generated artifacts plus provenance
-  -> source-side and target-side validation evidence
+  -> generated target artifacts with provenance and explicit gaps
+  -> source-side, target-side, and oracle validation evidence
+  -> corpus census, diagnostics, and regression report
 ```
 
 ## Independent packs
@@ -126,17 +127,18 @@ contract, project policy, or validated rule supports a choice, Sourcebridge
 reports `modernization-risk: arithmetic-intent-unresolved` and blocks
 automatic semantic rewriting.
 
-## The C# to Rust naming exception
+## C# to Rust pack
 
-`sourcebridge-csharp` will become the canonical C# to Rust pack. It will
-preserve the full Git history of [`awtoau/csharp2rust`](https://github.com/awtoau/csharp2rust),
-including the Roslyn frontend, Rust backend, C# language mappings, corpus
-adapters, and validation evidence.
+[`sourcebridge-csharp`](https://github.com/awtoau/sourcebridge-csharp) preserves
+the established C# to Rust system from
+[`awtoau/csharp2rust`](https://github.com/awtoau/csharp2rust), including its
+Roslyn frontend, Rust emitter/runtime, language and Renode DSL rules, corpus
+adapters, generated artifacts, compiler census, and oracle assets.
 
-The existing `csharp2rust` repository remains authoritative until the
-history-preserving move and reproducibility gates succeed. Only then may it
-become a compatibility placeholder that directs users to `sourcebridge-csharp`;
-it must not be emptied or redirected prematurely.
+Sourcebridge does not replace that system with fixture-only claims. Its pack
+adapter invokes and persists the real corpus pipeline using the shared
+structured validation contract. Current compiler or oracle gaps remain visible
+as failed or skipped validation sides; they are never rewritten as success.
 
 ## Hybrid ports are normal
 
@@ -171,6 +173,106 @@ Every source unit receives a recorded disposition:
 
 “Complete” means every unit has an evidence-backed disposition. It does not
 mean every line was emitted mechanically.
+
+## Emission is mandatory; gaps are explicit
+
+A source-only classification is not a conversion outcome. For every source unit
+selected for conversion, a pack must attempt to emit a real target artifact.
+The artifact must be attributable to its corpus revision, source unit,
+resolved profile, rule revisions, generator version, and toolchain.
+
+Supported semantics emit executable target code. Unsupported semantics must
+be visible in a standard generated-source header and in the evidence database:
+
+```rust
+// SOURCEBRIDGE INPUT:
+// - corpus revision: <revision>
+// - source: <path>:<span>
+//
+// SOURCEBRIDGE RULES:
+// - <rule revision and digest>
+//
+// SOURCEBRIDGE GAPS:
+// - <category>: <source span>: <reason>
+//
+// SOURCEBRIDGE VALIDATION:
+// - source: passed | failed | blocked | skipped
+// - target: passed | failed | blocked | skipped
+// - oracle: passed | failed | blocked | skipped
+```
+
+The exact comment syntax may follow the target language, but the semantic
+fields are pack-independent. A gap must never silently delete source behavior,
+and a placeholder must never claim equivalent behavior. If withholding a
+required symbol prevents a valid target program, the result is
+`blocked-on-target`, not an invented implementation.
+
+## Data-driven rules, reusable interpreters
+
+Rule changes follow the mandatory
+[rule-change workflow](docs/rule-change-workflow.md). A process deviation
+requires a `port-process-change` GitHub issue and Dan's approval; it must not
+be improvised in a rule, generated artifact, or agent run.
+
+Rules own language mappings, output shapes, semantic policies, applicability,
+required evidence, and validation tiers. For example, a generic C# rule may
+declare that an explicit-interface member name is emitted with the
+`declared-member-segment-snake-case` shape. A Delphi rule may select a
+source-overflow policy or a Rust runtime helper.
+
+The engine owns reusable algorithms: compiler/AST traversal, symbol binding,
+safe target syntax construction, graph ordering, compilation, execution,
+oracle replay, artifact hashing, and report generation. Sourcebridge must not
+replace these algorithms with arbitrary code embedded in JSON, nor accumulate
+corpus-specific `if` branches in the engine. The intended boundary is:
+
+```text
+versioned rule/profile data
+  -> selects a named semantic policy or output shape
+deterministic frontend/backend interpreter
+  -> applies that policy to compiler-grounded facts
+validation and corpus census
+  -> prove, reject, or record the resulting behavior
+```
+
+## Full-corpus conversion census
+
+Every conversion profile must support a corpus-level report. It is not a count
+of files that looked translatable; it is an auditable inventory of what was
+actually attempted:
+
+- source units discovered, extracted, emitted, and withheld;
+- generated artifact and header digests;
+- source, target, and oracle outcomes;
+- explicit gaps grouped by stable category, source span, rule/profile, and
+  blocked dependency;
+- compiler diagnostics grouped by stable failure signature while retaining
+  individual occurrences and excerpts;
+- source/target observable-output comparisons where both programs run; and
+- differences from the prior report, so regressions cannot hide in totals.
+
+`passed` means the declared validation tier passed. `failed`, `blocked`, and
+`skipped` are first-class results, not omissions. Compilation proves
+well-formed target syntax; it never by itself proves behavioral equivalence.
+
+The core recorder persists the emitted artifact digest and body, each
+source/target/boundary/oracle validation result, and explicit generated-code
+gaps. Query its deterministic current database view with:
+
+```text
+sourcebridge report-conversion-census --database evidence/sourcebridge.db
+```
+
+Current pack status is intentionally narrow and truthful:
+
+- the Delphi/FPC path has measured scalar arithmetic and Boolean-branch
+  extraction/emission scopes; its source-only candidate discovery is not a
+  conversion result;
+- the preserved C# Renode pipeline runs against its pinned corpus and records
+  its structured result, but the latest compiler census is 677 of 687 clean
+  modules with 14 errors across 10 modules; and
+- neither status is a claim of general Delphi-to-Rust conversion or complete
+  C# Renode equivalence.
 
 ## Agent-native, versioned conversion engine
 
@@ -246,10 +348,11 @@ target semantics for it.
 
 ## Local model assistance
 
-Local models may generate high-volume candidate rules, negative cases, fixtures,
-and isolated target drafts. They never directly modify generated output, mark a
-rule validated, or promote a proposal. Sourcebridge records model/prompt/input
-provenance and lets normal validation and review decide what lands.
+Local models may help prioritize gaps, generate negative cases, or draft a
+bounded rule proposal. They never directly modify generated output, mark a
+rule validated, or promote a proposal. Model classifications alone are not
+conversion outcomes: an emitted target artifact and its deterministic
+source/target/oracle validation remain required.
 
 The first executable proposal stage is deliberately strict:
 
