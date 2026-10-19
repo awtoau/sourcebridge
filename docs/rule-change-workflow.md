@@ -8,6 +8,12 @@ conversion rule, output shape, semantic policy, or emitter fallback.
 - Do not hand-edit generated target artifacts.
 - Do not claim a rule works from source inspection, a model response, or a
   single generated snippet.
+- **Compilation is not completion.** A rule whose target only compiles is
+  `implemented` — an incomplete, interim state, never a deliverable. A rule is
+  complete only when its declared validation tier passes; for any rule with
+  observable behavior that tier is an **executable oracle** that runs the
+  source and the generated target and compares their output. An oracle is
+  mandatory, not "nice to have."
 - Do not silently replace unsupported behavior with plausible target code.
 - Do not invoke a pack's internal scripts when its documented `dev.py` command
   exists.
@@ -67,6 +73,12 @@ sourcebridge process-change --dry-run --summary "..." --current-step "..." \
    - Add a smallest reproducible source fixture or fact-level test.
    - Test both the supported output and the closest negative/unsupported form.
    - Verify emitted target syntax and required generated gap/header content.
+   - **Add an executable oracle fixture** (a runnable source program plus the
+     matching generated-target harness) for any rule with observable behavior.
+     The oracle must run both sides and compare normalized output. A rule whose
+     behavior is observable is not eligible for promotion to complete without a
+     passing oracle. Only a genuinely non-observable rule may omit it, and that
+     must be stated and justified in the PR.
    - A new rule without a regression proof is not eligible for promotion.
 
 5. **Make one bounded change**
@@ -81,7 +93,10 @@ sourcebridge process-change --dry-run --summary "..." --current-step "..." \
    - target compiler/test for the affected fixture;
    - pack canonical gate through `dev.py`;
    - profile/corpus census when the rule affects a corpus;
-   - source/target comparison and oracle replay when available.
+   - **executable oracle comparison (source output vs generated-target output)
+     is required for any rule with observable behavior.** A compile-only pass
+     without the oracle yields `implemented`, which is incomplete; it must not
+     be reported, committed, or merged as a finished rule.
    - Report `passed`, `failed`, `blocked`, and `skipped` exactly as observed.
 
 7. **Record and review**

@@ -15,6 +15,10 @@ _COMMANDS = {
     "rule-runtime": "run a declared rule runtime through its contract",
     "validation": "run declared source/target/oracle validation",
     "census": "report persisted emitted-artifact outcomes",
+    "record-census": "run a pack catalogue against a profile and record census evidence",
+    "scaffold-rule": "create a rule definition from data and register it as a draft",
+    "record-rule-tokens": "record host-provided token cost against a rule revision",
+    "rules": "compact per-rule status for one profile (token-cheap)",
     "diagnostics": "report grouped compiler and conversion diagnostics",
     "diagnostic": "report one diagnostic signature",
     "packs": "report committed evidence across pack repositories",
@@ -28,6 +32,10 @@ _COMMANDS = {
 
 _FORWARD = {
     "census": "report-conversion-census",
+    "record-census": "record-catalogue-census",
+    "scaffold-rule": "scaffold-rule",
+    "record-rule-tokens": "record-rule-tokens",
+    "rules": "report-rules",
     "diagnostics": "report-diagnostics",
     "diagnostic": "report-diagnostic",
     "packs": "report-packs",

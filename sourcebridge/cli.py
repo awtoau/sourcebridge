@@ -11,6 +11,7 @@ import sys
 from cli import sourcebridge as manifest_cli
 from sourcebridge.proposals import (
     DEFAULT_MODEL,
+    PROMPT_TEMPLATE_VERSION,
     ProposalEvidenceError,
     ProposalWorker,
     ProposalValidationError,
@@ -110,6 +111,17 @@ def _proposal_parser() -> argparse.ArgumentParser:
     parser.add_argument("--model-digest", required=True)
     parser.add_argument("--endpoint", default="http://127.0.0.1:11434")
     parser.add_argument("--output-dir", type=Path, default=Path("evidence/proposals"))
+    parser.add_argument(
+        "--prompt-template-version",
+        default=PROMPT_TEMPLATE_VERSION,
+        help="versioned prompt template to use (file prompts/<version>.txt)",
+    )
+    parser.add_argument(
+        "--prompt-template",
+        type=Path,
+        default=None,
+        help="explicit prompt template file path (overrides --prompt-template-version lookup)",
+    )
     return parser
 
 
@@ -123,6 +135,8 @@ def _propose_rule(arguments: list[str]) -> int:
             model,
             read_evidence(args.evidence),
             enforce_evidence=True,
+            prompt_template_version=args.prompt_template_version,
+            prompt_template_path=args.prompt_template,
         )
         path = write_staged_proposal(args.output_dir, staged)
     except (ProposalValidationError, ProposalEvidenceError) as error:
@@ -151,6 +165,17 @@ def _propose_batch(arguments: list[str]) -> int:
     parser.add_argument("--endpoint", default="http://127.0.0.1:11434")
     parser.add_argument("--output-dir", type=Path, default=Path("evidence/proposals"))
     parser.add_argument("--database", type=Path)
+    parser.add_argument(
+        "--prompt-template-version",
+        default=PROMPT_TEMPLATE_VERSION,
+        help="versioned prompt template to use (file prompts/<version>.txt)",
+    )
+    parser.add_argument(
+        "--prompt-template",
+        type=Path,
+        default=None,
+        help="explicit prompt template file path (overrides --prompt-template-version lookup)",
+    )
     args = parser.parse_args(arguments)
     try:
         worker = ProposalWorker(
@@ -160,6 +185,8 @@ def _propose_batch(arguments: list[str]) -> int:
             active_rule_digest=args.active_rule_digest,
             batch_id=args.batch_id,
             session_id=args.session_id,
+            prompt_template_version=args.prompt_template_version,
+            prompt_template_path=args.prompt_template,
             database=args.database,
         )
         report = worker.run_batch(
@@ -219,6 +246,172 @@ def _report_conversion_census(arguments: list[str]) -> int:
     try:
         result = conversion_census_report(args.database)
     except ConversionCensusError as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def _record_rule_tokens(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge record-rule-tokens")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--rule-revision", required=True)
+    parser.add_argument("--provider", required=True)
+    parser.add_argument("--input-tokens", type=int, required=True)
+    parser.add_argument("--output-tokens", type=int, required=True)
+    parser.add_argument("--model-name")
+    parser.add_argument("--model-digest")
+    parser.add_argument("--session-id")
+    parser.add_argument("--duration-ms", type=float)
+    parser.add_argument("--local-only", action="store_true")
+    args = parser.parse_args(arguments)
+    if args.input_tokens < 0 or args.output_tokens < 0:
+        print("token counts must be non-negative host-provided values", file=sys.stderr)
+        return 1
+    record = {
+        "kind": "agent_usage",
+        "provider": args.provider,
+        "session_id": args.session_id,
+        "model_name": args.model_name,
+        "model_digest": args.model_digest,
+        "input_tokens": args.input_tokens,
+        "output_tokens": args.output_tokens,
+        "cache_read_tokens": None,
+        "cache_write_tokens": None,
+        "duration_ms": args.duration_ms,
+        "local_only": bool(args.local_only),
+        "proposal_worker_request_id": None,
+        "rule_revision_id": args.rule_revision,
+        "work_item_id": None,
+    }
+    import tempfile
+
+    try:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "agent_usage" / "usage.json"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(record), encoding="utf-8")
+            result = import_json(args.database, Path(temporary), repository="host-usage")
+    except (EvidencePipelineError, sqlite3.Error, OSError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps({"recorded": True, "rule_revision": args.rule_revision, "import": result}, indent=2, sort_keys=True))
+    return 0
+
+
+def _scaffold_rule(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge scaffold-rule")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--rule-key", required=True)
+    parser.add_argument("--source-frontend", required=True)
+    parser.add_argument("--fact-kind", required=True)
+    parser.add_argument("--rules-dir", type=Path, required=True)
+    parser.add_argument("--target", default="rust")
+    parser.add_argument("--body", default="{op0}")
+    parser.add_argument("--type-map", default='{"integer": "i32", "cardinal": "u32"}')
+    parser.add_argument("--title", default="")
+    parser.add_argument("--rationale", required=True)
+    parser.add_argument("--created-by", required=True)
+    args = parser.parse_args(arguments)
+    try:
+        type_map = json.loads(args.type_map)
+        if not isinstance(type_map, dict):
+            raise ValueError("--type-map must be a JSON object")
+    except (ValueError, json.JSONDecodeError) as error:
+        print(f"invalid --type-map: {error}", file=sys.stderr)
+        return 1
+    definition = {
+        "schema_version": 1,
+        "rule_key": args.rule_key,
+        "title": args.title or args.rule_key,
+        "applies_to": {"source_fact_kind": args.fact_kind},
+        "output_shape": {"target": args.target, "type_map": type_map, "body": args.body},
+        "validation_tier": "target-compile",
+        "rationale": args.rationale,
+    }
+    filename = args.rule_key.replace(".", "-") + ".json"
+    rule_path = args.rules_dir / filename
+    if rule_path.exists():
+        print(f"{rule_path}: rule definition already exists; edit it instead", file=sys.stderr)
+        return 1
+    try:
+        args.rules_dir.mkdir(parents=True, exist_ok=True)
+        rule_path.write_text(json.dumps(definition, indent=2) + "\n", encoding="utf-8")
+        result = register_rule_revision(
+            args.database,
+            rule_key=args.rule_key,
+            source_frontend_pack_id=args.source_frontend,
+            definition=definition,
+            rationale=args.rationale,
+            created_by=args.created_by,
+        )
+    except (ConversionProfileError, OSError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    print(json.dumps({
+        "rule_definition": str(rule_path),
+        "rule_revision_id": result["rule_revision_id"],
+        "state": result["state"],
+        "next_steps": [
+            "edit the rule_definition output_shape.body for the real target syntax",
+            "add a fixture and its expected engine-test result",
+            f"sourcebridge profile set-rule-state {result['rule_revision_id']} active "
+            f"--database {args.database} --rationale '...' --decided-by {args.created_by}",
+            "sourcebridge record-catalogue-census ... then sourcebridge report-rules ...",
+        ],
+    }, indent=2))
+    return 0
+
+
+def _report_rules(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge report-rules")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--profile-name", required=True)
+    args = parser.parse_args(arguments)
+    from sourcebridge.conversion_census import profile_report
+
+    try:
+        report = profile_report(args.database, profile_name=args.profile_name)
+    except ConversionCensusError as error:
+        print(error, file=sys.stderr)
+        return 1
+    # Compact, token-cheap summary: one line per rule plus counts.
+    summary = {
+        "profile": report["profile_name"],
+        "rule_status_counts": report["rule_status_counts"],
+        "rules": [
+            {
+                "rule_key": r["rule_key"],
+                "status": r["rule_status"],
+                "state": r["rule_state"],
+                "complete": r["complete"],
+                "needs_oracle": r["needs_oracle"],
+                "tokens": r["tokens"],
+            }
+            for r in report["rules"]
+        ],
+    }
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0
+
+
+def _record_catalogue_census(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="sourcebridge record-catalogue-census")
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--profile", type=Path, required=True)
+    parser.add_argument("--catalogue", type=Path, required=True)
+    parser.add_argument("--curriculum", type=Path)
+    args = parser.parse_args(arguments)
+    from sourcebridge.conversion_census import record_catalogue_census
+
+    try:
+        result = record_catalogue_census(
+            args.database,
+            profile_manifest=args.profile,
+            catalogue=args.catalogue,
+            curriculum=args.curriculum,
+        )
+    except (ConversionCensusError, EngineTestError) as error:
         print(error, file=sys.stderr)
         return 1
     print(json.dumps(result, indent=2, sort_keys=True))
@@ -983,6 +1176,14 @@ def main() -> int:
         return _report_diagnostics(arguments[1:])
     if arguments and arguments[0] in {"report-conversion-census", "conversion-census-report"}:
         return _report_conversion_census(arguments[1:])
+    if arguments and arguments[0] in {"record-catalogue-census", "record-profile-census"}:
+        return _record_catalogue_census(arguments[1:])
+    if arguments and arguments[0] in {"scaffold-rule", "rule-scaffold"}:
+        return _scaffold_rule(arguments[1:])
+    if arguments and arguments[0] in {"record-rule-tokens", "rule-tokens"}:
+        return _record_rule_tokens(arguments[1:])
+    if arguments and arguments[0] in {"report-rules", "rules-report"}:
+        return _report_rules(arguments[1:])
     if arguments and arguments[0] in {"report-diagnostic", "diagnostic-report"}:
         return _report_diagnostic(arguments[1:])
     if arguments and arguments[0] in {"review-diagnostic", "diagnostic-review"}:

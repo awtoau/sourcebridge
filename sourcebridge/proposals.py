@@ -17,19 +17,7 @@ import uuid
 DEFAULT_MODEL = "qwen3-coder:30b"
 APPROVED_MODELS = frozenset({DEFAULT_MODEL, "qwen2.5-coder:14b"})
 PROMPT_TEMPLATE_VERSION = "local-rule-proposal-v1"
-PROMPT_TEMPLATE_TEXT = (
-    "Return only one JSON object matching the supplied schema. "
-    "Propose one concise rule candidate; never claim validation, commit a rule, "
-    "or write generated code. "
-    "Use exact source snippets, symbols, compiler fields, and committed fixture paths "
-    "from the evidence, not prose summaries. "
-    "If the evidence is insufficient, abstain: return empty positive_patterns, "
-    "empty suggested_tests, and explain the gap in open_questions. "
-    "Never invent overflow, compiler, source, target, or fixture claims. "
-    "Suggested tests are only evidence references; their executable fields are "
-    "resolved and checked deterministically by Sourcebridge. "
-    "Keep every explanation concise."
-)
+_PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 GENERATION_OPTIONS = {"temperature": 0, "seed": 42, "num_ctx": 8192, "num_predict": 1024}
 REQUEST_TIMEOUT_SECONDS = 300
 MAX_BATCH_SIZE = 20
@@ -48,8 +36,39 @@ _REQUIRED_PROPOSAL_FIELDS = {
 _OPTIONAL_PROPOSAL_FIELDS = {"candidate_template", "evidence_references"}
 
 
-def _prompt_template_digest(version: str) -> str:
-    return hashlib.sha256(f"{version}\n{PROMPT_TEMPLATE_TEXT}".encode("utf-8")).hexdigest()
+def _prompt_template_path(version: str, template_path: Path | None = None) -> Path:
+    """Resolve the external, version-controlled proposal prompt template file."""
+    if template_path is not None:
+        return Path(template_path)
+    return _PROMPTS_DIR / f"{version}.txt"
+
+
+def load_prompt_template(
+    version: str = PROMPT_TEMPLATE_VERSION, template_path: Path | None = None
+) -> str:
+    """Load a versioned proposal prompt template from its external file.
+
+    Prompt templates are versioned conversion inputs (see ``docs/local-ollama.md``),
+    not operator preferences: the text lives in ``prompts/<version>.txt`` and is
+    tuned by adding a new version file and comparing it on a fixed evaluation
+    queue, never by editing code. A single conventional trailing newline in the
+    file is not part of the prompt, so the in-memory text (and its digest) stays
+    stable across the move from code to file.
+    """
+    path = _prompt_template_path(version, template_path)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as error:
+        raise ProposalWorkerError(
+            f"prompt template `{version}` is not available at {path}: {error}"
+        ) from error
+    return text[:-1] if text.endswith("\n") else text
+
+
+def _prompt_template_digest(version: str, template_path: Path | None = None) -> str:
+    return hashlib.sha256(
+        f"{version}\n{load_prompt_template(version, template_path)}".encode("utf-8")
+    ).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -374,6 +393,7 @@ def _proposal_payload(
     *,
     generation_options: Mapping[str, int] = GENERATION_OPTIONS,
     prompt_template_version: str = PROMPT_TEMPLATE_VERSION,
+    prompt_template_path: Path | None = None,
     session: ProposalWorkerSession | None = None,
 ) -> dict[str, Any]:
     request_context: dict[str, Any] = {
@@ -393,7 +413,12 @@ def _proposal_payload(
         "format": _proposal_schema(),
         "options": dict(generation_options),
         "messages": [
-            {"role": "system", "content": PROMPT_TEMPLATE_TEXT},
+            {
+                "role": "system",
+                "content": load_prompt_template(
+                    prompt_template_version, prompt_template_path
+                ),
+            },
             {
                 "role": "user",
                 "content": json.dumps(request_context, sort_keys=True),
@@ -410,6 +435,7 @@ def _stage_response(
     *,
     session: ProposalWorkerSession | None = None,
     prompt_template_version: str = PROMPT_TEMPLATE_VERSION,
+    prompt_template_path: Path | None = None,
     request_id: str | None = None,
 ) -> dict[str, Any]:
     proposal: Any = None
@@ -422,7 +448,9 @@ def _stage_response(
     record: dict[str, Any] = {
         "status": "unvalidated-llm-proposal",
         "prompt_template_version": prompt_template_version,
-        "prompt_template_digest": _prompt_template_digest(prompt_template_version),
+        "prompt_template_digest": _prompt_template_digest(
+            prompt_template_version, prompt_template_path
+        ),
         "model": asdict(model),
         "generation_options": dict(payload["options"]),
         "payload_sha256": payload_hash,
@@ -462,14 +490,23 @@ def stage_proposal(
     evidence: dict[str, Any],
     *,
     enforce_evidence: bool = False,
+    prompt_template_version: str = PROMPT_TEMPLATE_VERSION,
+    prompt_template_path: Path | None = None,
 ) -> dict[str, Any]:
-    payload = _proposal_payload(model, evidence)
+    payload = _proposal_payload(
+        model,
+        evidence,
+        prompt_template_version=prompt_template_version,
+        prompt_template_path=prompt_template_path,
+    )
     response = _request_json(f"{endpoint}/api/chat", payload)
     record = _stage_response(
         response,
         payload,
         model,
         evidence,
+        prompt_template_version=prompt_template_version,
+        prompt_template_path=prompt_template_path,
         request_id=f"request-{uuid.uuid4().hex}",
     )
     if enforce_evidence:
@@ -803,6 +840,7 @@ class ProposalWorker:
         session_id: str | None = None,
         generation_options: Mapping[str, int] = GENERATION_OPTIONS,
         prompt_template_version: str = PROMPT_TEMPLATE_VERSION,
+        prompt_template_path: Path | None = None,
         database: Path | None = None,
     ) -> None:
         self.endpoint = validate_local_endpoint(endpoint)
@@ -819,6 +857,9 @@ class ProposalWorker:
         self.prompt_template_version = prompt_template_version
         if not prompt_template_version:
             raise ValueError("a prompt template version is required")
+        self.prompt_template_path = prompt_template_path
+        # Fail fast if the versioned template file is missing or unreadable.
+        load_prompt_template(prompt_template_version, prompt_template_path)
         self.database = database
         self._session: ProposalWorkerSession | None = None
         self._request_count = 0
@@ -853,7 +894,9 @@ class ProposalWorker:
             model=identity,
             generation_options=dict(self.generation_options),
             prompt_template_version=self.prompt_template_version,
-            prompt_template_digest=_prompt_template_digest(self.prompt_template_version),
+            prompt_template_digest=_prompt_template_digest(
+                self.prompt_template_version, self.prompt_template_path
+            ),
             active_rule_digest=self.active_rule_digest,
         )
         _audit_worker_session(self.database, self._session, status="running")
@@ -873,6 +916,7 @@ class ProposalWorker:
             evidence,
             generation_options=session.generation_options,
             prompt_template_version=session.prompt_template_version,
+            prompt_template_path=self.prompt_template_path,
             session=session,
         )
         started = time.perf_counter()
@@ -898,6 +942,7 @@ class ProposalWorker:
                 evidence,
                 session=session,
                 prompt_template_version=session.prompt_template_version,
+                prompt_template_path=self.prompt_template_path,
                 request_id=request_id,
             )
         except ProposalValidationError as error:

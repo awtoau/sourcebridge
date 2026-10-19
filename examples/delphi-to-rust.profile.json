@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "id": "delphi-to-rust",
+  "source_frontend": "sourcebridge-delphi",
+  "target_backend": "sourcebridge-rust",
+  "rule_layers": [
+    "fpc-3.2.3-scalar-addition"
+  ],
+  "runtime_adapters": [],
+  "options": {
+    "source_variant": "fpc-3.2.3-x86_64-linux-delphi",
+    "source_language": "delphi",
+    "scope": "basics"
+  }
+}

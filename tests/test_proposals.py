@@ -520,3 +520,56 @@ class ProposalTests(unittest.TestCase):
         self.assertIn("Ollama unavailable", stderr.getvalue())
         self.assertNotIn("Traceback", stderr.getvalue())
         self.assertEqual(event[0], "failed")
+
+
+class PromptTemplateVersioningTests(unittest.TestCase):
+    """The proposal prompt is an external, versioned template, not hardcoded."""
+
+    def test_v1_template_is_external_and_digest_is_stable(self) -> None:
+        from sourcebridge import proposals
+
+        repo_root = Path(proposals.__file__).resolve().parent.parent
+        template = repo_root / "prompts" / "local-rule-proposal-v1.txt"
+        self.assertTrue(template.is_file(), "v1 prompt must live in prompts/")
+        # Moving the text from code to file must not change the recorded digest.
+        self.assertEqual(
+            proposals._prompt_template_digest("local-rule-proposal-v1"),
+            "18656b98767c0c7aa6f34d84fd5145ca9c3ff46f2f1c40422b7d99c54b604ad0",
+        )
+
+    def test_missing_version_raises_worker_error(self) -> None:
+        from sourcebridge import proposals
+
+        with self.assertRaises(ProposalWorkerError):
+            proposals.load_prompt_template("no-such-template")
+
+    def test_explicit_template_path_overrides_version_lookup(self) -> None:
+        from sourcebridge import proposals
+
+        with tempfile.TemporaryDirectory() as tmp:
+            custom = Path(tmp) / "tuned.txt"
+            custom.write_text("Tuned proposal prompt v2.\n", encoding="utf-8")
+            self.assertEqual(
+                proposals.load_prompt_template("v2-tuned", custom),
+                "Tuned proposal prompt v2.",
+            )
+            # The system message and digest both follow the selected template.
+            model = ModelIdentity(name="qwen3-coder:30b", digest="sha256:ok")
+            payload = proposals._proposal_payload(
+                model, {"a": 1}, prompt_template_version="v2-tuned", prompt_template_path=custom
+            )
+            self.assertEqual(
+                payload["messages"][0]["content"], "Tuned proposal prompt v2."
+            )
+            self.assertEqual(
+                proposals._prompt_template_digest("v2-tuned", custom),
+                proposals._prompt_template_digest("v2-tuned", custom),
+            )
+            self.assertNotEqual(
+                proposals._prompt_template_digest("v2-tuned", custom),
+                proposals._prompt_template_digest("local-rule-proposal-v1"),
+            )
+
+
+if __name__ == "__main__":
+    unittest.main()
